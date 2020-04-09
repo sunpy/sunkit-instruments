@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-# Author: Daniel Ryan <ryand5@tcd.ie>
 
 import os.path
 import pytest
@@ -142,63 +140,3 @@ def test_fits_data_comparison(iris_l2_test_raster):
         iris_l2_test_raster.data[spectral_window2].data[0].data, data2)
     np.testing.assert_array_almost_equal(
         iris_l2_test_raster.data[spectral_window3].data[0].data, data3)
-
-
-@pytest.mark.parametrize("input_cube, new_unit, expected_cube", [
-    (spectrogram_DN0, "DN", spectrogram_DN0),
-    (spectrogram_DN0, "photons", spectrogram_photon0),
-    (spectrogram_DN_per_s0, "DN", spectrogram_DN_per_s0),
-    (spectrogram_DN_per_s0, "photons", spectrogram_photon_per_s0),
-    (spectrogram_photon0, "DN", spectrogram_DN0),
-    (spectrogram_photon0, "photons", spectrogram_photon0),
-    (spectrogram_photon_per_s0, "DN", spectrogram_DN_per_s0),
-    (spectrogram_photon_per_s0, "photons", spectrogram_photon_per_s0)
-])
-def test_IRISSpectrogramCube_convert_to(input_cube, new_unit, expected_cube):
-    output_cube = input_cube.convert_to(new_unit)
-    assert_cubes_equal(output_cube, expected_cube)
-
-
-@pytest.mark.parametrize("input_cube, undo, force, expected_cube", [
-    (spectrogram_DN0, False, False, spectrogram_DN_per_s0),
-    (spectrogram_DN_per_s0, True, False, spectrogram_DN0),
-    (spectrogram_photon0, False, False, spectrogram_photon_per_s0),
-    (spectrogram_photon_per_s0, True, False, spectrogram_photon0),
-    (spectrogram_photon_per_s0, False, True, spectrogram_photon_per_s_per_s0),
-    (spectrogram_photon0, True, True, spectrogram_photon_s0)
-])
-def test_IRISSpectrogramCube_apply_exposure_time_correction(input_cube, undo,
-                                                            force, expected_cube):
-    output_cube = input_cube.apply_exposure_time_correction(undo=undo, force=force)
-    assert_cubes_equal(output_cube, expected_cube)
-
-
-@pytest.mark.parametrize("input_sequence, new_unit, expected_sequence", [
-    (sequence_DN, "DN", sequence_DN),
-    (sequence_DN, "photons", sequence_photon),
-    (sequence_photon, "DN", sequence_DN),
-    (sequence_photon, "photons", sequence_photon),
-    (sequence_DN_per_s, "DN", sequence_DN_per_s),
-    (sequence_DN_per_s, "photons", sequence_photon_per_s),
-    (sequence_photon_per_s, "DN", sequence_DN_per_s),
-    (sequence_photon_per_s, "photons", sequence_photon_per_s)
-])
-def test_IRISSpectrogramCubeSequence_convert_to(input_sequence, new_unit,
-                                                expected_sequence):
-    output_sequence = input_sequence.convert_to(new_unit, copy=True)
-    assert_cubesequences_equal(output_sequence, expected_sequence)
-
-
-@pytest.mark.parametrize("input_sequence, undo, force, expected_sequence", [
-    (sequence_DN, False, False, sequence_DN_per_s),
-    (sequence_DN_per_s, True, False, sequence_DN),
-    (sequence_photon, False, False, sequence_photon_per_s),
-    (sequence_photon, True, True, sequence_photon_s),
-    (sequence_photon_per_s, False, True, sequence_photon_per_s_per_s),
-    (sequence_photon_per_s, True, True, sequence_photon)
-])
-def test_IRISSpectrogramCubeSequence_apply_exposure_time_correction(
-        input_sequence, undo, force, expected_sequence):
-    output_sequence = input_sequence.apply_exposure_time_correction(undo, copy=True,
-                                                                    force=force)
-    assert_cubesequences_equal(output_sequence, expected_sequence)
