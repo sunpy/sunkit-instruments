@@ -1003,56 +1003,6 @@ def _reshape_1D_wavelength_dimensions_for_broadcast(wavelength, n_data_dim):
     return wavelength
 
 
-def _convert_iris_sequence(sequence, new_unit):
-    """Converts data and uncertainty in an IRISSpectrogramSequence between units.
-
-    Parameters
-    ----------
-    sequence: `NDCubeSequence`, `SpectrogramSequence` or `IRISSpectrogramSequence`
-        Sequence whose constituent NDCubes are be converted to new units.
-
-    new_unit: `astropy.units.Unit` or `str`
-       Unit to which the data is to be converted.
-
-    Returns
-    -------
-    converted_data_list: `list` of `NDCube`s.
-       List of NDCubes with data and uncertainty attributes converted to new_unit.
-
-    """
-    # Define empty list to hold NDCubes with converted data and uncertainty.
-    converted_data_list = []
-    # Cycle through each NDCube, convert data and uncertainty to new
-    # units, and append to list.
-    for i, cube in enumerate(sequence.data):
-        # Determine what type of DN unit is needed based on detector type.
-        detector_type = _get_detector_type(cube.meta)
-        if new_unit == "DN":
-            new_unit = DN_UNIT[detector_type]
-        # If NDCube is already in new unit, add NDCube as is to list.
-        if cube.unit is new_unit or cube.unit is new_unit / u.s:
-            converted_data_list.append(cube)
-        # Else convert data and uncertainty to new unit.
-        if cube.unit != new_unit or cube.unit != new_unit / u.s:
-            # During calculations, the time component due to exposure
-            # time correction, if it has been applied, is ignored.
-            # Check here whether the time correction is present in the
-            # original unit so that is carried through to new unit.
-            if u.s not in (cube.unit.decompose() * u.s).bases:
-                new_unit_time_accounted = new_unit / u.s
-            else:
-                new_unit_time_accounted = new_unit
-            # Convert data and uncertainty to new unit.
-            data = (cube.data * cube.unit).to(new_unit).value
-            uncertainty = (cube.uncertainty.array * cube.unit).to(new_unit).value
-            # Append new instance of NDCube in new unit to list.
-            converted_data_list.append(NDCube(
-                data, wcs=cube.wcs, meta=cube.meta, mask=cube.mask,
-                unit=new_unit_time_accounted, uncertainty=uncertainty,
-                extra_coords=_extra_coords_to_input_format(cube._extra_coords)))
-    return converted_data_list
-
-
 def _apply_or_undo_exposure_time_correction(sequence, correction_function):
     """Applies or undoes exposure time correction to a sequence of NDCubes.
 
