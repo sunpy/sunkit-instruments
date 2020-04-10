@@ -6,8 +6,8 @@ from astropy import units as u
 from astropy.time import Time, TimeDelta
 from ndcube.utils.wcs import WCS
 
-from irispy import iris_tools
-from irispy.sji import IRISMapCube, IRISMapCubeSequence
+from sunkit_instruments.iris import iris_tools
+from sunkit_instruments.iris.sji import IRISMapCube, IRISMapCubeSequence
 
 # Sample data for IRISMapCube tests
 data = np.array([[[1, 2, 3, 4], [2, 4, 5, 3], [0, 1, 2, 3]],

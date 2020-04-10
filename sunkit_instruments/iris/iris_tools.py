@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-# Author: Daniel Ryan <ryand5@tcd.ie>
 
 """Some IRIS instrument tools."""
 

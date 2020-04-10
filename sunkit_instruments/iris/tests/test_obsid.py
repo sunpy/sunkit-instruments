@@ -2,7 +2,8 @@
 
 import pytest
 import astropy.units as u
-from irispy.obsid import ObsId
+
+from sunkit_instruments.obsid import ObsId
 
 OBSID = [3677508065, 3880903651, 4050607445]
 INVALID_OBSID = [4643502010, 4050607495, 3880903650, 3680903685, 335987081297, 40]

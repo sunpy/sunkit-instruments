@@ -11,9 +11,9 @@ from astropy.utils.data import download_file
 import scipy.io
 from sunpy.time import parse_time
 
-import irispy.iris_tools as iris_tools
-from irispy.iris_tools import fit_iris_xput
-from irispy.iris_tools import get_iris_response
+from sunkit_instruments.iris import iris_tools
+from iris_tools import fit_iris_xput
+from iris_tools import get_iris_response
 
 DETECTOR_TYPE_KEY = "detector type"
 

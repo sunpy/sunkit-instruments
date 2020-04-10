@@ -1,3 +1,3 @@
 def get_package_data():
-    return {'irispy.data': ['irispyrc'],
-            'irispy.data.test': ['*.*', '*/*.*']}
+    return {'sunkit_instruments.iris.data': ['irispyrc'],
+            'sunkit_instruments.iris.data.test': ['*.*', '*/*.*']}

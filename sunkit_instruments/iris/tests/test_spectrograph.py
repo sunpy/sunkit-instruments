@@ -11,11 +11,10 @@ from astropy.time import Time, TimeDelta
 from ndcube.utils.wcs import WCS
 from ndcube.tests.helpers import assert_cubes_equal, assert_cubesequences_equal
 
-from irispy.spectrograph import IRISSpectrogramCube, IRISSpectrogramCubeSequence, IRISSpectrograph, read_iris_spectrograph_level2_fits
-import irispy.data.test
-from irispy import iris_tools
+import sunkit_instruments.iris.data.test
+from sunkit_instruments.iris import iris_tools
 
-testpath = irispy.data.test.rootdir
+testpath = sunkit_instruments.iris.data.test.rootdir
 
 # Arrays of DN
 SOURCE_DATA_DN = np.array([[[ 0.563,  1.132, -1.343], [-0.719,  1.441, 1.566]],

@@ -11,12 +11,11 @@ from astropy.wcs import WCS
 from sunpy.time import parse_time
 import sunpy.cm
 from astropy.time import Time, TimeDelta
-from sunpy.map import GenericMap
 from ndcube import NDCube
 from ndcube.utils.cube import convert_extra_coords_dict_to_input_format
 from ndcube.ndcube_sequence import NDCubeSequence
 
-from irispy import iris_tools
+from sunkit_instruments.iris import iris_tools
 
 __all__ = ['IRISMapCube', 'IRISMapCubeSequence', 'read_iris_sji_level2_fits']
 
