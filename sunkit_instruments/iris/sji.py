@@ -208,10 +208,10 @@ class IRISMapCube(NDCube):
                         self.data.ndim))
         # Based on value on undo kwarg, apply or remove exposure time correction.
         if undo is True:
-            new_data_arrays, new_unit = iris_tools.uncalculate_exposure_time_correction(
+            new_data_arrays, new_unit = uncalculate_exposure_time_correction(
                 (self.data, self.uncertainty.array), self.unit, exposure_time_s, force=force)
         else:
-            new_data_arrays, new_unit = iris_tools.calculate_exposure_time_correction(
+            new_data_arrays, new_unit = calculate_exposure_time_correction(
                 (self.data, self.uncertainty.array), self.unit, exposure_time_s, force=force)
         # Return new instance of IRISMapCube with correction applied/undone.
         return IRISMapCube(
@@ -238,7 +238,7 @@ class IRISMapCube(NDCube):
             Rewrite self.mask with/without the dust positions.
         """
         # Calculate position of dust pixels
-        dust_mask = iris_tools.calculate_dust_mask(self.data)
+        dust_mask = calculate_dust_mask(self.data)
         if undo:
             # If undo kwarg IS set, unmask dust pixels.
             self.mask[dust_mask] = False
@@ -464,6 +464,112 @@ Axis Types:\t\t {axis_types}
         """
         for cube in self.data:
             cube.apply_dust_mask(undo=undo)
+
+
+def calculate_exposure_time_correction(old_data_arrays, old_unit, exposure_time,
+                                       force=False):
+    """
+    Applies exposure time correction to data arrays.
+
+    Parameters
+    ----------
+    old_data_arrays: iterable of `numpy.ndarray`s
+        Arrays of data to be converted.
+
+    old_unit: `astropy.unit.Unit`
+        Unit of data arrays.
+
+    exposure_time: `numpy.ndarray`
+        Exposure time in seconds for each exposure in data arrays.
+
+    Returns
+    -------
+    new_data_arrays: `list` of `numpy.ndarray`s
+        Data arrays with exposure time corrected for.
+
+    new_unit_time_accounted: `astropy.unit.Unit`
+        Unit of new data arrays after exposure time correction.
+
+    """
+    # If force is not set to True and unit already includes inverse time,
+    # raise error as exposure time correction has probably already been
+    # applied and should not be applied again.
+    if force is not True and u.s in old_unit.decompose().bases:
+        raise ValueError(APPLY_EXPOSURE_TIME_ERROR)
+    else:
+        # Else, either unit does not include inverse time and so
+        # exposure does need to be applied, or
+        # user has set force=True and wants the correction applied
+        # regardless of the unit.
+        new_data_arrays = [old_data/exposure_time for old_data in old_data_arrays]
+        new_unit = old_unit/u.s
+    return new_data_arrays, new_unit
+
+
+def uncalculate_exposure_time_correction(old_data_arrays, old_unit,
+        exposure_time, force=False):
+    """
+    Removes exposure time correction from data arrays.
+
+    Parameters
+    ----------
+    old_data_arrays: iterable of `numpy.ndarray`s
+        Arrays of data to be converted.
+
+    old_unit: `astropy.unit.Unit`
+        Unit of data arrays.
+
+    exposure_time: `numpy.ndarray`
+        Exposure time in seconds for each exposure in data arrays.
+
+    Returns
+    -------
+    new_data_arrays: `list` of `numpy.ndarray`s
+        Data arrays with exposure time correction removed.
+
+    new_unit_time_accounted: `astropy.unit.Unit`
+        Unit of new data arrays after exposure time correction removed.
+
+    """
+    # If force is not set to True and unit does not include inverse time,
+    # raise error as exposure time correction has probably already been
+    # undone and should not be undone again.
+    if force is not True and u.s in (old_unit*u.s).decompose().bases:
+        raise ValueError(UNDO_EXPOSURE_TIME_ERROR)
+    else:
+        # Else, either unit does include inverse time and so
+        # exposure does need to be removed, or
+        # user has set force=True and wants the correction removed
+        # regardless of the unit.
+        new_data_arrays = [old_data * exposure_time for old_data in old_data_arrays]
+        new_unit = old_unit*u.s
+    return new_data_arrays, new_unit
+
+
+def calculate_dust_mask(data_array):
+    """Calculate a mask with the dust positions in a given arrayself.
+
+    Parameters
+    ----------
+    data_array : `numpy.ndarray`
+        This array contains some dust poisition that will be calculated. The array
+        must have scaled values.
+
+    Returns
+    -------
+    dust : `numpy.ndarray` of `bool`
+        This array has the same shape than data_array and contains the dust positions
+        when the value is True.
+
+    """
+    # Creating a mask with the same shape than the inputed data array.
+    mask = np.zeros_like(data_array, dtype=bool)
+    # Set the pixel value to True is the pixel is recognized as a dust pixel.
+    mask[(data_array < 0.5) & (data_array > -200)] = True
+    # Extending the mask to avoid the neighbours pixel influenced by the dust pixels.
+    struct = np.array([np.zeros((3, 3)), np.ones((3, 3)), np.zeros((3, 3))], dtype=bool)
+    mask = ndimage.binary_dilation(mask, structure=struct).astype(mask.dtype)
+    return mask
 
 
 def read_iris_sji_level2_fits(filenames, uncertainty=True, memmap=False):
