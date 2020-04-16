@@ -5,6 +5,8 @@ import pandas as pd
 from astropy import units as u
 from pkg_resources import resource_filename
 
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class ObsId(dict):
     """A class to convert the IRIS OBS ID to human-readable format.
@@ -22,8 +24,7 @@ class ObsId(dict):
     Examples
     --------
     Quickly show OBS ID parameters:
-
-    >>> obsid.ObsId(3675508564)
+    >>> obsid.ObsId(3675508564)  # doctest: +SKIP
     IRIS OBS ID 3675508564
     ----------------------
     Description:            Large dense 96-step raster 31.35x120 96s
@@ -38,14 +39,14 @@ class ObsId(dict):
 
     The data can be accessed as in a dictionary:
 
-    >>> data = obsid.ObsId(3675508564)
-    >>> data['exptime']
+    >>> data = obsid.ObsId(3675508564)  # doctest: +SKIP
+    >>> data['exptime']  # doctest: +SKIP
     <Quantity 8. s>
-    >>> data['linelist']
+    >>> data['linelist']  # doctest: +SKIP
     'Flare linelist 1'
-    >>> data['raster_fov']
+    >>> data['raster_fov']  # doctest: +SKIP
     '31.35x120'
-    >>> data['raster_step']
+    >>> data['raster_step']  # doctest: +SKIP
     0.33
     """
 
@@ -105,10 +106,10 @@ class ObsId(dict):
             raise ValueError("Invalid OBS ID: two first digits must one of"
                              " {0}".format(versions))
         obsid = int(str(obsid)[2:])  # version digits are no longer needed
-        table1 = pd.read_csv(resource_filename('irispy',
-                                               'data/v%i-table10.csv' % version))
-        table2 = pd.read_csv(resource_filename('irispy',
-                                               'data/v%i-table2000.csv' % version))
+        table1 = pd.read_csv(resource_filename('sunkit_instruments',
+                                               'iris/data/v%i-table10.csv' % version))
+        table2 = pd.read_csv(resource_filename('sunkit_instruments',
+                                               'iris/data/v%i-table2000.csv' % version))
         id_raster = int(str(obsid)[-2:])
         try:
             meta = table1.where(table1['OBS-ID'] == id_raster).dropna().iloc[0]

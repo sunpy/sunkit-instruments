@@ -4,26 +4,26 @@
 from __future__ import division
 
 import datetime
-import warnings
+# import warnings
 import os.path
 
 import numpy as np
-import astropy
+# import astropy
 import astropy.units as u
 from astropy.units.quantity import Quantity
-from astropy.modeling import fitting
+# from astropy.modeling import fitting
 from astropy.modeling.models import custom_model
 from astropy import constants
-from astropy.time import Time
+# from astropy.time import Time
 from astropy.table import Table
 import scipy
 import scipy.io
-from scipy import ndimage
+# from scipy import ndimage
 from scipy import interpolate
 from sunpy.time import parse_time
 import sunpy.util.config
 from sunpy.util.net import check_download_file
-from ndcube import NDCube
+# from ndcube import NDCube
 
 
 # Define some properties of IRIS detectors.  Source: IRIS instrument paper.
@@ -85,15 +85,15 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
         time_obs=parse_time('2013-09-03', format='utime'),
         which yields 1094169600.0 seconds in value.
         The argument time_obs is ignored for versions 1 and 2.
-        
+
     pre_launch: `bool`
         Equivalent to setting response_version=2.  Cannot be set
         simultaneously with response_file kwarg. Default=False.
-        
+
     response_file: `int`
         Version number of effective area file to be used.  Cannot be set
         simultaneously with pre_launch kwarg.  Default=latest.
-        
+
     response_version : `int`
         Version number of effective area file to be used. Cannot be set
         simultaneously with response_file or pre_launch kwarg. Default=4.
@@ -179,9 +179,9 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
         # If DATE_OBS has a value, convert to `astropy.time.Time`, else set to None.
         try:
             iris_response["DATE_OBS"] = parse_time(iris_response["DATE_OBS"], format = 'utime')
-        except:
+        except Exception:
             iris_response["DATE_OBS"] = None
-        
+
         time_obs = np.array([time_obs.value])
 
         # Convert C_F_TIME to array of time objects while conserving shape.
@@ -193,7 +193,7 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
 
         # Convert C_F_LAMBDA to Quantity.
         iris_response["C_F_LAMBDA"] = Quantity(iris_response["C_F_LAMBDA"], unit="nm")
-        
+
         # Convert C_N_TIME to array of time objects while
         # conserving shape.
         c_n_time = np.empty(iris_response["C_N_TIME"].shape, dtype=object)
@@ -204,7 +204,7 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
 
         # Convert C_N_LAMBDA to Quantity.
         iris_response["C_N_LAMBDA"] = Quantity(iris_response["C_N_LAMBDA"], unit="nm")
-        
+
         # Convert C_S_TIME to array of time objects while
         # conserving shape.
         c_s_time = np.empty(iris_response["C_S_TIME"].shape, dtype=object)
@@ -231,7 +231,7 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
     if int(iris_response["VERSION"]) > 2 and time_obs is not None:
         try:
             n_time_obs = len(time_obs)
-        except:
+        except Exception:
             n_time_obs = 1
         iris_response["AREA_SG"] = np.zeros(iris_response["AREA_SG"].shape)
         iris_response["AREA_SJI"] = np.zeros(iris_response["AREA_SJI"].shape)
@@ -251,7 +251,7 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
             for k in range(n_time_obs):
                 interpol_fuv = scipy.interpolate.interp1d(iris_response["C_F_LAMBDA"][j:j+2], np.squeeze(iris_fit_fuv[k, j:j+2]), fill_value='extrapolate')
                 iris_response["AREA_SG"][0, w_fuv] = interpol_fuv(iris_response["LAMBDA"][w_fuv])
-    
+
         # 2. NUV SG effective areas
         lambran_nuv = np.array([278.2, 283.5])
         # Rough SG spectral ranges.  Setting effective area to 0 outside of these.
@@ -326,10 +326,10 @@ def get_iris_response(time_obs=None, pre_launch=False, response_file=None, respo
                             iris_response["AREA_SJI"][m] = area_sji[m] * sca1n
                 else:
                     # NUV: essentially same calculation as r.version=3
-                     for n in range(n_time_obs):
-                         iris_response["AREA_SJI"] = [Quantity(x, unit=u.cm**2) for x in iris_response["AREA_SJI"]]
-                         area_sji = [x for x in area_sji]
-                         iris_response["AREA_SJI"][2:4] = area_sji[:]
+                    for n in range(n_time_obs):
+                        iris_response["AREA_SJI"] = [Quantity(x, unit=u.cm**2) for x in iris_response["AREA_SJI"]]
+                        area_sji = [x for x in area_sji]
+                        iris_response["AREA_SJI"][2:4] = area_sji[:]
             for j in range(4):
                 # SJI specific time dependency
                 iris_fit_sji = fit_iris_xput(time_obs, iris_response["C_S_TIME"][j, :, :], iris_response["COEFFS_SJI"][j, :, :])
@@ -393,10 +393,10 @@ def fit_iris_xput(time_obs, time_cal_coeffs, cal_coeffs):
 
     # Exponent for transition between exp.decay intervals.
     transition_exp = 1.5
-    
+
     # For loop for carrying out the least-squares fit and computation of fit output.
     fit_out = np.zeros(len(time_obs))
-    
+
     for i, t in enumerate(time_obs):
         aux_cal_coeffs = np.zeros(2*size_time_cal_coeffs[0])
 
@@ -407,7 +407,7 @@ def fit_iris_xput(time_obs, time_cal_coeffs, cal_coeffs):
         t_diff = t - t_cal_coeffs
 
         t_diff = t_diff.flatten()
-        
+
         # To Convert to an array, quantities need to be dimensionless, hence dividing out the unit.
         t_diff = np.array([x.to(u.year).value for x in t_diff])
         w = np.where(t_diff < 0)[0][0]
@@ -533,11 +533,11 @@ def convert_or_undo_photons_per_sec_to_radiance(data_quantities,
         time_obs parse_time('2013-09-03', format='utime'),
         which yields 1094169600.0 seconds in value.
         The argument time_obs is ignored for versions 1 and 2.
-    
+
     response_version : `int`
         Version number of effective area file to be used. Cannot be set
         simultaneously with response_file or pre_launch kwarg. Default=4.
-        
+
     obs_wavelength: `astropy.units.Quantity`
         Wavelength at each element along spectral axis of data quantities.
 
@@ -606,11 +606,11 @@ def calculate_photons_per_sec_to_radiance_factor(time_obs, response_version,
         time_obs=parse_time('2013-09-03', format='utime'),
         which yields 1094169600.0 seconds in value.
         The argument time_obs is ignored for versions 1 and 2.
-        
+
     response_version : `int`
         Version number of effective area file to be used. Cannot be set
         simultaneously with response_file or pre_launch kwarg. Default=4.
-    
+
     wavelength: `astropy.units.Quantity`
         Wavelengths for which counts/s-to-radiance factor is to be calculated
 
@@ -640,7 +640,7 @@ def calculate_photons_per_sec_to_radiance_factor(time_obs, response_version,
 def _get_interpolated_effective_area(time_obs, response_version, detector_type, obs_wavelength, *args, **kwargs):
     """
     To compute the interpolated time-dependent effective area.
-    
+
     Parameters
     ----------
     time_obs: an `astropy.time.Time` object, as a kwarg, valid for version > 2
@@ -649,22 +649,22 @@ def _get_interpolated_effective_area(time_obs, response_version, detector_type, 
         time_obs parse_time('2013-09-03', format='utime'),
         which yields 1094169600.0 seconds in value.
         The argument time_obs is ignored for versions 1 and 2.
-    
+
     response_version : `int`
         Version number of effective area file to be used. Cannot be set
         simultaneously with response_file or pre_launch kwarg. Default=4.
-    
+
     detector_type: `str`
         Detector type: 'FUV' or 'NUV'.
-        
+
     obs_wavelength: `astropy.units.Quantity`
         The wavelength at which the observation has been taken in Angstroms.
-    
+
     Returns
     -------
     eff_area_interp: `numpy.array`
         The effective area(s) determined by interpolation with a spline fit.
-    
+
     """
     # Generalizing to the time of obs.
     time_obs = time_obs

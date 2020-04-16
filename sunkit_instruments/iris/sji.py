@@ -77,9 +77,9 @@ class IRISMapCube(NDCube):
 
     Examples
     --------
-    >>> from irispy import sji
-    >>> from irispy.data import sample
-    >>> sji = read_iris_sji_level2_fits(sample.SJI_CUBE_1400)
+    >>> from irispy import sji  # doctest: +SKIP
+    >>> from irispy.data import sample  # doctest: +SKIP
+    >>> sji = read_iris_sji_level2_fits(sample.SJI_CUBE_1400)  # doctest: +SKIP
     """
 
     def __init__(self, data, wcs, uncertainty=None, unit=None, meta=None,

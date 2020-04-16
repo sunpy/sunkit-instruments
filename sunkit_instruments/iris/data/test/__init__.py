@@ -6,11 +6,11 @@ import glob
 
 from astropy.utils.data import get_pkg_data_filename
 
-import irispy
+import sunraster
 
 __all__ = ['rootdir', 'file_list', 'get_test_filepath']
 
-rootdir = os.path.join(os.path.dirname(irispy.__file__), "data", "test")
+rootdir = os.path.join(os.path.dirname(sunraster.__file__), "data", "tests")
 
 def get_test_filepath(filename, **kwargs):
     """
