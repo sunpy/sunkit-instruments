@@ -4,26 +4,26 @@
 from __future__ import division
 
 import datetime
-# import warnings
+import warnings
 import os.path
 
 import numpy as np
-# import astropy
+import astropy
 import astropy.units as u
 from astropy.units.quantity import Quantity
-# from astropy.modeling import fitting
+from astropy.modeling import fitting
 from astropy.modeling.models import custom_model
 from astropy import constants
-# from astropy.time import Time
+from astropy.time import Time
 from astropy.table import Table
 import scipy
 import scipy.io
-# from scipy import ndimage
+from scipy import ndimage
 from scipy import interpolate
 from sunpy.time import parse_time
 import sunpy.util.config
 from sunpy.util.net import check_download_file
-# from ndcube import NDCube
+from ndcube import NDCube
 
 
 # Define some properties of IRIS detectors.  Source: IRIS instrument paper.
