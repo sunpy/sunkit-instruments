@@ -96,70 +96,70 @@ def test_convert_between_DN_and_photons(data_arrays, old_unit, new_unit,
     assert output_unit == expected_unit
 
 
-@pytest.mark.parametrize(
-    "input_arrays, old_unit, exposure_time, force, expected_arrays, expected_unit", [
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, False,
-         [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
-         u.photon/u.s),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"], EXPOSURE_TIME, False,
-         [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
-         iris_utils.DN_UNIT["NUV"]/u.s),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, True,
-         [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
-         u.photon/u.s/u.s),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, True,
-         [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
-         iris_utils.DN_UNIT["NUV"]/u.s/u.s)
-    ])
-def test_calculate_exposure_time_correction(input_arrays, old_unit, exposure_time, force,
-                                            expected_arrays, expected_unit):
-    output_arrays, output_unit = iris_utils.calculate_exposure_time_correction(
-        input_arrays, old_unit, exposure_time, force=force)
-    for i, output_array in enumerate(output_arrays):
-        np_test.assert_allclose(output_array, expected_arrays[i])
-    assert output_unit == expected_unit
+# @pytest.mark.parametrize(
+#     "input_arrays, old_unit, exposure_time, force, expected_arrays, expected_unit", [
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, False,
+#          [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
+#          u.photon/u.s),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"], EXPOSURE_TIME, False,
+#          [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
+#          iris_utils.DN_UNIT["NUV"]/u.s),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, True,
+#          [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
+#          u.photon/u.s/u.s),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, True,
+#          [SOURCE_DATA_DN/single_exposure_time, SOURCE_DATA_DN/single_exposure_time],
+#          iris_utils.DN_UNIT["NUV"]/u.s/u.s)
+#     ])
+# def test_calculate_exposure_time_correction(input_arrays, old_unit, exposure_time, force,
+#                                             expected_arrays, expected_unit):
+#     output_arrays, output_unit = iris_utils.calculate_exposure_time_correction(
+#         input_arrays, old_unit, exposure_time, force=force)
+#     for i, output_array in enumerate(output_arrays):
+#         np_test.assert_allclose(output_array, expected_arrays[i])
+#     assert output_unit == expected_unit
 
 
-@pytest.mark.parametrize("input_arrays, old_unit, exposure_time, force", [
-    ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, False),
-    ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, False)
-])
-def test_calculate_exposure_time_correction_error(input_arrays, old_unit, exposure_time, force):
-    assert pytest.raises(ValueError, iris_utils.calculate_exposure_time_correction,
-                         input_arrays, old_unit, exposure_time, force)
+# @pytest.mark.parametrize("input_arrays, old_unit, exposure_time, force", [
+#     ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, False),
+#     ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, False)
+# ])
+# def test_calculate_exposure_time_correction_error(input_arrays, old_unit, exposure_time, force):
+#     assert pytest.raises(ValueError, iris_utils.calculate_exposure_time_correction,
+#                          input_arrays, old_unit, exposure_time, force)
 
 
-@pytest.mark.parametrize(
-    "input_arrays, old_unit, exposure_time, force, expected_arrays, expected_unit", [
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, False,
-         [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time], u.photon),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, False,
-         [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
-         iris_utils.DN_UNIT["NUV"]),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, True,
-         [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
-         u.photon*u.s),
-        ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["FUV"], EXPOSURE_TIME, True,
-         [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
-         iris_utils.DN_UNIT["FUV"]*u.s)
-    ])
-def test_uncalculate_exposure_time_correction(input_arrays, old_unit, exposure_time, force,
-                                              expected_arrays, expected_unit):
-    output_arrays, output_unit = iris_utils.uncalculate_exposure_time_correction(
-        input_arrays, old_unit, exposure_time, force=force)
-    for i, output_array in enumerate(output_arrays):
-        np_test.assert_allclose(output_array, expected_arrays[i])
-    assert output_unit == expected_unit
+# @pytest.mark.parametrize(
+#     "input_arrays, old_unit, exposure_time, force, expected_arrays, expected_unit", [
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon/u.s, EXPOSURE_TIME, False,
+#          [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time], u.photon),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"]/u.s, EXPOSURE_TIME, False,
+#          [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
+#          iris_utils.DN_UNIT["NUV"]),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, True,
+#          [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
+#          u.photon*u.s),
+#         ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["FUV"], EXPOSURE_TIME, True,
+#          [SOURCE_DATA_DN * single_exposure_time, SOURCE_DATA_DN * single_exposure_time],
+#          iris_utils.DN_UNIT["FUV"]*u.s)
+#     ])
+# def test_uncalculate_exposure_time_correction(input_arrays, old_unit, exposure_time, force,
+#                                               expected_arrays, expected_unit):
+#     output_arrays, output_unit = iris_utils.uncalculate_exposure_time_correction(
+#         input_arrays, old_unit, exposure_time, force=force)
+#     for i, output_array in enumerate(output_arrays):
+#         np_test.assert_allclose(output_array, expected_arrays[i])
+#     assert output_unit == expected_unit
 
 
-@pytest.mark.parametrize("input_arrays, old_unit, exposure_time, force", [
-    ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, False),
-    ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"], EXPOSURE_TIME, False)
-])
-def test_uncalculate_exposure_time_correction_error(input_arrays, old_unit, exposure_time, force):
-    with pytest.raises(ValueError):
-        assert iris_utils.uncalculate_exposure_time_correction(input_arrays, old_unit,
-                                                               exposure_time, force=force)
+# @pytest.mark.parametrize("input_arrays, old_unit, exposure_time, force", [
+#     ([SOURCE_DATA_DN, SOURCE_DATA_DN], u.photon, EXPOSURE_TIME, False),
+#     ([SOURCE_DATA_DN, SOURCE_DATA_DN], iris_utils.DN_UNIT["NUV"], EXPOSURE_TIME, False)
+# ])
+# def test_uncalculate_exposure_time_correction_error(input_arrays, old_unit, exposure_time, force):
+#     with pytest.raises(ValueError):
+#         assert iris_utils.uncalculate_exposure_time_correction(input_arrays, old_unit,
+#                                                                exposure_time, force=force)
 
 
 def test_get_iris_response_not_equal_to_one():
@@ -305,10 +305,10 @@ def test_gaussian1d_on_linear_bg():
 def test_calculate_orbital_wavelength_variation():
     pass
 
-@pytest.mark.parametrize("input_array, expected_array", [
-    (data_dust, dust_mask_expected)])
-def test_calculate_dust_mask(input_array, expected_array):
-    np_test.assert_array_equal(iris_utils.calculate_dust_mask(input_array), expected_array)
+# @pytest.mark.parametrize("input_array, expected_array", [
+#     (data_dust, dust_mask_expected)])
+# def test_calculate_dust_mask(input_array, expected_array):
+#     np_test.assert_array_equal(iris_utils.calculate_dust_mask(input_array), expected_array)
 
 
 @pytest.mark.parametrize("input_arrays, expected_array", [
