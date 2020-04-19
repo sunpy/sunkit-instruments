@@ -6,7 +6,7 @@
 # from astropy.time import Time, TimeDelta
 # from ndcube.utils.wcs import WCS
 #
-# from sunkit_instruments.iris import iris_tools
+# from sunkit_instruments.iris.utils import iris_utils
 # from sunkit_instruments.iris.sji import IRISMapCube, IRISMapCubeSequence
 #
 #
@@ -45,7 +45,7 @@
 #              'CRPIX1': 0, 'CRVAL1': 0, 'NAXIS1': 2}
 # wcs_1D = WCS(header=header_1D, naxis=1)
 #
-# unit = iris_tools.DN_UNIT["SJI"]
+# unit = iris_utils.DN_UNIT["SJI"]
 #
 # mask_cube = data >= 0
 # mask_4D = data_4D >= 0
@@ -86,7 +86,7 @@
 #           'CRPIX3': 0, 'CRVAL3': 0, 'NAXIS3': 2}
 # wcs = WCS(header=header, naxis=3)
 #
-# unit = iris_tools.DN_UNIT["SJI"]
+# unit = iris_utils.DN_UNIT["SJI"]
 #
 # mask_dust = data_dust == -200
 #

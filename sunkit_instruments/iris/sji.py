@@ -15,7 +15,7 @@ from ndcube import NDCube
 from ndcube.utils.cube import convert_extra_coords_dict_to_input_format
 from ndcube.ndcube_sequence import NDCubeSequence
 
-from sunkit_instruments.iris import iris_tools
+from sunkit_instruments.iris.utils import iris_utils
 
 __all__ = ['IRISMapCube', 'IRISMapCubeSequence', 'read_iris_sji_level2_fits']
 
@@ -614,15 +614,15 @@ def read_iris_sji_level2_fits(filenames, uncertainty=True, memmap=False):
             data_nan_masked[data == BAD_PIXEL_VALUE_UNSCALED] = 0
             mask = None
             scaled = False
-            unit = iris_tools.DN_UNIT["SJI_UNSCALED"]
+            unit = iris_utils.DN_UNIT["SJI_UNSCALED"]
             out_uncertainty = None
         elif not memmap:
             data_nan_masked[data == BAD_PIXEL_VALUE_SCALED] = np.nan
             mask = data_nan_masked == BAD_PIXEL_VALUE_SCALED
             scaled = True
             # Derive unit and readout noise from the detector
-            unit = iris_tools.DN_UNIT["SJI"]
-            readout_noise = iris_tools.READOUT_NOISE["SJI"]
+            unit = iris_utils.DN_UNIT["SJI"]
+            readout_noise = iris_utils.READOUT_NOISE["SJI"]
             # Derive uncertainty of data for NDCube from fits file.
             if uncertainty:
                 out_uncertainty = u.Quantity(np.sqrt((data_nan_masked*unit).to(u.photon).value
