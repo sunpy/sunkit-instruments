@@ -15,6 +15,9 @@ from sunpy.data.test import get_test_filepath
 from sunpy.instr import goes
 from sunpy.time import TimeRange, is_time_equal, parse_time
 
+import zeep
+
+
 # Define input variables to be used in test functions for
 # _goes_chianti_tem.
 LONGFLUX = Quantity([7e-6], unit="W/m**2")
@@ -39,7 +42,7 @@ def test_goes_event_list():
     assert type(result[0]['noaa_active_region']) == np.int64
     assert result[0]['event_date'] == '2011-06-07'
     assert result[0]['goes_location'] == (54, -21)
-    # float errror
+    # float error
     assert is_time_equal(result[0]['start_time'], parse_time((2011, 6, 7, 6, 16)))
     assert is_time_equal(result[0]['peak_time'], parse_time((2011, 6, 7, 6, 41)))
     assert is_time_equal(result[0]['end_time'], parse_time((2011, 6, 7, 6, 59)))
