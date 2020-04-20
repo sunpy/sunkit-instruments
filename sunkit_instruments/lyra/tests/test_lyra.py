@@ -59,7 +59,7 @@ def test_split_series_using_lytaf():
     dummy_data = np.random.random(seconds)
 
     lytaf_tmp = lyra.get_lytaf_events('2010-06-13 02:00', '2010-06-13 06:00',
-                                      combine_files=["ppt"], force_use_local_lytaf=True)
+                                      combine_files=["ppt"])
     split = lyra.split_series_using_lytaf(dummy_time, dummy_data, lytaf_tmp)
     assert type(split) == list
     assert len(split) == 4
