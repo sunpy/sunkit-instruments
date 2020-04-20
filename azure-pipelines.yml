@@ -56,7 +56,7 @@ jobs:
         pypi_connection_name : 'PyPI'
 
       test_extras: 'tests'
-      test_command: 'pytest -p no:warnings --doctest-rst -m "not figure" --pyargs sunkit_instruments'
+      test_command: 'pytest -p no:warnings --remote-data=any --doctest-rst -m "not figure" --pyargs sunkit_instruments'
       submodules: false
       targets:
         - wheels_linux
