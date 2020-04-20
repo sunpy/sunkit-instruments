@@ -23,7 +23,6 @@ from scipy import interpolate
 from sunpy.time import parse_time
 import sunpy.util.config
 from sunpy.util.net import check_download_file
-# from ndcube import NDCube
 
 
 # Define some properties of IRIS detectors.  Source: IRIS instrument paper.
