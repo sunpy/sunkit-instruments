@@ -4,8 +4,8 @@ routines.
 
 .. note::
 
-    More comprehensive IRIS tools are now being developed in the `IRISPy
-    <https://github.com/sunpy/irispy>`__ affiliated package.
+    More comprehensive IRIS tools are now being developed by the
+    `IRIS instrument team. <https://gitlab.com/LMSAL_HUB/iris_hub>`__
 """
 import sunpy.io
 import sunpy.map

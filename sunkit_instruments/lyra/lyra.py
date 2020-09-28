@@ -4,8 +4,6 @@ Alpha Radiometer) instrument on Proba-2.
 """
 import csv
 import copy
-import urllib
-import os.path
 import sqlite3
 import datetime
 from warnings import warn
@@ -14,13 +12,11 @@ from urllib.parse import urljoin
 import numpy as np
 import pandas
 
-from astropy.io import fits
 from astropy.time import Time
-
 from sunpy.data import cache
 from sunpy.time import parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
-from sunpy.util.decorators import add_common_docstring, deprecated
+from sunpy.util.decorators import add_common_docstring
 from sunpy.util.exceptions import SunpyDeprecationWarning
 
 LYTAF_REMOTE_PATH = "http://proba2.oma.be/lyra/data/lytaf/"
@@ -29,13 +25,14 @@ LYTAF_REMOTE_PATH = "http://proba2.oma.be/lyra/data/lytaf/"
 __all__ = ['remove_lytaf_events_from_timeseries',
            'get_lytaf_events',
            'get_lytaf_event_types',
-           'download_lytaf_database',
-           'split_series_using_lytaf']
+           'split_series_using_lytaf',
+           '_prep_columns',
+           '_lytaf_event2string',
+           '_remove_lytaf_events']
 
 
 def remove_lytaf_events_from_timeseries(ts, artifacts=None,
                                         return_artifacts=False,
-                                        lytaf_path=None,
                                         force_use_local_lytaf=False):
     """
     Removes periods of LYRA artifacts defined in LYTAF from a TimeSeries.
@@ -43,21 +40,15 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
     Parameters
     ----------
     ts : `sunpy.timeseries.TimeSeries`
-
-    artifacts : list of strings
+    artifacts : list
         Sets the artifact types to be removed.  For a list of artifact types
         see reference [1].  For example, if a user wants to remove only large
         angle rotations, listed at reference [1] as LAR, set artifacts=["LAR"].
         The default is that no artifacts will be removed.
-
     return_artifacts : `bool`
         Set to True to return a `numpy.recarray` containing the start time, end
         time and type of all artifacts removed.
         Default=False
-
-    lytaf_path : `str`
-        directory path where the LYRA annotation files are stored.
-
     force_use_local_lytaf : `bool`
         Ensures current local version of lytaf files are not replaced by
         up-to-date online versions even if current local lytaf files do not
@@ -69,7 +60,6 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
     ts_new : `sunpy.timeseries.TimeSeries`
         copy of input TimeSeries with periods corresponding to artifacts
         removed.
-
     artifact_status : `dict`
         List of 4 variables containing information on what artifacts were
         found, removed, etc. from the time series.
@@ -100,7 +90,7 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
 
         >>> import sunpy.timeseries as ts
         >>> import sunpy.data.sample  # doctest: +REMOTE_DATA
-        >>> from sunpy.instr.lyra import remove_lytaf_events_from_timeseries
+        >>> from sunkit_instruments.lyra import remove_lytaf_events_from_timeseries
         >>> lyrats = ts.TimeSeries(sunpy.data.sample.LYRA_LEVEL3_TIMESERIES, source='LYRA')  # doctest: +REMOTE_DATA
         >>> ts_nolars = remove_lytaf_events_from_timeseries(lyrats, artifacts=["LAR"])  # doctest: +REMOTE_DATA
 
@@ -108,22 +98,19 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
         >>> ts_nolars, artifact_status = remove_lytaf_events_from_timeseries(
         ...        lyrats, artifacts=["LAR"], return_artifacts=True)  # doctest: +REMOTE_DATA
     """
-    # Check that input argument is of correct type
-    if lytaf_path:
-        warn('laytaf_path is deprecated, has no effect and will be removed in SunPy 2.1.', SunpyDeprecationWarning)
     # Remove artifacts from time series
     data_columns = ts.data.columns
     time, channels, artifact_status = _remove_lytaf_events(
         ts.data.index,
         channels=[np.asanyarray(ts.data[col]) for col in data_columns],
-        artifacts=artifacts, return_artifacts=True, lytaf_path=lytaf_path,
+        artifacts=artifacts, return_artifacts=True,
         force_use_local_lytaf=force_use_local_lytaf)
     # Create new copy copy of timeseries and replace data with
     # artifact-free time series.
     ts_new = copy.deepcopy(ts)
     ts_new.data = pandas.DataFrame(
         index=time, data={col: channels[i]
-                              for i, col in enumerate(data_columns)})
+                          for i, col in enumerate(data_columns)})
     if return_artifacts:
         return ts_new, artifact_status
     else:
@@ -132,7 +119,7 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
 
 def _remove_lytaf_events(time, channels=None, artifacts=None,
                          return_artifacts=False, filecolumns=None,
-                         lytaf_path=None, force_use_local_lytaf=False):
+                         force_use_local_lytaf=False):
     """
     Removes periods of LYRA artifacts from a time series.
 
@@ -150,33 +137,25 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
     ----------
     time : `numpy.ndarray` of `astropy.time.Time`
         Gives the times of the timeseries.
-
     channels : `list` of `numpy.array` convertible to float64.
         Contains arrays of the irradiances taken at the times in the time
         variable.  Each element in the list must have the same number of
         elements as time.
-
     artifacts : `list` of strings
         Contain the artifact types to be removed.  For list of artifact types
         see reference [1].  For example, if user wants to remove only large
         angle rotations, listed at reference [1] as LAR, let artifacts=["LAR"].
         Default=[], i.e. no artifacts will be removed.
-
     return_artifacts : `bool`
         Set to True to return a numpy recarray containing the start time, end
         time and type of all artifacts removed.
         Default=False
-
     filecolumns : `list` of strings
         Gives names of columns of any output files produced.  Although
         initially set to None above, the default is in fact
         ["time", "channel0", "channel1",..."channelN"]
         where N is the number of irradiance arrays in the channels input
         (assuming 0-indexed counting).
-
-    lytaf_path : `str`
-        directory path where the LYRA annotation files are stored.
-
     force_use_local_lytaf : `bool`
         Ensures current local version of lytaf files are not replaced by
         up-to-date online versions even if current local lytaf files do not
@@ -187,10 +166,8 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
     -------
     clean_time : `numpy.ndarray` of `astropy.time.Time`
         time array with artifact periods removed.
-
     clean_channels : `list` ndarrays/array-likes convertible to float64
         list of irradiance arrays with artifact periods removed.
-
     artifact_status : `dict`
         List of 4 variables containing information on what artifacts were
         found, removed, etc. from the time series.
@@ -215,7 +192,7 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
     -------
     Sample data for example
         >>> from sunpy.time import parse_time
-        >>> from sunpy.instr.lyra import _remove_lytaf_events
+        >>> from sunkit_instruments.lyra import _remove_lytaf_events
 
         >>> time = parse_time(np.arange('2005-02-01T00:00:00', '2005-02-01T02:00:00',
         ...                   dtype='datetime64[m]'))
@@ -228,8 +205,6 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
         ...   time, channels=[channel_1, channel_2], artifacts=['LAR'])  # doctest: +SKIP
     """
     # Check inputs
-    if lytaf_path:
-        warn('laytaf_path is deprecated, has no effect and will be removed in SunPy 2.1.', SunpyDeprecationWarning)
     if channels and type(channels) is not list:
         raise TypeError("channels must be None or a list of numpy arrays "
                         "of dtype 'float64'.")
@@ -239,8 +214,7 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
         artifacts = [artifacts]
     if not all(isinstance(artifact_type, str) for artifact_type in artifacts):
         raise TypeError("All elements in artifacts must in strings.")
-    all_lytaf_event_types = get_lytaf_event_types(lytaf_path=lytaf_path,
-                                                  print_event_types=False)
+    all_lytaf_event_types = get_lytaf_event_types(print_event_types=False)
     for artifact in artifacts:
         if artifact not in all_lytaf_event_types:
             print(all_lytaf_event_types)
@@ -250,8 +224,7 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
     clean_channels = copy.deepcopy(channels)
     artifacts_not_found = []
     # Get LYTAF file for given time range
-    lytaf = get_lytaf_events(time[0], time[-1], lytaf_path=lytaf_path,
-                             force_use_local_lytaf=force_use_local_lytaf)
+    lytaf = get_lytaf_events(time[0], time[-1], force_use_local_lytaf=force_use_local_lytaf)
 
     # Find events in lytaf which are to be removed from time series.
     artifact_indices = np.empty(0, dtype="int64")
@@ -306,8 +279,7 @@ def _remove_lytaf_events(time, channels=None, artifacts=None,
             return clean_time, clean_channels
 
 
-def get_lytaf_events(start_time, end_time, lytaf_path=None,
-                     combine_files=("lyra", "manual", "ppt", "science"),
+def get_lytaf_events(start_time, end_time, combine_files=("lyra", "manual", "ppt", "science"),
                      csvfile=None, force_use_local_lytaf=False):
     """
     Extracts combined lytaf file for given time range.
@@ -319,18 +291,12 @@ def get_lytaf_events(start_time, end_time, lytaf_path=None,
     ----------
     start_time : `astropy.time.Time` or `str`
         Start time of period for which annotation file is required.
-
     end_time : `astropy.time.Time` or `str`
         End time of period for which annotation file is required.
-
-    lytaf_path : `str`
-        directory path where the LYRA annotation files are stored.
-
     combine_files : `tuple` of strings
         States which LYRA annotation files are to be combined.
         Default is all four, i.e. lyra, manual, ppt, science.
         See Notes section for an explanation of each.
-
     force_use_local_lytaf : `bool`
         Ensures current local version of lytaf files are not replaced by
         up-to-date online versions even if current local lytaf files do not
@@ -367,13 +333,10 @@ def get_lytaf_events(start_time, end_time, lytaf_path=None,
     Examples
     --------
     Get all events in the LYTAF files for January 2014
-        >>> from sunpy.instr.lyra import get_lytaf_events
+        >>> from sunkit_instruments.lyra import get_lytaf_events
         >>> lytaf = get_lytaf_events('2014-01-01', '2014-02-01')  # doctest: +SKIP
     """
     # Check inputs
-    # Check lytaf path
-    if lytaf_path:
-        warn('laytaf_path is deprecated, has no effect and will be removed in SunPy 2.1.', SunpyDeprecationWarning)
     # Parse start_time and end_time
     start_time = parse_time(start_time)
     end_time = parse_time(end_time)
@@ -454,13 +417,13 @@ def get_lytaf_events(start_time, end_time, lytaf_path=None,
             id_index = eventType_id.index(event_row[4])
             lytaf = np.append(lytaf,
                               np.array((Time(datetime.datetime.utcfromtimestamp(event_row[0]),
-                                        format='datetime'),
+                                             format='datetime'),
                                         Time(datetime.datetime.utcfromtimestamp(event_row[1]),
-                                        format='datetime'),
+                                             format='datetime'),
                                         Time(datetime.datetime.utcfromtimestamp(event_row[2]),
-                                        format='datetime'),
+                                             format='datetime'),
                                         Time(datetime.datetime.utcfromtimestamp(event_row[3]),
-                                        format='datetime'),
+                                             format='datetime'),
                                         eventType_type[id_index],
                                         eventType_definition[id_index]), dtype=lytaf.dtype))
         # Close file
@@ -490,16 +453,12 @@ def get_lytaf_events(start_time, end_time, lytaf_path=None,
     return lytaf
 
 
-def get_lytaf_event_types(lytaf_path=None, print_event_types=True):
+def get_lytaf_event_types(print_event_types=True):
     """
     Prints the different event types in the each of the LYTAF databases.
 
     Parameters
     ----------
-    lytaf_path : `str`
-        Path location where LYTAF files are stored.
-        Default = Path stored in confog file.
-
     print_event_types : `bool`
         If True, prints the artifacts in each lytaf database to screen.
 
@@ -508,9 +467,6 @@ def get_lytaf_event_types(lytaf_path=None, print_event_types=True):
     all_event_types : `list`
         List of all events types in all lytaf databases.
     """
-    # Set lytaf_path is not done by user
-    if lytaf_path:
-        warn('laytaf_path is deprecated, has no effect and will be removed in SunPy 2.1.', SunpyDeprecationWarning)
     suffixes = ["lyra", "manual", "ppt", "science"]
     all_event_types = []
     # For each database file extract the event types and print them.
@@ -538,17 +494,6 @@ def get_lytaf_event_types(lytaf_path=None, print_event_types=True):
                        for event_type in event_types]
     return all_event_types
 
-@deprecated("1.1")
-def download_lytaf_database(lytaf_dir=''):
-    """
-    download latest Proba2 pointing database from Proba2 Science Center.
-    """
-    url = 'http://proba2.oma.be/lyra/data/lytaf/annotation_ppt.db'
-    destination = os.path.join(lytaf_dir, 'annotation_ppt.db')
-    urllib.request.urlretrieve(url, destination)
-
-    return
-
 
 def split_series_using_lytaf(timearray, data, lytaf):
     """
@@ -563,7 +508,7 @@ def split_series_using_lytaf(timearray, data, lytaf):
         An array corresponding to the given time array.
     lytaf : `numpy.recarray`
         Events obtained from querying the LYTAF database using
-        `sunpy.instr.lyra.get_lytaf_events`.
+        `sunkit_instruments.lyra.get_lytaf_events`.
 
     Returns
     -------

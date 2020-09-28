@@ -1,6 +1,5 @@
 import os.path
 import datetime
-import tempfile
 
 import numpy as np
 import pandas
@@ -8,11 +7,11 @@ import pytest
 
 import astropy.units as u
 from astropy.time import TimeDelta
-
 from sunpy import timeseries
-from sunpy.data.test import rootdir
-from sunpy.instr import lyra
 from sunpy.time import is_time_equal, parse_time
+
+from sunkit_instruments import lyra
+from sunkit_instruments.data.test import rootdir
 
 # Define location for test LYTAF database files
 TEST_DATA_PATH = rootdir
@@ -122,7 +121,7 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
                                                 "CHANNEL3": channels[2],
                                                 "CHANNEL4": channels[3]})
     # Assert expected result is returned
-    pandas.util.testing.assert_frame_equal(ts_test.data, dataframe_expected)
+    pandas.testing.assert_frame_equal(ts_test.data, dataframe_expected)
     assert artifact_status_test.keys() == artifact_status_expected.keys()
     np.testing.assert_array_equal(artifact_status_test["lytaf"],
                                   artifact_status_expected["lytaf"])
@@ -140,12 +139,12 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
             lyra_ts, artifacts=["LAR", "Offpoint"],
             force_use_local_lytaf=True)
     # Assert expected result is returned
-    pandas.util.testing.assert_frame_equal(ts_test.data, dataframe_expected)
+    pandas.testing.assert_frame_equal(ts_test.data, dataframe_expected)
 
 
 @pytest.fixture()
 def local_cache(sunpy_cache):
-    sunpy_cache = sunpy_cache('sunpy.instr.lyra.cache')
+    sunpy_cache = sunpy_cache('sunkit_instruments.lyra.lyra.cache')
     sunpy_cache.add('http://proba2.oma.be/lyra/data/lytaf/annotation_lyra.db',
                     os.path.join(TEST_DATA_PATH, 'annotation_lyra.db'))
     sunpy_cache.add('http://proba2.oma.be/lyra/data/lytaf/annotation_manual.db',
@@ -176,7 +175,7 @@ def test_remove_lytaf_events_1(local_cache):
                                  "not_removed": LYTAF_TEST[1],
                                  "not_found": ["Offpoint"]}
     # Assert test values are same as expected
-    assert time_test.all() == time_expected.all()
+    np.testing.assert_array_equal(time_test, time_expected)
     assert (channels_test[0]).all() == (channels_expected[0]).all()
     assert (channels_test[1]).all() == (channels_expected[1]).all()
     assert artifacts_status_test.keys() == artifacts_status_expected.keys()
@@ -197,7 +196,7 @@ def test_remove_lytaf_events_1(local_cache):
             TIME, artifacts=["LAR", "Offpoint"],
             return_artifacts=True, force_use_local_lytaf=True)
     # Assert test values are same as expected
-    assert time_test.all() == time_expected.all()
+    assert np.all(time_test == time_expected)
     assert artifacts_status_test.keys() == artifacts_status_expected.keys()
     np.testing.assert_array_equal(artifacts_status_test["lytaf"],
                                   artifacts_status_expected["lytaf"])
@@ -226,7 +225,7 @@ def test_remove_lytaf_events_2(local_cache):
                                  "not_removed": LYTAF_TEST,
                                  "not_found": ["Offpoint"]}
     # Assert test values are same as expected
-    assert np.all(time_test == time_expected)
+    np.testing.assert_array_equal(time_test, time_expected)
     assert (channels_test[0]).all() == (channels_expected[0]).all()
     assert (channels_test[1]).all() == (channels_expected[1]).all()
     assert artifacts_status_test.keys() == artifacts_status_expected.keys()

@@ -2,9 +2,9 @@ import pytest
 from numpy.testing import assert_almost_equal
 
 import astropy.units as u
-
-from sunpy.instr import fermi
 from sunpy.time import parse_time
+
+from sunkit_instruments import fermi
 
 
 @pytest.mark.remote_data

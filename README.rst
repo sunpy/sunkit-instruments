@@ -23,7 +23,6 @@ they should consider starting their own package for full control.
 We encourage and support instrument teams in choosing this route and hope they will still engage and collaborate with the SunPy and wider community during their development.
 We point to the recent development of [aiapy](https://gitlab.com/LMSAL_HUB/aia_hub/aiapy) as a shining example of this type of collaboration.
 
-
 License
 -------
 
@@ -32,7 +31,6 @@ the terms of the BSD 3-Clause license. This package is based upon
 the `Openastronomy packaging guide <https://github.com/OpenAstronomy/packaging-guide>`_
 which is licensed under the BSD 3-clause licence. See the licenses folder for
 more information.
-
 
 Contributing
 ------------

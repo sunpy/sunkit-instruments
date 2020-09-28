@@ -1,5 +1,5 @@
 sunkit-instruments Documentation
---------------------------------
+================================
 
 This is the documentation for sunkit-instruments.
 
@@ -10,6 +10,6 @@ This is the documentation for sunkit-instruments.
 
 
 Reference/API
-=============
+-------------
 
-.. automodapi:: sunkit-instruments
+.. automodapi:: sunkit_instruments
