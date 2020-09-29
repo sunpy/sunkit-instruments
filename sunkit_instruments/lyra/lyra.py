@@ -16,8 +16,8 @@ from astropy.time import Time
 from sunpy.data import cache
 from sunpy.time import parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
+from sunpy.timeseries import TimeSeries
 from sunpy.util.decorators import add_common_docstring
-from sunpy.util.exceptions import SunpyDeprecationWarning
 
 LYTAF_REMOTE_PATH = "http://proba2.oma.be/lyra/data/lytaf/"
 
@@ -99,18 +99,19 @@ def remove_lytaf_events_from_timeseries(ts, artifacts=None,
         ...        lyrats, artifacts=["LAR"], return_artifacts=True)  # doctest: +REMOTE_DATA
     """
     # Remove artifacts from time series
-    data_columns = ts.data.columns
+    ts_ds = ts.to_dataframe()
+    data_columns = ts_ds.columns
     time, channels, artifact_status = _remove_lytaf_events(
-        ts.data.index,
-        channels=[np.asanyarray(ts.data[col]) for col in data_columns],
+        ts_ds.index,
+        channels=[np.asanyarray(ts_ds[col]) for col in data_columns],
         artifacts=artifacts, return_artifacts=True,
         force_use_local_lytaf=force_use_local_lytaf)
     # Create new copy copy of timeseries and replace data with
     # artifact-free time series.
-    ts_new = copy.deepcopy(ts)
-    ts_new.data = pandas.DataFrame(
+    data = pandas.DataFrame(
         index=time, data={col: channels[i]
                           for i, col in enumerate(data_columns)})
+    ts_new = TimeSeries(data, ts.meta)
     if return_artifacts:
         return ts_new, artifact_status
     else:
