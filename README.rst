@@ -21,7 +21,7 @@ It also lowers the barrier to publishing Python-based instrument tools by provid
 However should instrument teams want to develop at their own pace or provide a large number of tools,
 they should consider starting their own package for full control.
 We encourage and support instrument teams in choosing this route and hope they will still engage and collaborate with the SunPy and wider community during their development.
-We point to the recent development of [aiapy](https://gitlab.com/LMSAL_HUB/aia_hub/aiapy) as a shining example of this type of collaboration.
+We point to the recent development of `aiapy <https://gitlab.com/LMSAL_HUB/aia_hub/aiapy>`__ as a shining example of this type of collaboration.
 
 License
 -------
