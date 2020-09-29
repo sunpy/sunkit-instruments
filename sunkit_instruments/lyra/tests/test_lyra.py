@@ -142,7 +142,7 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
     pandas.testing.assert_frame_equal(ts_test.to_dataframe(), dataframe_expected)
 
 
-@pytest.fixture()
+@pytest.fixture
 def local_cache(sunpy_cache):
     sunpy_cache = sunpy_cache('sunkit_instruments.lyra.lyra.cache')
     sunpy_cache.add('http://proba2.oma.be/lyra/data/lytaf/annotation_lyra.db',

@@ -73,7 +73,7 @@ jobs:
       ${{ if startsWith(variables['Build.SourceBranch'], 'refs/tags/') }}:
         pypi_connection_name : 'PyPI'
       test_extras: 'dev'
-      test_command: 'pytest -p no:warnings --doctest-rst -m "not figure" --pyargs sunpy'
+      test_command: 'pytest -p no:warnings --doctest-rst -m "not figure" --pyargs sunkit_instruments'
       submodules: false
 
       targets:

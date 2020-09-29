@@ -1,5 +1,5 @@
 """
-This package contains all of SunPy's test data.
+This package contains all of sunkit-instruments's test data.
 """
 import os
 import re

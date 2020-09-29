@@ -1,4 +1,4 @@
-A sunpy-affiliated package for solar instrument-specific tools.
+A SunPy-affiliated package for solar instrument-specific tools.
 ---------------------------------------------------------------
 
 .. image:: http://img.shields.io/badge/powered%20by-SunPy-orange.svg?style=flat
@@ -8,7 +8,7 @@ A sunpy-affiliated package for solar instrument-specific tools.
 What is sunkit-instruments?
 ---------------------------
 
-sunkit-instruments is a sunpy-affiliated package for solar instrument-specific tools.
+sunkit-instruments is a SunPy-affiliated package for solar instrument-specific tools.
 Its purpose is not to be a repository for all tools for all instruments.
 Instead it is intended to perform three main roles:
 

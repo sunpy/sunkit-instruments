@@ -883,25 +883,21 @@ def _calc_rad_loss(temp: u.MK, em: u.cm**-3, obstime=None, force_download=False,
     temp : `~astropy.units.Quantity`
         Array containing the temperature of the coronal plasma at
         different times.  Units=[MK]
-
     em : `~astropy.units.Quantity`
         Array containing the emission measure of the coronal plasma
         at the same times corresponding to the temperatures in temp.
         Must be same length as temp.  Units=[cm**-3]
-
     obstime : (optional) array-like of `~sunpy.time.parse_time` parsable objects
         Array of measurement times to which temperature and
         emission measure values correspond.  Must be same length
         as temp and em.  If this keyword is set, the integrated
         radiated energy is calculated.
-
     force_download : (optional) bool
         If True, the GOES radiative loss data file is downloaded.  It is
         important to do this if a new version of the files has been
         generated due to a new CHIANTI version being released or the
         launch of new GOES satellites.
         Default=False
-
     download_dir : (optional) str
         The directory to download the GOES radiative loss data file to.
         Default=SunPy default download directory
@@ -910,7 +906,6 @@ def _calc_rad_loss(temp: u.MK, em: u.cm**-3, obstime=None, force_download=False,
     -------
     rad_loss_out : `dict` of `~astropy.units.quantity.Quantity` objects
         Contains the following keys.
-
         | "rad_loss_rate" - radiative loss rate of the soft X-ray-emitting
            plasma across all wavelengths corresponding to temperatures and
            emission measures in temp and em Quantity inputs.
@@ -1039,8 +1034,7 @@ def calculate_xray_luminosity(goests):
     -------
     ts_new : `~sunpy.timeseries.sources.XRSTimeSeries`
         Contains same metadata and data as input LightCurve with the
-        following additional data columns;
-
+        following additional data columns:
         | goests_new.to_dataframe().luminosity_xrsa - Xray luminosity in 0.5-4A channel
           unit=[W]
         | goests_new.to_dataframe().luminosity_xrsb - Xray luminosity in 1-8A channel
@@ -1113,16 +1107,13 @@ def _goes_lx(longflux, shortflux, obstime=None, date=None):
     longflux : `~astropy.units.Quantity`
         Array containing the observed GOES/XRS long channel flux.
         Units=[W/m**2]
-
     shortflux : `~astropy.units.Quantity`
         Array containing the observed GOES/XRS short channel flux.
         Units=[W/m**2]
-
     obstime : (optional) array-like of `~sunpy.time.parse_time` parsable objects
         Measurement times corresponding to each flux measurement.
         Assumes each pair of 0.5-4 and 1-8 angstrom flux measurements
         were taken simultaneously.
-
     date : (optional) `astropy.time.Time` object or valid date string.
         Date at which measurements were taken.  This is used to
         calculate the Sun-Earth distance.
@@ -1134,12 +1125,9 @@ def _goes_lx(longflux, shortflux, obstime=None, date=None):
         dictionary containing the following fields.
         longlum : `~astropy.units.Quantity`
             Array of luminosity in the 1-8 angstroms range.
-
         shortlum : `~astropy.units.Quantity`
             Array of luminosity in the 0.5-4 angstroms range.
-
         longlum_int : (only present if obstime kwarg is set)
-
         shortlum_int : (only present if obstime kwarg is set)
 
     Notes
