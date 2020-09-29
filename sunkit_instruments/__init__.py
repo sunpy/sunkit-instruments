@@ -2,7 +2,7 @@
 Sunkit-instruments
 ==================
 
-A sunpy-affiliated package for solar instrument-specific tools.
+A SunPy-affiliated package for solar instrument-specific tools.
 
 * Homepage: https://sunpy.org
 * Documentation: https://sunkit-instruments.readthedocs.io/en/latest/
