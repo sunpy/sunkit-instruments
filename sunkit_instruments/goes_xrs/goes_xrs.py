@@ -14,11 +14,11 @@ on the GOES event list definitions and data.
 
 The functions in this module provide useful software to analyse GOES/XRS
 observations. First they allow the GOES event list to be imported into a
-Python session (`~sunpy.instr.goes.get_goes_event_list`).
+Python session (`~sunkit_instruments.goes_xrs.get_goes_event_list`).
 
 They also allow the thermodynamic properties of the emitting solar plasma to be
 determined. Temperature and emission measure are obtained using
-`~sunpy.instr.goes.calculate_temperature_em`, this function currently relies on
+`~sunkit_instruments.goes_xrs.calculate_temperature_em`, this function currently relies on
 lookup tables relating the GOES fluxes to the isothermal temperature and volume
 emission measure. These tables were calculated by functions in SolarSoftWare
 (SSW) using the CHIANTI atomic physics database ([Ref2]_). For more detail, see
@@ -26,16 +26,16 @@ the docstring of calculate_temperature_em` and references therein.
 
 The radiative loss rate of the soft X-ray-emitting plasma across all
 wavelengths can be found with
-`~sunpy.instr.goes.calculate_radiative_loss_rate`, which makes use of a look up
+`~sunkit_instruments.goes_xrs.calculate_radiative_loss_rate`, which makes use of a look up
 table calculated by functions in SSW using CHIANTI. This table relates the
 temperature and emission measure of the emitting solar plasma to the thermal
 energy radiated over all wavelengths. For more information on how this is
-done, see the docstring of `~sunpy.instr.goes._calc_rad_loss` and reference
+done, see the docstring of `~sunkit_instruments.goes_xrs._calc_rad_loss` and reference
 therein.
 
 Meanwhile, the X-ray luminosity in the two GOES passbands can be obtained by
-`~sunpy.instr.goes.calculate_xray_luminosity`. To do so, this function calls
-`~sunpy.instr.goes._goes_lx` and `~sunpy.instr.goes.calc_xraylum`.
+`~sunkit_instruments.goes_xrs.calculate_xray_luminosity`. To do so, this function calls
+`~sunkit_instruments.goes_xrs._goes_lx` and `~sunkit_instruments.goes_xrs._calc_xraylum`.
 
 References
 ----------
@@ -48,7 +48,6 @@ References
 import csv
 import copy
 import socket
-import os.path
 import datetime
 from itertools import dropwhile
 from urllib.parse import urljoin
@@ -59,9 +58,8 @@ from scipy.integrate import cumtrapz, trapz
 
 import astropy.units as u
 from astropy.time import TimeDelta
-
 from sunpy import timeseries
-from sunpy.coordinates import get_sunearth_distance, sun
+from sunpy.coordinates import sun
 from sunpy.data import manager
 from sunpy.sun import constants
 from sunpy.time import parse_time
@@ -73,8 +71,9 @@ GOES_CONVERSION_DICT = {'X': u.Quantity(1e-4, "W/m^2"),
                         'B': u.Quantity(1e-7, "W/m^2"),
                         'A': u.Quantity(1e-8, "W/m^2")}
 __all__ = ['get_goes_event_list', 'calculate_temperature_em',
-           'calculate_radiative_loss_rate', 'calculate_xray_luminosity', 'flux_to_flareclass',
-           'flareclass_to_flux']
+           'calculate_radiative_loss_rate', 'calculate_xray_luminosity',
+           'flux_to_flareclass', 'flareclass_to_flux', '_goes_lx',
+           '_goes_get_chianti_em', '_calc_rad_loss', '_calc_xraylum', '_goes_chianti_tem', '_goes_get_chianti_temp']
 
 try:
     # Check required data files are present in user's default download dir
@@ -157,7 +156,7 @@ def calculate_temperature_em(goests, abundances="coronal",
                              download=False, download_dir=None):
     """
     Calculates temperature and emission measure from a
-    `~sunpy.timeseries.XRSTimeSeries`.
+    `~sunpy.timeseries.sources.XRSTimeSeries`.
 
     This function calculates the isothermal temperature and
     corresponding volume emission measure of the solar soft X-ray
@@ -169,7 +168,7 @@ def calculate_temperature_em(goests, abundances="coronal",
 
     Parameters
     ----------
-    goeslc : `~sunpy.timeseries.XRSTimeSeries`
+    goeslc : `~sunpy.timeseries.sources.XRSTimeSeries`
         The TimeSeries containing GOES flux data which **MUST**
         be in units of "W/m^2".
     abundances : {'coronal' | 'photospheric'}, optional
@@ -187,12 +186,12 @@ def calculate_temperature_em(goests, abundances="coronal",
 
     Returns
     -------
-    `~sunpy.timeseries.XRSTimeSeries`
+    `~sunpy.timeseries.sources.XRSTimeSeries`
         Contains same metadata and data as input timeseries with the
         following two additional data columns:
 
-        | ts_new.data.temperature - Array of temperatures [MK]
-        | ts_new.data.em - Array of volume emission measures [cm**-3]
+        | ts_new.to_dataframe().temperature - Array of temperatures [MK]
+        | ts_new.to_dataframe().em - Array of volume emission measures [cm**-3]
 
     Notes
     -----
@@ -200,7 +199,7 @@ def calculate_temperature_em(goests, abundances="coronal",
     using the methods of White et al. (2005) who used the
     CHIANTI atomic physics database to model the response of the ratio
     of the short (0.5-4 angstrom) to long (1-8 angstrom) channels of the
-    XRSs onboard various GOES satellites. This method assumes an
+    XRSs on board various GOES satellites. This method assumes an
     isothermal plasma, the ionization equilibria of
     [2]_, and a constant density of 10**10 cm**-3.
     (See [1]_ for justification of this last assumption.)
@@ -226,10 +225,10 @@ def calculate_temperature_em(goests, abundances="coronal",
     Examples
     --------
     >>> import sunpy.timeseries as ts
-    >>> from sunpy.instr.goes import calculate_temperature_em
+    >>> from sunkit_instruments.goes_xrs import calculate_temperature_em
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
-    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA
-    >>> goests.data[0:10]  # doctest: +REMOTE_DATA
+    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
+    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
                                            xrsa          xrsb
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
@@ -242,7 +241,7 @@ def calculate_temperature_em(goests, abundances="coronal",
     2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
     2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_temperature_em(goests)  # doctest: +REMOTE_DATA
-    >>> goests_new.data[0:10]  # doctest: +REMOTE_DATA
+    >>> goests_new.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
                                            xrsa          xrsb  temperature            em
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07     3.503510  2.190626e+48
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07     3.534262  2.055847e+48
@@ -266,11 +265,11 @@ def calculate_temperature_em(goests, abundances="coronal",
         goests.quantity("xrsb"),
         goests.quantity("xrsa"),
         satellite=goests.meta.metas[0]["TELESCOP"].split()[1],
-        date=goests.data.index[0],
+        date=goests.to_dataframe().index[0],
         abundances=abundances, download=download, download_dir=download_dir)
 
     ts_new = timeseries.XRSTimeSeries(meta=copy.deepcopy(goests.meta),
-                                      data=copy.deepcopy(goests.data),
+                                      data=copy.deepcopy(goests.to_dataframe()),
                                       units=copy.deepcopy(goests.units))
     ts_new = ts_new.add_column("temperature", temp)
     ts_new = ts_new.add_column("em", em)
@@ -338,7 +337,7 @@ def _goes_chianti_tem(longflux: u.W/u.m/u.m, shortflux: u.W/u.m/u.m, satellite=8
     using the methods of [1]_ who used the
     CHIANTI atomic physics database to model the response of the ratio
     of the short (0.5-4 angstrom) to long (1-8 angstrom) channels of the
-    XRSs onboard various GOES satellites.  This method assumes an
+    XRSs on board various GOES satellites.  This method assumes an
     isothermal plasma, the ionisation equilibria of
     [2]_, and a constant density of 10**10 cm**-3.
     (See White et al. 2005 for justification of this last assumption.)
@@ -364,7 +363,7 @@ def _goes_chianti_tem(longflux: u.W/u.m/u.m, shortflux: u.W/u.m/u.m, satellite=8
 
     Examples
     --------
-    >>> from sunpy.instr.goes import _goes_chianti_tem
+    >>> from sunkit_instruments.goes_xrs import _goes_chianti_tem
     >>> from astropy.units import Quantity
     >>> longflux = Quantity([7e-6, 7e-6], unit="W/m**2")
     >>> shortflux = Quantity([7e-7, 7e-7], unit="W/m**2")
@@ -490,7 +489,7 @@ def _goes_get_chianti_temp(fluxratio: u.one, satellite=8, abundances="coronal",
     These files were calculated using the methods of [1]_
     who used the CHIANTI atomic physics database to model the response
     of the ratio of the short (0.5-4 angstrom) to long (1-8 angstrom)
-    channels of the XRSs onboard various GOES satellites.  This method
+    channels of the XRSs on board various GOES satellites.  This method
     assumes an isothermal plasma, the ionisation equilibria of
 
     (See White et al. 2005 for justification of this last assumption.)
@@ -510,7 +509,7 @@ def _goes_get_chianti_temp(fluxratio: u.one, satellite=8, abundances="coronal",
     Examples
     --------
     >>> from astropy.units import Quantity
-    >>> from sunpy.instr.goes import _goes_get_chianti_temp
+    >>> from sunkit_instruments.goes_xrs import _goes_get_chianti_temp
     >>> fluxratio = Quantity([0.1,0.1])
     >>> temp = _goes_get_chianti_temp(fluxratio, satellite=15,
     ...                               abundances="coronal")  # doctest: +REMOTE_DATA
@@ -640,7 +639,7 @@ def _goes_get_chianti_em(longflux: u.W/u.m/u.m, temp: u.MK, satellite=8,
     These files were calculated using the methods of White et al. (2005)
     who used the CHIANTI atomic physics database and GOES transfer
     functions to model the response of the long channel to the
-    temperature of the emitting plasma for XRSs onboard various GOES
+    temperature of the emitting plasma for XRSs on board various GOES
     satellites.  The emission measure can then be found by scaling the
     ratio of these two properties.  This method assumes an isothermal
     plasma, the ionisation equilibria of Mazzotta et al. (1998), and
@@ -662,7 +661,7 @@ def _goes_get_chianti_em(longflux: u.W/u.m/u.m, temp: u.MK, satellite=8,
     Examples
     --------
     >>> import astropy.units as u
-    >>> from sunpy.instr.goes import _goes_get_chianti_em
+    >>> from sunkit_instruments.goes_xrs import _goes_get_chianti_em
     >>> longflux = u.Quantity([7e-6,7e-6], unit=u.W/u.m/u.m)
     >>> temp = u.Quantity([11, 11], unit=u.MK)
     >>> em = _goes_get_chianti_em(longflux, temp, satellite=15,
@@ -673,7 +672,9 @@ def _goes_get_chianti_em(longflux: u.W/u.m/u.m, temp: u.MK, satellite=8,
     # Check inputs are of correct type
     longflux = longflux.to(u.W/u.m**2)
     temp = temp.to(u.MK)
-    log10_temp = np.log10(temp.value)
+    # Ignore zero values raising a numpy warning here
+    with np.errstate(invalid='ignore'):
+        log10_temp = np.log10(temp.value)
     int(satellite)
     if satellite < 1:
         raise ValueError("satellite must be the number of a "
@@ -750,7 +751,7 @@ def calculate_radiative_loss_rate(goests, force_download=False,
 
     Parameters
     ----------
-    goests : `~sunpy.timeseries.XRSTimeSeries`
+    goests : `~sunpy.timeseries.sources.XRSTimeSeries`
         TimeSeries object containing GOES data.  The units of these
         data MUST be W/m^2 (flux), MK (temperature) and cm^-3
         (emission measure).  If LightCurve object does not contain
@@ -770,13 +771,13 @@ def calculate_radiative_loss_rate(goests, force_download=False,
 
     Returns
     -------
-    ts_new : `~sunpy.timeseries.XRSTimeSeries`
+    ts_new : `~sunpy.timeseries.sources.XRSTimeSeries`
         Contains same metadata and data as input LightCurve with the
         following additional data columns:
 
-        | ts_new.data.temperature - Array of temperature values [MK]
-        | ts_new.data.em - Array of volume emission measure values [cm**-3]
-        | ts_new.data.rad_loss_rate - radiative loss rate of the coronal soft
+        | ts_new.to_dataframe().temperature - Array of temperature values [MK]
+        | ts_new.to_dataframe().em - Array of volume emission measure values [cm**-3]
+        | ts_new.to_dataframe().rad_loss_rate - radiative loss rate of the coronal soft
           X-ray-emitting plasma across all wavelengths [W]
 
     Notes
@@ -798,10 +799,10 @@ def calculate_radiative_loss_rate(goests, force_download=False,
     Examples
     --------
     >>> import sunpy.timeseries as ts
-    >>> from sunpy.instr.goes import calculate_radiative_loss_rate
+    >>> from sunkit_instruments.goes_xrs import calculate_radiative_loss_rate
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
-    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA
-    >>> goests.data[0:10]  # doctest: +REMOTE_DATA
+    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
+    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
                                            xrsa          xrsb
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
@@ -814,7 +815,7 @@ def calculate_radiative_loss_rate(goests, force_download=False,
     2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
     2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_radiative_loss_rate(goests)  # doctest: +REMOTE_DATA
-    >>> goests_new.data[0:10]   # doctest:  +REMOTE_DATA
+    >>> goests_new.to_dataframe()[0:10]   # doctest:  +REMOTE_DATA
                                            xrsa          xrsb  temperature            em  rad_loss_rate
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07     3.503510  2.190626e+48   1.781001e+19
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07     3.534262  2.055847e+48   1.660031e+19
@@ -841,13 +842,13 @@ def calculate_radiative_loss_rate(goests, force_download=False,
         # Use copy.deepcopy for replicating meta and data so that input
         # lightcurve is not altered.
         ts_new = timeseries.XRSTimeSeries(meta=copy.deepcopy(goests.meta),
-                                          data=copy.deepcopy(goests.data),
+                                          data=copy.deepcopy(goests.to_dataframe()),
                                           units=copy.deepcopy(goests.units))
     else:
         ts_new = calculate_temperature_em(goests)
-    temp = u.Quantity(np.asarray(ts_new.data.temperature, dtype=np.float64),
+    temp = u.Quantity(np.asarray(ts_new.to_dataframe().temperature, dtype=np.float64),
                       unit=u.MK)
-    em = u.Quantity(np.asarray(ts_new.data.em, dtype=np.float64),
+    em = u.Quantity(np.asarray(ts_new.to_dataframe().em, dtype=np.float64),
                     unit=u.cm**(-3))
 
     # Find radiative loss rate with _calc_rad_loss()
@@ -882,25 +883,21 @@ def _calc_rad_loss(temp: u.MK, em: u.cm**-3, obstime=None, force_download=False,
     temp : `~astropy.units.Quantity`
         Array containing the temperature of the coronal plasma at
         different times.  Units=[MK]
-
     em : `~astropy.units.Quantity`
         Array containing the emission measure of the coronal plasma
         at the same times corresponding to the temperatures in temp.
         Must be same length as temp.  Units=[cm**-3]
-
     obstime : (optional) array-like of `~sunpy.time.parse_time` parsable objects
         Array of measurement times to which temperature and
         emission measure values correspond.  Must be same length
         as temp and em.  If this keyword is set, the integrated
         radiated energy is calculated.
-
     force_download : (optional) bool
         If True, the GOES radiative loss data file is downloaded.  It is
         important to do this if a new version of the files has been
         generated due to a new CHIANTI version being released or the
         launch of new GOES satellites.
         Default=False
-
     download_dir : (optional) str
         The directory to download the GOES radiative loss data file to.
         Default=SunPy default download directory
@@ -909,7 +906,6 @@ def _calc_rad_loss(temp: u.MK, em: u.cm**-3, obstime=None, force_download=False,
     -------
     rad_loss_out : `dict` of `~astropy.units.quantity.Quantity` objects
         Contains the following keys.
-
         | "rad_loss_rate" - radiative loss rate of the soft X-ray-emitting
            plasma across all wavelengths corresponding to temperatures and
            emission measures in temp and em Quantity inputs.
@@ -938,7 +934,7 @@ def _calc_rad_loss(temp: u.MK, em: u.cm**-3, obstime=None, force_download=False,
 
     Examples
     --------
-    >>> from sunpy.instr.goes import _calc_rad_loss
+    >>> from sunkit_instruments.goes_xrs import _calc_rad_loss
     >>> from astropy.units.quantity import Quantity
     >>> temp = Quantity([11.0, 11.0], unit="MK")
     >>> em = Quantity([4.0e+48, 4.0e+48], unit="cm**(-3)")
@@ -1030,28 +1026,27 @@ def calculate_xray_luminosity(goests):
 
     Parameters
     ----------
-    goests : `~sunpy.timeseries.XRSTimeSeries`
+    goests : `~sunpy.timeseries.sources.XRSTimeSeries`
         LightCurve object containing GOES flux data which MUST
         be in units of W/m^2.
 
     Returns
     -------
-    ts_new : `~sunpy.timeseries.XRSTimeSeries`
+    ts_new : `~sunpy.timeseries.sources.XRSTimeSeries`
         Contains same metadata and data as input LightCurve with the
-        following additional data columns;
-
-        | goests_new.data.luminosity_xrsa - Xray luminosity in 0.5-4A channel
+        following additional data columns:
+        | goests_new.to_dataframe().luminosity_xrsa - Xray luminosity in 0.5-4A channel
           unit=[W]
-        | goests_new.data.luminosity_xrsb - Xray luminosity in 1-8A channel
+        | goests_new.to_dataframe().luminosity_xrsb - Xray luminosity in 1-8A channel
           unit=[W]
 
     Examples
     --------
     >>> import sunpy.timeseries as ts
-    >>> from sunpy.instr.goes import calculate_xray_luminosity
+    >>> from sunkit_instruments.goes_xrs import calculate_xray_luminosity
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
-    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA
-    >>> goests.data[0:10]  # doctest: +REMOTE_DATA
+    >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
+    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
                                            xrsa          xrsb
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
@@ -1064,7 +1059,7 @@ def calculate_xray_luminosity(goests):
     2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
     2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_xray_luminosity(goests)  # doctest: +REMOTE_DATA
-    >>> goests_new.data[0:10]   # doctest:  +REMOTE_DATA
+    >>> goests_new.to_dataframe()[0:10]   # doctest:  +REMOTE_DATA
                                            xrsa          xrsb  luminosity_xrsa  luminosity_xrsb
     2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07     2.896209e+14     5.465435e+16
     2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07     2.896209e+14     5.313384e+16
@@ -1083,12 +1078,12 @@ def calculate_xray_luminosity(goests):
     # Find temperature and emission measure with _goes_chianti_tem
     lx_out = _goes_lx(goests.quantity("xrsb"),
                       goests.quantity("xrsa"),
-                      date=str(goests.data.index[0]))
+                      date=str(goests.to_dataframe().index[0]))
     # Enter results into new version of GOES LightCurve Object
     # Use copy.deepcopy for replicating meta and data so that input
     # lightcurve is not altered.
     ts_new = timeseries.XRSTimeSeries(meta=copy.deepcopy(goests.meta),
-                                      data=copy.deepcopy(goests.data),
+                                      data=copy.deepcopy(goests.to_dataframe()),
                                       units=copy.deepcopy(goests.units))
     ts_new = ts_new.add_column("luminosity_xrsa", lx_out["shortlum"].to("W"))
     ts_new = ts_new.add_column("luminosity_xrsb", lx_out["longlum"].to("W"))
@@ -1112,16 +1107,13 @@ def _goes_lx(longflux, shortflux, obstime=None, date=None):
     longflux : `~astropy.units.Quantity`
         Array containing the observed GOES/XRS long channel flux.
         Units=[W/m**2]
-
     shortflux : `~astropy.units.Quantity`
         Array containing the observed GOES/XRS short channel flux.
         Units=[W/m**2]
-
     obstime : (optional) array-like of `~sunpy.time.parse_time` parsable objects
         Measurement times corresponding to each flux measurement.
         Assumes each pair of 0.5-4 and 1-8 angstrom flux measurements
         were taken simultaneously.
-
     date : (optional) `astropy.time.Time` object or valid date string.
         Date at which measurements were taken.  This is used to
         calculate the Sun-Earth distance.
@@ -1133,12 +1125,9 @@ def _goes_lx(longflux, shortflux, obstime=None, date=None):
         dictionary containing the following fields.
         longlum : `~astropy.units.Quantity`
             Array of luminosity in the 1-8 angstroms range.
-
         shortlum : `~astropy.units.Quantity`
             Array of luminosity in the 0.5-4 angstroms range.
-
         longlum_int : (only present if obstime kwarg is set)
-
         shortlum_int : (only present if obstime kwarg is set)
 
     Notes
@@ -1149,7 +1138,7 @@ def _goes_lx(longflux, shortflux, obstime=None, date=None):
 
     Examples
     --------
-    >>> from sunpy.instr.goes import _goes_lx
+    >>> from sunkit_instruments.goes_xrs import _goes_lx
     >>> from astropy.time import Time
     >>> from astropy.units.quantity import Quantity
     >>> longflux = Quantity([7e-6,7e-6,7e-6,7e-6,7e-6,7e-6], unit='W/m**2')
@@ -1244,7 +1233,7 @@ def _calc_xraylum(flux: u.W/u.m/u.m, date=None):
 
     Examples
     --------
-    >>> from sunpy.instr.goes import _calc_xraylum
+    >>> from sunkit_instruments.goes_xrs import _calc_xraylum
     >>> from astropy.units.quantity import Quantity
     >>> flux = Quantity([7e-6,7e-6], unit="W/m**2")
     >>> xraylum = _calc_xraylum(flux, date="2014-04-21")  # doctest: +REMOTE_DATA
@@ -1280,7 +1269,7 @@ def flareclass_to_flux(flareclass):
 
     Examples
     --------
-    >>> from sunpy.instr.goes import flareclass_to_flux
+    >>> from sunkit_instruments.goes_xrs import flareclass_to_flux
     >>> flareclass_to_flux('A1.0')
     <Quantity 1.e-08 W / m2>
     >>> flareclass_to_flux('c4.7')
@@ -1325,7 +1314,7 @@ def flux_to_flareclass(goesflux: u.watt/u.m**2):
 
     Examples
     --------
-    >>> from sunpy.instr.goes import flux_to_flareclass
+    >>> from sunkit_instruments.goes_xrs import flux_to_flareclass
     >>> import astropy.units as u
     >>> flux_to_flareclass(1e-08 * u.watt/u.m**2)
     'A1'
@@ -1358,7 +1347,6 @@ def flux_to_flareclass(goesflux: u.watt/u.m**2):
 
 
 def _assert_chrono_order(obstime):
-    chrono_check = np.array(obstime) - np.roll(obstime, 1)
-    chrono_check = chrono_check[1:]
+    chrono_check = obstime[1:] - obstime[:-1]
     if not all(val > TimeDelta(0*u.day) for val in chrono_check):
         raise ValueError("Elements of obstime must be in chronological order.")

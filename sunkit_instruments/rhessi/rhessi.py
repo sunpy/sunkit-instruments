@@ -9,13 +9,15 @@ import csv
 import numpy as np
 
 import astropy.units as u
-from astropy.time import Time, TimeDelta
-
 import sunpy.io
+from astropy.time import Time, TimeDelta
 from sunpy.coordinates import sun
 from sunpy.time import TimeRange, parse_time
 
-__all__ = ['parse_observing_summary_hdulist', 'backprojection', 'parse_observing_summary_dbase_file']
+__all__ = ['parse_observing_summary_hdulist',
+           'backprojection',
+           'parse_observing_summary_dbase_file',
+           '_build_energy_bands', 'uncompress_countrate']
 
 
 # Measured fixed grid parameters
@@ -50,7 +52,7 @@ def parse_observing_summary_dbase_file(filename):
 
     Examples
     --------
-    >>> import sunpy.instr.rhessi as rhessi
+    >>> import sunkit_instruments.rhessi as rhessi
     >>> rhessi.parse_observing_summary_dbase_file(fname)   # doctest: +SKIP
 
     References
@@ -332,7 +334,7 @@ def _build_energy_bands(label, bands):
 
     Example
     -------
-    >>> from sunpy.instr.rhessi import _build_energy_bands
+    >>> from sunkit_instruments.rhessi import _build_energy_bands
     >>> _build_energy_bands('Energy bands (keV)', ['3 - 6', '6 - 12', '12 - 25'])
     ['3 - 6 keV', '6 - 12 keV', '12 - 25 keV']
     """

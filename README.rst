@@ -1,4 +1,4 @@
-A sunpy-affiliated package for solar instrument-specific tools.
+A SunPy-affiliated package for solar instrument-specific tools.
 ---------------------------------------------------------------
 
 .. image:: http://img.shields.io/badge/powered%20by-SunPy-orange.svg?style=flat
@@ -8,7 +8,7 @@ A sunpy-affiliated package for solar instrument-specific tools.
 What is sunkit-instruments?
 ---------------------------
 
-sunkit-instruments is a sunpy-affiliated package for solar instrument-specific tools.
+sunkit-instruments is a SunPy-affiliated package for solar instrument-specific tools.
 Its purpose is not to be a repository for all tools for all instruments.
 Instead it is intended to perform three main roles:
 
@@ -23,7 +23,6 @@ they should consider starting their own package for full control.
 We encourage and support instrument teams in choosing this route and hope they will still engage and collaborate with the SunPy and wider community during their development.
 We point to the recent development of [aiapy](https://gitlab.com/LMSAL_HUB/aia_hub/aiapy) as a shining example of this type of collaboration.
 
-
 License
 -------
 
@@ -32,7 +31,6 @@ the terms of the BSD 3-Clause license. This package is based upon
 the `Openastronomy packaging guide <https://github.com/OpenAstronomy/packaging-guide>`_
 which is licensed under the BSD 3-clause licence. See the licenses folder for
 more information.
-
 
 Contributing
 ------------

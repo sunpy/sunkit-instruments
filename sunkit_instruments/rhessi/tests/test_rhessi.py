@@ -6,11 +6,12 @@ from distutils.version import LooseVersion
 import numpy as np
 import pytest
 
-import sunpy.instr.rhessi as rhessi
 import sunpy.io
 import sunpy.map
-from sunpy.data.test import get_test_filepath
 from sunpy.time import is_time_equal, parse_time
+
+from sunkit_instruments import rhessi
+from sunkit_instruments.data.test import get_test_filepath
 
 
 @pytest.fixture
@@ -64,7 +65,8 @@ def test_parse_observing_summary_dbase_file():
     Test that we get the observing summary database file with the content we
     expect.
     """
-    obssum = rhessi.parse_observing_summary_dbase_file(get_test_filepath("hsi_obssumm_filedb_201104.txt"))
+    obssum = rhessi.parse_observing_summary_dbase_file(
+        get_test_filepath("hsi_obssumm_filedb_201104.txt"))
 
     assert obssum['filename'][0][0:20] == 'hsi_obssumm_20110401'
     assert obssum['filename'][1][0:20] == 'hsi_obssumm_20110402'
@@ -141,7 +143,7 @@ def test_parse_observing_summary_dbase_file_mock():
         mock_file = mock.mock_open(read_data=hessi_data())
 
     dbase_data = {}
-    with mock.patch('sunpy.instr.rhessi.open', mock_file, create=True):
+    with mock.patch('sunkit_instruments.rhessi.rhessi.open', mock_file, create=True):
         dbase_data = rhessi.parse_observing_summary_dbase_file(None)
 
     assert len(dbase_data.keys()) == 7

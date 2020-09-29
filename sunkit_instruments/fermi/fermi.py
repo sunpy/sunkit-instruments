@@ -14,7 +14,6 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import Latitude, Longitude
 from astropy.time import TimeDelta
-
 from sunpy.coordinates import sun
 from sunpy.io.fits import fits
 from sunpy.time import TimeRange, parse_time
@@ -73,7 +72,7 @@ def download_weekly_pointing_file(date):
 
     # try to download the file
     try:
-        resp = urllib.request.urlopen(pointing_file_url)
+        urllib.request.urlopen(pointing_file_url)
         exists = True
     except urllib.error.HTTPError:
         exists = False
@@ -203,7 +202,7 @@ def plot_detector_sun_angles(angles):
     angles : `dict`
         A dictionary containing the Fermi/GBM detector angle information as a
         function of time. Obtained from the
-        `~sunpy.instr.fermi.get_detector_separation_angles` function.
+        `~sunkit_instruments.fermi.get_detector_separation_angles` function.
     """
 
     # make a plot showing the angles vs time
@@ -237,7 +236,7 @@ def get_scx_scz_at_time(time, file):
         time string, number, or a datetime object.
     file : `str`
         A filepath to a Fermi/LAT weekly pointing file (e.g. as obtained by the
-         `~sunpy.instr.fermi.download_weekly_pointing_file` function).
+         `~sunkit_instruments.fermi.download_weekly_pointing_file` function).
 
     Returns
     -------
@@ -272,7 +271,7 @@ def get_scx_scz_in_timerange(timerange, file):
         A SunPy `~sunpy.time.TimeRange`.
     file : `str`
         A filepath to a Fermi/LAT weekly pointing file (e.g. as obtained by the
-        `~sunpy.instr.fermi.download_weekly_pointing_file` function).
+        `~sunkit_instruments.fermi.download_weekly_pointing_file` function).
 
     Returns
     -------
@@ -344,7 +343,7 @@ def nai_detector_radecs(detectors, scx, scz, time):
     detectors : `dict`
         A dictionary containing the Fermi/GBM detector pointing angles relative
         to the spacecraft axes. Obtained from the
-        `sunpy.instr.fermi.nai_detector_angles` function.
+        `sunkit_instruments.fermi.nai_detector_angles` function.
     scx : array-like
         Two-element tuple containing the "RA/DEC" information of the Fermi
         spacecraft X-axis
@@ -442,7 +441,7 @@ def get_detector_separation_angles(detector_radecs, sunpos):
     ----------
     detector_radecs : `dict`
         The "RA/DEC" for each NaI detector as Astropy quantities. Obtained
-        from the `sunpy.instr.fermi.nai_detector_radecs` function
+        from the `sunkit_instruments.fermi.nai_detector_radecs` function
     sunpos : `list`
         Two-element list containing the "RA/DEC" of the Sun position as
         `astropy.unit.quantity`, e.g., ``[<Longitude 73.94 deg>,
