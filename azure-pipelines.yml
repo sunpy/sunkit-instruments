@@ -44,13 +44,13 @@ jobs:
     envs:
       - macos: py38
         name: py38_test
-        posargs: -n=1
 
       - windows: py37
         name: py37_test
 
       - linux: py38-online
         name: py38_test_online
+        posargs: -n=1
 
       - linux: codestyle
         name: python_codestyle
