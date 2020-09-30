@@ -9,12 +9,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'sunkit-instruments'
+from sunkit_instruments import __version__
+project = 'sunkit_instruments'
 copyright = '2020, The SunPy Developers'
 author = 'The SunPy Developers'
 
 # The full version, including alpha/beta/rc tags
-from sunkit_instruments import __version__
 release = __version__
 is_development = '.dev' in __version__
 
