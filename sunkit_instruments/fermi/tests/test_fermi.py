@@ -17,11 +17,17 @@ def test_download_weekly_pointing_file():
 
 
 @pytest.mark.remote_data
-def test_detector_angles():
+@pytest.fixture
+def pointing_file():
     # set a test date
     date = parse_time('2012-02-15')
     file = fermi.download_weekly_pointing_file(date)
-    det = fermi.get_detector_sun_angles_for_date(date, file)
+    return date, file
+
+
+@pytest.mark.remote_data
+def test_detector_angles(pointing_file):
+    det = fermi.get_detector_sun_angles_for_date(pointing_file[0], pointing_file[1])
     assert len(det) == 13
     assert_almost_equal(det['n0'][0].value, 21.79, decimal=1)
     assert_almost_equal(det['n1'][0].value, 30.45, decimal=1)
@@ -36,8 +42,11 @@ def test_detector_angles():
     assert_almost_equal(det['n10'][0].value, 106.95, decimal=1)
     assert_almost_equal(det['n11'][0].value, 121.32, decimal=1)
 
+
+@pytest.mark.remote_data
+def test_detector_angles_2(pointing_file):
     det2 = fermi.get_detector_sun_angles_for_time(
-        parse_time('2012-02-15 02:00'), file)
+        parse_time('2012-02-15 02:00'), pointing_file[1])
     assert len(det2) == 13
     assert type(det2) == dict
     assert_almost_equal(det2['n0'].value, 83.54, decimal=1)
