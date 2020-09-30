@@ -30,7 +30,7 @@ build-backend = 'setuptools.build_meta'
     missing_message_long = "This pull request does not have a milestone assigned to it. Only maintainers can change this, so you don't need to worry about it. :smile:"
 
 [tool.towncrier]
-    package = "sunkit-instruments"
+    package = "sunkit_instruments"
     filename = "CHANGELOG.rst"
     directory = "changelog/"
     issue_format = "`#{issue} <https://github.com/sunpy/sunkit-instruments/pull/{issue}>`__"
