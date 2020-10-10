@@ -1035,9 +1035,10 @@ def calculate_xray_luminosity(goests):
     ts_new : `~sunpy.timeseries.sources.XRSTimeSeries`
         Contains same metadata and data as input LightCurve with the
         following additional data columns:
-        | goests_new.to_dataframe().luminosity_xrsa - Xray luminosity in 0.5-4A channel
+
+        - ts_new.to_dataframe().luminosity_xrsa - Xray luminosity in 0.5-4A channel
           unit=[W]
-        | goests_new.to_dataframe().luminosity_xrsb - Xray luminosity in 1-8A channel
+        - ts_new.to_dataframe().luminosity_xrsb - Xray luminosity in 1-8A channel
           unit=[W]
 
     Examples
