@@ -1,3 +1,4 @@
+================================
 sunkit-instruments Documentation
 ================================
 
@@ -6,10 +7,5 @@ This is the documentation for sunkit-instruments.
 .. toctree::
    :maxdepth: 2
 
+   code_ref/index
    whatsnew/index
-
-
-Reference/API
--------------
-
-.. automodapi:: sunkit_instruments
