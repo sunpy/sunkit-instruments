@@ -17,7 +17,8 @@ from sunpy.time import TimeRange, parse_time
 __all__ = ['parse_observing_summary_hdulist',
            'backprojection',
            'parse_observing_summary_dbase_file',
-           '_build_energy_bands', 'uncompress_countrate']
+           '_build_energy_bands', 'uncompress_countrate',
+           'hsi_fits2map']
 
 
 # Measured fixed grid parameters
@@ -350,3 +351,50 @@ def _build_energy_bands(label, bands):
     unit = matched.group('UNIT').strip()
 
     return [f'{band} {unit}' for band in bands]
+
+
+def hsi_fits2map(image_datacube):
+    """
+    Extracts single map images from a RHESSI flare image datacube.
+
+    Parameters
+    ----------
+    image_datacube: `str`
+        Path or URL to image datacube .fits
+
+    Returns
+    -------
+    `dict` of `list` of `sunpy.map.Map`
+        Each energy band has a list of maps where the index of the lists represent the time step
+    """
+    # import sunpy.map in here so that net and timeseries don't end up importing map
+    from sunpy.map import Map
+    
+    f = sunpy.io.read_file(image_datacube)
+    header = f[0].header
+    del header["CROTACN1"]
+    del header["CROTACN2"]
+    del header["CROTA"]
+
+    d_min = 1e10
+    d_max = -1e10
+    for t in range(len(f[1].data[0]["TIME_AXIS"])):
+        for e in range(len(f[1].data[0]["ENERGY_AXIS"])):
+            d_min = min(d_min, f[0].data[t][e].min())
+            d_max = max(d_max, f[0].data[t][e].max())
+
+    maps = {}  # result dictionary
+    for e in f[1].data[0]["ENERGY_AXIS"].astype('int'):
+        maps[f"{e[0]}-{e[1]} keV"] = []  # init all layers (each energy band corresponds to a layer)
+
+    header["DATAMIN"] = d_min
+    header["DATAMAX"] = d_max
+    for t in range(len(f[1].data[0]["TIME_AXIS"])):
+        header["DATE_OBS"] = parse_time(f[1].data[0]["TIME_AXIS"][t][0], format='utime').to_value('isot')
+        header["DATE_END"] = parse_time(f[1].data[0]["TIME_AXIS"][t][1], format='utime').to_value('isot')
+        for e in range(len(f[1].data[0]["ENERGY_AXIS"])):
+            header["ENERGY_L"] = f[1].data[0]["ENERGY_AXIS"][e][0]
+            header["ENERGY_H"] = f[1].data[0]["ENERGY_AXIS"][e][1]
+            key = f"{int(header['ENERGY_L'])}-{int(header['ENERGY_H'])} keV"
+            maps[key].append(Map(f[0].data[t][e], header))  # extract image Map
+    return maps
