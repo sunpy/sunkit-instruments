@@ -192,3 +192,20 @@ def test_build_energy_bands(raw_bands):
                             '25 - 50 keV', '50 - 100 keV', '100 - 300 keV',
                             '300 - 800 keV', '800 - 7000 keV',
                             '7000 - 20000 keV']
+
+
+def test_hsi_fits2map():
+    fname = get_test_filepath("hsi_imagecube_clean_20151214_2255_2tx2e.fits")
+    maps = rhessi.hsi_fits2map(fname)
+    
+    assert list(maps.keys()) == ['3-6 keV', '6-12 keV']
+    assert len(maps['3-6 keV']) == 2
+    assert len(maps['6-12 keV']) == 2
+    assert maps['3-6 keV'][0].fits_header['DATAMIN'] == pytest.approx(0.0, abs=1e-4)
+    assert maps['3-6 keV'][1].fits_header['DATAMIN'] == pytest.approx(0.0, abs=1e-4)
+    assert maps['3-6 keV'][0].fits_header['DATAMAX'] == pytest.approx(0.0, abs=1e-4)
+    assert maps['3-6 keV'][1].fits_header['DATAMAX'] == pytest.approx(0.0, abs=1e-4)
+    assert maps['6-12 keV'][0].fits_header['DATAMIN'] == pytest.approx(-0.00765, abs=1e-4)
+    assert maps['6-12 keV'][1].fits_header['DATAMIN'] == pytest.approx(-0.00765, abs=1e-4)
+    assert maps['6-12 keV'][0].fits_header['DATAMAX'] == pytest.approx(0.1157, abs=1e-4)
+    assert maps['6-12 keV'][1].fits_header['DATAMAX'] == pytest.approx(0.1157, abs=1e-4)
