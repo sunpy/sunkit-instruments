@@ -392,8 +392,8 @@ def hsi_fits2map(image_datacube):
         d_min[e] = 1e10
         d_max[e] = -1e10
         for t in range(t_ax.shape[0]):
-            d_min[e] = min(d_min[e], f[0].data[t][e].min())
-            d_max[e] = max(d_max[e], f[0].data[t][e].max())
+            d_min[e] = min(d_min[e], data[t][e].min())
+            d_max[e] = max(d_max[e], data[t][e].max())
 
     maps = {}  # result dictionary
     for e in range(e_ax.shape[0]):
