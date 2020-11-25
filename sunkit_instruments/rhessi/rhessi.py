@@ -370,10 +370,14 @@ def hsi_fits2map(image_datacube):
     """
     # import sunpy.map in here so that net and timeseries don't end up importing map
     from sunpy.map import Map
-    
+
     f = sunpy.io.read_file(image_datacube)
     header = f[0].header
-    
+
+    # make sure datacube is a RHESSI cube
+    if header['INSTRUME'] != "RHESSI":
+        raise ValueError(f"Expected a RHESSI datacube, got: {header['INSTRUME']}")
+
     # remove those (non-standard) headers to avoid user warnings (they are 0 anyway)
     del header["CROTACN1"]
     del header["CROTACN2"]
@@ -381,23 +385,26 @@ def hsi_fits2map(image_datacube):
 
     d_min = {}
     d_max = {}
-    for e in range(len(f[1].data[0]["ENERGY_AXIS"])):
+    e_ax = f[1].data[0]["ENERGY_AXIS"].reshape((-1, 2))  # reshape energy axis to be 2D
+    t_ax = f[1].data[0]["TIME_AXIS"].reshape((-1, 2))  # reshape time axis to be 2D
+    data = f[0].data.reshape(tuple([1] * (4 - len(f[0].data.shape))) + f[0].data.shape)  # reshape data to be 4D
+    for e in range(e_ax.shape[0]):
         d_min[e] = 1e10
         d_max[e] = -1e10
-        for t in range(len(f[1].data[0]["TIME_AXIS"])):
+        for t in range(t_ax.shape[0]):
             d_min[e] = min(d_min[e], f[0].data[t][e].min())
             d_max[e] = max(d_max[e], f[0].data[t][e].max())
 
     maps = {}  # result dictionary
-    for e in range(len(f[1].data[0]["ENERGY_AXIS"])):
-        header["ENERGY_L"] = f[1].data[0]["ENERGY_AXIS"][e][0]
-        header["ENERGY_H"] = f[1].data[0]["ENERGY_AXIS"][e][1]
+    for e in range(e_ax.shape[0]):
+        header["ENERGY_L"] = e_ax[e][0]
+        header["ENERGY_H"] = e_ax[e][1]
         header["DATAMIN"] = d_min[e]
         header["DATAMAX"] = d_max[e]
         key = f"{int(header['ENERGY_L'])}-{int(header['ENERGY_H'])} keV"
         maps[key] = []
-        for t in range(len(f[1].data[0]["TIME_AXIS"])):
-            header["DATE_OBS"] = parse_time(f[1].data[0]["TIME_AXIS"][t][0], format='utime').to_value('isot')
-            header["DATE_END"] = parse_time(f[1].data[0]["TIME_AXIS"][t][1], format='utime').to_value('isot')
-            maps[key].append(Map(f[0].data[t][e], header))  # extract image Map
+        for t in range(t_ax.shape[0]):
+            header["DATE_OBS"] = parse_time(t_ax[t][0], format='utime').to_value('isot')
+            header["DATE_END"] = parse_time(t_ax[t][1], format='utime').to_value('isot')
+            maps[key].append(Map(data[t][e], header))  # extract image Map
     return maps
