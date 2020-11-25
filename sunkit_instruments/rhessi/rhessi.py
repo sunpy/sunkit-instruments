@@ -360,7 +360,7 @@ def hsi_fits2map(image_datacube):
 
     Parameters
     ----------
-    image_datacube: `str`
+    image_datacube : `str`
         Path or URL to image datacube .fits
 
     Returns
