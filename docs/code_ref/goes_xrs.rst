@@ -1,1 +1,1 @@
-.. automodapi:: sunkit_instruments.fermi
+.. automodapi:: sunkit_instruments.goes_xrs

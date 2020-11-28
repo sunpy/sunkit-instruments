@@ -9,14 +9,10 @@ A SunPy-affiliated package for solar instrument-specific tools.
 """
 import sys
 
+from .version import version as __version__  # NOQA
+
 # Enforce Python version check during package import.
 __minimum_python_version__ = "3.7"
-
-try:
-    from .version import __version__
-except ImportError:
-    print("version.py not found, please reinstall sunkit_instruments.")
-    __version__ = "unknown"
 
 
 class UnsupportedPythonError(Exception):
