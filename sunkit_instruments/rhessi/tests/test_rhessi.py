@@ -219,3 +219,9 @@ def test_hsi_fits2map_edgecase():
     assert len(maps['6-12 keV']) == 1
     assert maps['6-12 keV'][0].fits_header['DATAMIN'] == pytest.approx(-0.0835, abs=1e-4)
     assert maps['6-12 keV'][0].fits_header['DATAMAX'] == pytest.approx(1.9085, abs=1e-4)
+
+
+def test_hsi_fits2map_nonrhessi():
+    fname = get_test_filepath("go1520110607.fits")
+    with pytest.raises(ValueError):
+        rhessi.hsi_fits2map(fname)
