@@ -223,5 +223,5 @@ def test_hsi_fits2map_edgecase():
 
 def test_hsi_fits2map_nonrhessi():
     fname = get_test_filepath("go1520110607.fits")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Expected a RHESSI datacube*"):
         rhessi.hsi_fits2map(fname)
