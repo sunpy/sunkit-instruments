@@ -353,7 +353,7 @@ def _build_energy_bands(label, bands):
     return [f'{band} {unit}' for band in bands]
 
 
-def hsi_fits2map(image_datacube):
+def hsi_fits2map(rhessi_imagecube_file):
     """
     Extracts single map images from a RHESSI flare image datacube.
     Currently assumes input to be 4D.
@@ -371,7 +371,7 @@ def hsi_fits2map(image_datacube):
     # import sunpy.map in here so that net and timeseries don't end up importing map
     from sunpy.map import Map
 
-    f = sunpy.io.read_file(image_datacube)
+    f = sunpy.io.read_file(rhessi_imagecube_file)
     header = f[0].header
 
     # make sure datacube is a RHESSI cube
@@ -402,9 +402,13 @@ def hsi_fits2map(image_datacube):
         header["DATAMIN"] = d_min[e]
         header["DATAMAX"] = d_max[e]
         key = f"{int(header['ENERGY_L'])}-{int(header['ENERGY_H'])} keV"
-        maps[key] = []
+        map_list=[]
         for t in range(t_ax.shape[0]):
             header["DATE_OBS"] = parse_time(t_ax[t][0], format='utime').to_value('isot')
             header["DATE_END"] = parse_time(t_ax[t][1], format='utime').to_value('isot')
-            maps[key].append(Map(data[t][e], header))  # extract image Map
+            map_list.append(Map(data[t][e], header))  # extract image Map
+        if len(map_list)==1:
+            maps[key] = Map(map_list)
+        else:
+            maps[key] = Map(map_list, sequence=True)
     return maps
