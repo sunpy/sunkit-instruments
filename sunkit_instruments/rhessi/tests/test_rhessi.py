@@ -194,13 +194,15 @@ def test_build_energy_bands(raw_bands):
                             '7000 - 20000 keV']
 
 
-def test_hsi_fits2map():
+def test_imagecube2map():
     fname = get_test_filepath("hsi_imagecube_clean_20151214_2255_2tx2e.fits")
-    maps = rhessi.hsi_fits2map(fname)
+    maps = rhessi.imagecube2map(fname)
 
     assert list(maps.keys()) == ['3-6 keV', '6-12 keV']
     assert len(maps['3-6 keV']) == 2
     assert len(maps['6-12 keV']) == 2
+    assert isinstance(maps['3-6 keV'], sunpy.map.MapSequence)
+    assert isinstance(maps['6-12 keV'], sunpy.map.MapSequence)
     assert maps['3-6 keV'][0].fits_header['DATAMIN'] == pytest.approx(0.0, abs=1e-4)
     assert maps['3-6 keV'][1].fits_header['DATAMIN'] == pytest.approx(0.0, abs=1e-4)
     assert maps['3-6 keV'][0].fits_header['DATAMAX'] == pytest.approx(0.0, abs=1e-4)
@@ -211,17 +213,18 @@ def test_hsi_fits2map():
     assert maps['6-12 keV'][1].fits_header['DATAMAX'] == pytest.approx(0.1157, abs=1e-4)
 
 
-def test_hsi_fits2map_edgecase():
+def test_imagecube2map_edgecase():
     fname = get_test_filepath("hsi_imagecube_clean_20150930_1307_1tx1e.fits")
-    maps = rhessi.hsi_fits2map(fname)
+    maps = rhessi.imagecube2map(fname)
 
     assert list(maps.keys()) == ['6-12 keV']
     assert len(maps['6-12 keV']) == 1
+    assert isinstance(maps['6-12 keV'], sunpy.map.MapSequence)
     assert maps['6-12 keV'][0].fits_header['DATAMIN'] == pytest.approx(-0.0835, abs=1e-4)
     assert maps['6-12 keV'][0].fits_header['DATAMAX'] == pytest.approx(1.9085, abs=1e-4)
 
 
-def test_hsi_fits2map_nonrhessi():
+def test_imagecube2map_nonrhessi():
     fname = get_test_filepath("go1520110607.fits")
     with pytest.raises(ValueError, match="Expected a RHESSI datacube*"):
-        rhessi.hsi_fits2map(fname)
+        rhessi.imagecube2map(fname)

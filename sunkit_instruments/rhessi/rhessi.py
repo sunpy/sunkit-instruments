@@ -18,7 +18,7 @@ __all__ = ['parse_observing_summary_hdulist',
            'backprojection',
            'parse_observing_summary_dbase_file',
            '_build_energy_bands', 'uncompress_countrate',
-           'hsi_fits2map']
+           'imagecube2map']
 
 
 # Measured fixed grid parameters
@@ -353,19 +353,19 @@ def _build_energy_bands(label, bands):
     return [f'{band} {unit}' for band in bands]
 
 
-def hsi_fits2map(rhessi_imagecube_file):
+def imagecube2map(rhessi_imagecube_file):
     """
     Extracts single map images from a RHESSI flare image datacube.
     Currently assumes input to be 4D.
 
     Parameters
     ----------
-    image_datacube : `str`
+    rhessi_imagecube_file : `str`
         Path or URL to image datacube .fits
 
     Returns
     -------
-    `dict` of `list` of `sunpy.map.Map`
+    `dict` of `sunpy.map.MapSequence`
         Each energy band has a list of maps where the index of the lists represent the time step
     """
     # import sunpy.map in here so that net and timeseries don't end up importing map
@@ -407,8 +407,5 @@ def hsi_fits2map(rhessi_imagecube_file):
             header["DATE_OBS"] = parse_time(t_ax[t][0], format='utime').to_value('isot')
             header["DATE_END"] = parse_time(t_ax[t][1], format='utime').to_value('isot')
             map_list.append(Map(data[t][e], header))  # extract image Map
-        if len(map_list)==1:
-            maps[key] = Map(map_list)
-        else:
-            maps[key] = Map(map_list, sequence=True)
+        maps[key] = Map(map_list, sequence=True)
     return maps
