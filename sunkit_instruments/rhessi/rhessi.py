@@ -357,6 +357,8 @@ def imagecube2map(rhessi_imagecube_file):
     """
     Extracts single map images from a RHESSI flare image datacube.
     Currently assumes input to be 4D.
+    
+    This function is analogous to the `hsi_fits2map.pro` functionality available in SSW. 
 
     Parameters
     ----------
