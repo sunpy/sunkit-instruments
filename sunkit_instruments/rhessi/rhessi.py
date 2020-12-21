@@ -17,7 +17,8 @@ from sunpy.time import TimeRange, parse_time
 __all__ = ['parse_observing_summary_hdulist',
            'backprojection',
            'parse_observing_summary_dbase_file',
-           '_build_energy_bands', 'uncompress_countrate']
+           '_build_energy_bands', 'uncompress_countrate',
+           'imagecube2map']
 
 
 # Measured fixed grid parameters
@@ -350,3 +351,63 @@ def _build_energy_bands(label, bands):
     unit = matched.group('UNIT').strip()
 
     return [f'{band} {unit}' for band in bands]
+
+
+def imagecube2map(rhessi_imagecube_file):
+    """
+    Extracts single map images from a RHESSI flare image datacube.
+    Currently assumes input to be 4D.
+
+    This function is analogous to the `hsi_fits2map.pro` functionality available in SSW.
+
+    Parameters
+    ----------
+    rhessi_imagecube_file : `str`
+        Path or URL to image datacube .fits
+
+    Returns
+    -------
+    `dict` of `sunpy.map.MapSequence`
+        Each energy band has a list of maps where the index of the lists represent the time step
+    """
+    # import sunpy.map in here so that net and timeseries don't end up importing map
+    from sunpy.map import Map
+
+    f = sunpy.io.read_file(rhessi_imagecube_file)
+    header = f[0].header
+
+    # make sure datacube is a RHESSI cube
+    if header['INSTRUME'] != "RHESSI":
+        raise ValueError(f"Expected a RHESSI datacube, got: {header['INSTRUME']}")
+
+    # remove those (non-standard) headers to avoid user warnings (they are 0 anyway)
+    del header["CROTACN1"]
+    del header["CROTACN2"]
+    del header["CROTA"]
+
+    d_min = {}
+    d_max = {}
+    e_ax = f[1].data[0]["ENERGY_AXIS"].reshape((-1, 2))  # reshape energy axis to be 2D
+    t_ax = f[1].data[0]["TIME_AXIS"].reshape((-1, 2))  # reshape time axis to be 2D
+    data = f[0].data.reshape(tuple([1] * (4 - len(f[0].data.shape))) + f[0].data.shape)  # reshape data to be 4D
+    for e in range(e_ax.shape[0]):
+        d_min[e] = 1e10
+        d_max[e] = -1e10
+        for t in range(t_ax.shape[0]):
+            d_min[e] = min(d_min[e], data[t][e].min())
+            d_max[e] = max(d_max[e], data[t][e].max())
+
+    maps = {}  # result dictionary
+    for e in range(e_ax.shape[0]):
+        header["ENERGY_L"] = e_ax[e][0]
+        header["ENERGY_H"] = e_ax[e][1]
+        header["DATAMIN"] = d_min[e]
+        header["DATAMAX"] = d_max[e]
+        key = f"{int(header['ENERGY_L'])}-{int(header['ENERGY_H'])} keV"
+        map_list=[]
+        for t in range(t_ax.shape[0]):
+            header["DATE_OBS"] = parse_time(t_ax[t][0], format='utime').to_value('isot')
+            header["DATE_END"] = parse_time(t_ax[t][1], format='utime').to_value('isot')
+            map_list.append(Map(data[t][e], header))  # extract image Map
+        maps[key] = Map(map_list, sequence=True)
+    return maps
