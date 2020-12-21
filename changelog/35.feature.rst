@@ -1,1 +1,1 @@
-Add `sunkit_instruments.rhessi.hsi_fits2map` function to extract `sunpy.map.Map` objects from a RHESSI 4D image cube.
+Add :func:`sunkit_instruments.rhessi.imagecube2map` function to extract `sunpy.map.MapSequence` objects from a RHESSI 4D image cube.
