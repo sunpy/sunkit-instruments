@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -14,22 +13,22 @@ def sunpy_cache(mocker, tmp_path):
     from sunpy.data.data_manager.cache import Cache
     from sunpy.data.data_manager.downloader import ParfiveDownloader
     from sunpy.data.data_manager.storage import InMemStorage
-    cache = Cache(
-        ParfiveDownloader(),
-        InMemStorage(),
-        tmp_path,
-        None
-    )
+
+    cache = Cache(ParfiveDownloader(), InMemStorage(), tmp_path, None)
 
     def add(self, url, path):
-        self._storage.store({
-            'url': url,
-            'file_path': path,
-            'file_hash': 'none',  # hash doesn't matter
-        })
+        self._storage.store(
+            {
+                "url": url,
+                "file_path": path,
+                "file_hash": "none",  # hash doesn't matter
+            }
+        )
+
     cache.add = MethodType(add, cache)
 
     def func(mocked):
         mocker.patch(mocked, cache)
         return cache
+
     yield func

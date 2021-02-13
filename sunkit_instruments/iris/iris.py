@@ -11,7 +11,7 @@ import sunpy.io
 import sunpy.map
 import sunpy.time
 
-__all__ = ['SJI_to_sequence']
+__all__ = ["SJI_to_sequence"]
 
 
 def SJI_to_sequence(filename, start=0, stop=None, hdu=0):
@@ -43,8 +43,7 @@ def SJI_to_sequence(filename, start=0, stop=None, hdu=0):
 
     hdus = sunpy.io.read_file(filename)
     # Get the time delta
-    time_range = sunpy.time.TimeRange(hdus[hdu][1]['STARTOBS'],
-                                      hdus[hdu][1]['ENDOBS'])
+    time_range = sunpy.time.TimeRange(hdus[hdu][1]["STARTOBS"], hdus[hdu][1]["ENDOBS"])
     splits = time_range.split(hdus[hdu][0].shape[0])
 
     if not stop:
@@ -58,6 +57,6 @@ def SJI_to_sequence(filename, start=0, stop=None, hdu=0):
     # Set the date/time
 
     for i, m in enumerate(iris_cube):
-        m.meta['DATE-OBS'] = splits[i].center.isot
+        m.meta["DATE-OBS"] = splits[i].center.isot
 
     return iris_cube
