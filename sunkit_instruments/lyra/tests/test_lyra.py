@@ -9,6 +9,7 @@ import astropy.units as u
 from astropy.time import TimeDelta
 from sunpy import timeseries
 from sunpy.time import is_time_equal, parse_time
+from sunpy.util.exceptions import SunpyUserWarning
 
 from sunkit_instruments import lyra
 from sunkit_instruments.data.test import rootdir
@@ -108,11 +109,11 @@ def test_split_series_using_lytaf():
 @pytest.fixture
 def lyra_ts():
     # Create sample TimeSeries
-    lyra_ts = timeseries.TimeSeries(
+    lyrats = timeseries.TimeSeries(
         os.path.join(rootdir, "lyra_20150101-000000_lev3_std_truncated.fits.gz"),
         source="LYRA",
     )
-    data = pandas.DataFrame(
+    lyrats._data = pandas.DataFrame(
         index=TIME,
         data={
             "CHANNEL1": CHANNELS[0],
@@ -121,8 +122,7 @@ def lyra_ts():
             "CHANNEL4": CHANNELS[1],
         },
     )
-    lyra_ts = timeseries.TimeSeries(data, lyra_ts.meta)
-    return lyra_ts
+    return lyrats
 
 
 @pytest.mark.remote_data
@@ -136,14 +136,14 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
             [], force_use_local_lytaf=True
         )
 
-    # Run remove_artifacts_from_timeseries, returning artifact
-    # status
-    ts_test, artifact_status_test = lyra.remove_lytaf_events_from_timeseries(
-        lyra_ts,
-        artifacts=["LAR", "Offpoint"],
-        return_artifacts=True,
-        force_use_local_lytaf=True,
-    )
+    # Run remove_artifacts_from_timeseries, returning artifact status
+    with pytest.warns(SunpyUserWarning):
+        ts_test, artifact_status_test = lyra.remove_lytaf_events_from_timeseries(
+            lyra_ts,
+            artifacts=["LAR", "Offpoint"],
+            return_artifacts=True,
+            force_use_local_lytaf=True,
+        )
     # Generate expected data by calling _remove_lytaf_events and
     # constructing expected dataframe manually.
     lyra_df = lyra_ts.to_dataframe()
@@ -184,9 +184,10 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
 
     # Run remove_artifacts_from_timeseries, without returning
     # artifact status
-    ts_test = lyra.remove_lytaf_events_from_timeseries(
-        lyra_ts, artifacts=["LAR", "Offpoint"], force_use_local_lytaf=True
-    )
+    with pytest.warns(SunpyUserWarning):
+        ts_test = lyra.remove_lytaf_events_from_timeseries(
+            lyra_ts, artifacts=["LAR", "Offpoint"], force_use_local_lytaf=True
+        )
     # Assert expected result is returned
     pandas.testing.assert_frame_equal(ts_test.to_dataframe(), dataframe_expected)
 

@@ -89,7 +89,6 @@ def remove_lytaf_events_from_timeseries(
     Examples
     --------
     Remove LARs (Large Angle Rotations) from TimeSeries for 4-Dec-2014:
-
         >>> import sunpy.timeseries as ts
         >>> import sunpy.data.sample  # doctest: +REMOTE_DATA
         >>> from sunkit_instruments.lyra import remove_lytaf_events_from_timeseries
@@ -613,8 +612,8 @@ def split_series_using_lytaf(timearray, data, lytaf):
 
         if h == limit - 1:
             # can't index h+1 here. Go to end of series
-            subtimes = time_array[disc[h]:-1]
-            subdata = data[disc[h]:-1]
+            subtimes = time_array[disc[h]: -1]
+            subdata = data[disc[h]: -1]
             subseries = {"subtimes": subtimes, "subdata": subdata}
             split_series.append(subseries)
         else:
