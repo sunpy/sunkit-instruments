@@ -590,7 +590,7 @@ def _goes_get_chianti_temp(
     label = f"ratioGOES{satellite}"
     # Read data representing appropriate temperature--flux ratio
     # relationship depending on satellite number and assumed abundances.
-    with open(data_file, "r") as csvfile:
+    with open(data_file) as csvfile:
         startline = dropwhile(lambda l: l.startswith("#"), csvfile)
         csvreader = csv.DictReader(startline, delimiter=";")
         for row in csvreader:
@@ -763,7 +763,7 @@ def _goes_get_chianti_em(
 
     # Read data representing appropriate temperature--long flux
     # relationship depending on satellite number and assumed abundances.
-    with open(data_file, "r") as csvfile:
+    with open(data_file) as csvfile:
         startline = dropwhile(lambda l: l.startswith("#"), csvfile)
         csvreader = csv.DictReader(startline, delimiter=";")
         for row in csvreader:
@@ -1027,7 +1027,7 @@ def _calc_rad_loss(
 
     # Read data from csv file into lists, being sure to skip commented
     # lines beginning with "#"
-    with open(manager.get("file_rad_cor"), "r") as csvfile:
+    with open(manager.get("file_rad_cor")) as csvfile:
         startline = csvfile.readlines()[7:]
         csvreader = csv.reader(startline, delimiter=" ")
         for row in csvreader:

@@ -532,7 +532,7 @@ def get_lytaf_event_types(print_event_types=True):
         event_types = cursor.fetchall()
         all_event_types.append(event_types)
         if print_event_types:
-            print("----------------\n{} database\n----------------".format(suffix))
+            print(f"----------------\n{suffix} database\n----------------")
             for event_type in event_types:
                 print(str(event_type[0]))
             print(" ")
