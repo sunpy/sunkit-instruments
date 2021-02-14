@@ -109,7 +109,7 @@ def remove_lytaf_events_from_timeseries(
         return_artifacts=True,
         force_use_local_lytaf=force_use_local_lytaf,
     )
-    # Create new copy copy of timeseries and replace data with
+    # Create new copy of timeseries and replace data with
     # artifact-free time series.
     data = pandas.DataFrame(
         index=time, data={col: channels[i] for i, col in enumerate(data_columns)}
