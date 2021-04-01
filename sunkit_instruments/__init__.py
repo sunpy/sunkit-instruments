@@ -5,7 +5,8 @@ Sunkit-instruments
 A SunPy-affiliated package for solar instrument-specific tools.
 
 * Homepage: https://sunpy.org
-* Documentation: https://sunkit-instruments.readthedocs.io/en/latest/
+* Documentation: https://docs.sunpy.org/projects/sunkit-instruments/en/latest/
+* Source code: https://github.com/sunpy/sunkit-instruments
 """
 import sys
 
@@ -29,4 +30,4 @@ if sys.version_info < tuple(int(val) for val in __minimum_python_version__.split
         )
     )
 
-__all__ = []
+__all__ = ["__version__"]
