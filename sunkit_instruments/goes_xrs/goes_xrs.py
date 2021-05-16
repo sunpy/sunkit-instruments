@@ -245,18 +245,6 @@ def calculate_temperature_em(
     >>> from sunkit_instruments.goes_xrs import calculate_temperature_em
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
     >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
-    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
-                                           xrsa          xrsb
-    2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
-    2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:04.058999896  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:06.104999900  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:08.151999950  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:10.201999903  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:12.248999953  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:14.298999906  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_temperature_em(goests)  # doctest: +REMOTE_DATA
     >>> goests_new.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
                                            xrsa          xrsb  temperature            em
@@ -864,18 +852,6 @@ def calculate_radiative_loss_rate(goests, force_download=False, download_dir=Non
     >>> from sunkit_instruments.goes_xrs import calculate_radiative_loss_rate
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
     >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
-    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
-                                           xrsa          xrsb
-    2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
-    2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:04.058999896  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:06.104999900  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:08.151999950  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:10.201999903  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:12.248999953  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:14.298999906  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_radiative_loss_rate(goests)  # doctest: +REMOTE_DATA
     >>> goests_new.to_dataframe()[0:10]   # doctest:  +REMOTE_DATA
                                            xrsa          xrsb  temperature            em  rad_loss_rate
@@ -1121,18 +1097,6 @@ def calculate_xray_luminosity(goests):
     >>> from sunkit_instruments.goes_xrs import calculate_xray_luminosity
     >>> from sunpy.data.sample import GOES_XRS_TIMESERIES  # doctest: +REMOTE_DATA
     >>> goests = ts.TimeSeries(GOES_XRS_TIMESERIES)  # doctest: +REMOTE_DATA +IGNORE_WARNINGS
-    >>> goests.to_dataframe()[0:10]  # doctest: +REMOTE_DATA
-                                           xrsa          xrsb
-    2011-06-06 23:59:59.961999893  1.000000e-09  1.887100e-07
-    2011-06-07 00:00:02.008999944  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:04.058999896  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:06.104999900  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:08.151999950  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:10.201999903  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:12.248999953  1.000000e-09  1.860900e-07
-    2011-06-07 00:00:14.298999906  1.000000e-09  1.834600e-07
-    2011-06-07 00:00:16.344999909  1.000000e-09  1.808400e-07
-    2011-06-07 00:00:18.391999960  1.000000e-09  1.834600e-07
     >>> goests_new = calculate_xray_luminosity(goests)  # doctest: +REMOTE_DATA
     >>> goests_new.to_dataframe()[0:10]   # doctest:  +REMOTE_DATA
                                            xrsa          xrsb  luminosity_xrsa  luminosity_xrsb
