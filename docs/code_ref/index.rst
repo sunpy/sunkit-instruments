@@ -13,3 +13,4 @@ Code Reference
    iris
    lyra
    rhessi
+   suvi
