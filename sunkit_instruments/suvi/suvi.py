@@ -1,57 +1,71 @@
-"""
-This package provides helper routines for the SUVI (Solar UltraViolet Imager) 
-instrument on the GOES-R series of satellites.
-
-.. note::
-    SUVI data (and data from other GOES instrumentation) can be found 
-    `here <https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/>`__
-    for L1b and L2 FITS files and
-    `here <https://noaa-goes16.s3.amazonaws.com/index.html>`__ for L1b netCDF files (publicly 
-    available Amazon S3 bucket, look on page 2 after all the ABI data).
-"""
-import os, warnings, numpy, h5py, gzip
-import tempfile, requests
-from astropy.io import fits
-from astropy.time import Time, TimeDelta
-from astropy import units as u
-from astropy.io.fits.verify import VerifyError
-import sunpy.map
-from sunpy.util.exceptions import warn_user
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-from matplotlib.colors import ListedColormap
-from scipy.ndimage import gaussian_filter
-from scipy import interpolate
-from bs4 import BeautifulSoup
+import os
+import gzip
+import tempfile
 from os.path import expanduser
-import sunkit_instruments
 
+import matplotlib.pyplot as plt
+import numpy
+import requests
+from bs4 import BeautifulSoup
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch
+from scipy import interpolate
+from scipy.ndimage import gaussian_filter
+
+import sunpy.map
+from astropy import units as u
+from astropy.io import fits
+from astropy.io.fits.verify import VerifyError
+from astropy.time import Time, TimeDelta
+from sunpy.util.exceptions import warn_user
+
+import sunkit_instruments
 
 __all__ = ["despike_L1b_image",
            "download_data_from_NOAA",
            "files_to_map",
            "fix_L1b_header",
            "get_response",
-           "plot_thematic_map",
-           "read_suvi"]
+           "plot_thematic_map"]
 
-    
+SOLAR_CLASSES = [('unlabeled', 0),
+                 ('outer_space', 1),
+                 ('bright_region', 3),
+                 ('filament', 4),
+                 ('prominence', 5),
+                 ('coronal_hole', 6),
+                 ('quiet_sun', 7),
+                 ('limb', 8),
+                 ('flare', 9)]
+
+SOLAR_CLASS_NAME = {number: theme for theme, number in SOLAR_CLASSES}
+
+SOLAR_COLORS = {"unlabeled": "white",
+                "outer_space": "black",
+                "bright_region": "#F0E442",
+                "filament": "#D55E00",
+                "prominence": "#E69F00",
+                "coronal_hole": "#009E73",
+                "quiet_sun": "#0072B2",
+                "limb": "#56B4E9",
+                "flare": "#CC79A7"}
+
 def despike_L1b_image(the_input, filter_width=7, return_map=False):
     """
-    Despike SUVI L1b data and return either a despiked 
-    `~numpy.ndarray` or a despiked `~sunpy.map.Map`. 
+    Despike SUVI L1b data and return either a despiked
+    `~numpy.ndarray` or a despiked `~sunpy.map.Map`.
 
     .. note::
-        If the the_input is a string: the type of file is determined 
-        by pattern matching in the filenames, e.g. "-L1b-Fe171" 
-        for a 171 L1b file. If this pattern is not found in the 
+        If the the_input is a string: the type of file is determined
+        by pattern matching in the filenames, e.g. "-L1b-Fe171"
+        for a 171 L1b file. If this pattern is not found in the
         filename, the file will not be recognized.
 
     .. note::
-        The despiking relies on the presence of the data quality 
-        flags (DQF) in the first extension of a SUVI L1b FITS file. 
-        Early in the mission, the DQF extension was not present 
-        yet, so the despiking cannot be done with this function 
+        The despiking relies on the presence of the data quality
+        flags (DQF) in the first extension of a SUVI L1b FITS file.
+        Early in the mission, the DQF extension was not present
+        yet, so the despiking cannot be done with this function
         for those early files.
 
     Parameters
@@ -59,11 +73,11 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     the_input: `str` or `tuple` of 2-D `~numpy.ndarray` containing (data, DQF)
         Filename or tuple of (data, DQF) to despike.
 
-    filter_width: `int`, optional. Default: 7. 
+    filter_width: `int`, optional. Default: 7.
         The filter width for the Gaussian filter. If NaNs are still
         present in the despiked image, try increasing this value.
 
-    return_map: `bool`, optional. Default: False. 
+    return_map: `bool`, optional. Default: False.
         If True, returns a `~sunpy.map.Map` instead of a `~numpy.ndarray`.
         Ignored if the_input is not a filename string.
 
@@ -82,15 +96,15 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     elif isinstance(the_input, str):
         L1b_matches = ['-L1b-Fe093', '-L1b-Fe131', '-L1b-Fe171', '-L1b-Fe195', '-L1b-Fe284', '-L1b-He303']
         if any(fn in os.path.basename(the_input) for fn in L1b_matches):
-            header, image, dqf_mask = read_suvi(the_input, return_DQF=True)
+            header, image, dqf_mask = sunkit_instruments.io.read_suvi(the_input, return_DQF=True)
         else:
             raise ValueError("File "+the_input+" does not look like a SUVI L1b file.")
     else:
         raise TypeError("Input must be string or tuple of 2-D arrays.")
-        
+
     image_with_nans = numpy.copy(image)
     image_with_nans[numpy.where(dqf_mask == 4)] = numpy.nan
-    indices = numpy.where(numpy.isnan(image_with_nans)) 
+    indices = numpy.where(numpy.isnan(image_with_nans))
     image_gaussian_filtered = gaussian_filter(image, filter_width)
     despiked_image = numpy.copy(image_with_nans)
     despiked_image[indices] = image_gaussian_filtered[indices]
@@ -100,50 +114,49 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     else:
         return despiked_image
 
-
 # helper function: parser for the SUVI websites using BeautifulSoup
 def _list_url_directory(url, ext=''):
     page = requests.get(url).text
     soup = BeautifulSoup(page, 'html.parser')
     return [url + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
-    
+
 def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=None,
                             composites=False, query_only=False, verbose=False):
     """
-    Download SUVI L1b or L2 HDR composite FITS files from the NOAA websites directly. 
-    Intended as an alternative to getting it from the VSO with fido. For L1b 
+    Download SUVI L1b or L2 HDR composite FITS files from the NOAA websites directly.
+    Intended as an alternative to getting it from the VSO with fido. For L1b
     files, it will only download long exposures, no short/short flare exposures.
 
     .. note::
         Existing files with the same filename will be overwritten.
 
     .. note::
-        Using the JSOC-style format below does not mean that the cadence will 
-        always be exactly what was requested. The code only tries to download 
-        the nearest file to any datetime given, i.e. if there is data missing 
-        for example, the code might try and download the same file over and  
-        over (because one file might always be the closest one). There will 
+        Using the JSOC-style format below does not mean that the cadence will
+        always be exactly what was requested. The code only tries to download
+        the nearest file to any datetime given, i.e. if there is data missing
+        for example, the code might try and download the same file over and
+        over (because one file might always be the closest one). There will
         be a warning printed if that is the case.
 
     .. note::
         The standard observing sequence for SUVI is 4 minutes. Using 4 minutes
-        (and multiples thereof) should therefore be fairly safe to use for all 
+        (and multiples thereof) should therefore be fairly safe to use for all
         channels. 94 is observed with a higher, regular 2 min cadence.
-        195 is observed with an even higher, but irregular cadence (70 s, 60 s, 
-        60 s, 50 s, and repeating). In other words: if higher cadence data is 
-        needed, it can be obtained in some channels. However, only for L1b data, 
-        because all L1b files get averaged into one L2 HDR composite in a 4 min 
-        window, and for 195 data, it can be tricky to get the timing right with 
+        195 is observed with an even higher, but irregular cadence (70 s, 60 s,
+        60 s, 50 s, and repeating). In other words: if higher cadence data is
+        needed, it can be obtained in some channels. However, only for L1b data,
+        because all L1b files get averaged into one L2 HDR composite in a 4 min
+        window, and for 195 data, it can be tricky to get the timing right with
         the JSOC-style query because of the irregular cadence.
 
     Parameters
     ----------
-    date_time: `str` or `list`.     
+    date_time: `str` or `list`.
         date_time can have the following formats:
-        
-        -A JSOC-style string with start time, timespan, and cadence: 
+
+        -A JSOC-style string with start time, timespan, and cadence:
         ``'2021-02-03T12:30:00/3h@20m'``
-        Cadence is optional (defaults to 4 min if not given). 
+        Cadence is optional (defaults to 4 min if not given).
         Valid values for the time units are m, h, and d.
 
         -A single datetime string in isot format (without milliseconds):
@@ -152,27 +165,27 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
         -A list of several datetime strings in isot format (without milliseconds):
         ``['2021-02-03T12:30:00', '2021-04-23T11:43:00', '2021-05-11T17:05:00']``
 
-    spacecraft: `int`, optional. Default: 16. Valid numbers: [16, 17]. 
-        The spacecraft to get the data from. 
+    spacecraft: `int`, optional. Default: 16. Valid numbers: [16, 17].
+        The spacecraft to get the data from.
 
-    wavelength: `int`, optional. Default: 171. Valid numbers: [94, 131, 171, 195, 284, 304]. 
+    wavelength: `int`, optional. Default: 171. Valid numbers: [94, 131, 171, 195, 284, 304].
         The wavelength channel to get the data from.
 
-    outdir: `str`, optional. Default: user's home directory. 
+    outdir: `str`, optional. Default: user's home directory.
         The directory to write the FITS files to.
 
-    composites: `bool`, optional. Default: False. 
-        If True, the function will not download long exposure L1b files, 
+    composites: `bool`, optional. Default: False.
+        If True, the function will not download long exposure L1b files,
         but L2 HDR composite images instead.
 
-    query_only: `bool`, optional. Default: False. 
-        If True, the function does not download anything, only queries the NOAA website 
+    query_only: `bool`, optional. Default: False.
+        If True, the function does not download anything, only queries the NOAA website
         and prints the filenames that would be downloaded.
 
-    verbose: `bool`, optional. Default: False. 
+    verbose: `bool`, optional. Default: False.
         If True, the user gets slightly more information about what is happening.
     """
-    spacecraft_numbers = [16, 17] 
+    spacecraft_numbers = [16, 17]
 
     if composites:
         wvln_path = { 94:'suvi-l2-ci094', 131:'suvi-l2-ci131', 171:'suvi-l2-ci171', \
@@ -180,7 +193,7 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
     else:
         wvln_path = { 94:'suvi-l1b-fe094', 131:'suvi-l1b-fe131', 171:'suvi-l1b-fe171', \
                      195:'suvi-l1b-fe195', 284:'suvi-l1b-fe284', 304:'suvi-l1b-he304'}
-                      
+
     if outdir is not None:
         if not query_only:
             if not os.path.exists(outdir):
@@ -191,7 +204,7 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
     # Add the path separator at the end if it is not there yet
     if outdir[-1] != os.path.sep:
         outdir = outdir + os.path.sep
-        
+
     # this should stay the same for now
     baseurl1 = 'https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes'
     if composites:
@@ -200,13 +213,13 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
     else:
         baseurl2 = '/l1b/'
         ext = '.fits.gz'
-    
+
     if spacecraft not in spacecraft_numbers:
         raise ValueError("Invalid spacecraft number: "+str(spacecraft)+". Valid values are: 16, 17.")
-    
+
     if wavelength not in wvln_path:
         raise ValueError("Invalid wavelength: "+str(wavelength)+". Valid values are: 94, 131, 171, 195, 284, 304.")
-    
+
     # Figure out what kind of date_time was given.
     if isinstance(date_time, str):
         # Check if it is a JSOC-style query
@@ -223,11 +236,11 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
                 elif cadence_unit == 'd':
                     cadence = cadence*60.*60*24.
                 else:
-                    raise ValueError('Not a valid time unit (must be m, h, or d).') 
+                    raise ValueError('Not a valid time unit (must be m, h, or d).')
             else:
                 cadence = 240.
                 timespan_string = date_time.split('/')[1]
-        
+
             timespan = float(timespan_string[:-1])
             timespan_unit = timespan_string[-1]
             if timespan_unit == 'm':
@@ -237,25 +250,25 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
             elif timespan_unit == 'd':
                 timespan = timespan*60.*60*24.
             else:
-                raise ValueError('Not a valid time unit (must be m, h, or d).')    
-    
+                raise ValueError('Not a valid time unit (must be m, h, or d).')
+
             t0 = Time(date_time.split('/')[0], scale='utc', format='isot')
             tmp_timestamp = []
             counter = 0
             while counter*cadence <= timespan:
                 tmp_timestamp.append(counter*cadence)
                 counter += 1
-                
+
             timestamp = t0+TimeDelta(tmp_timestamp, format='sec')
             urls = []
             for time in timestamp:
                 urls.append(baseurl1+str(spacecraft)+baseurl2+wvln_path[wavelength]+'/'+time.value[0:10].replace('-','/')+'/')
-    
+
         else:
             # Only one date, and no JSOC-style query
             timestamp = [Time(date_time, scale='utc', format='isot')]
             urls = [baseurl1+str(spacecraft)+baseurl2+wvln_path[wavelength]+'/'+date_time[0:10].replace('-','/')+'/']
-            
+
     elif isinstance(date_time, list):
         # if the argument was a list of dates
         timestamp = []
@@ -263,20 +276,19 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
         for this_date in date_time:
             timestamp.append(Time(this_date, scale='utc', format='isot'))
             urls.append(baseurl1+str(spacecraft)+baseurl2+wvln_path[wavelength]+'/'+this_date[0:10].replace('-','/')+'/')
-    
-    
+
     # Before we run, check if all of the websites are there.
     # Cook the urls down to unique values. To do that, convert
     # to a numpy array, use numpy.unique, and then convert back
     # to a list. Tried by using conversion to a set first,
     # but that doesn't keep the correct order for the dates.
-    urls_arr = numpy.array(urls) 
-    urls_unique = numpy.unique(urls_arr).tolist() 
+    urls_arr = numpy.array(urls)
+    urls_unique = numpy.unique(urls_arr).tolist()
     all_files  = []
     start_time = []
     if not composites:
         end_time = []
-    for url in urls_unique:    
+    for url in urls_unique:
         request = requests.get(url)
         if not request.status_code == 200:
             warn_user("Website not found: "+url)
@@ -299,13 +311,13 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
                                       file_base[34:36]+'.'+file_base[36]+'00')
                     end_time.append(url[-11:-1].replace('/','-')+'T'+file_base[46:48]+':'+file_base[48:50]+':'+\
                                     file_base[50:52]+'.'+file_base[52]+'00')
-    
+
     # Make astropy time objects from the start and end times, compute the exposure time from that (only for L1b files).
     start_time = Time(start_time, scale='utc', format='isot')
 
     if composites:
         these_files = numpy.array(all_files)
-    
+
         # Now go through all of the requested times and download/print the files.
         # Skip the download if the current file is the same one as the last.
         last_file = ' '
@@ -328,11 +340,11 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
 
     else:
         end_time = Time(end_time, scale='utc', format='isot')
-        exposure_time = end_time-start_time    
+        exposure_time = end_time-start_time
         # Get the long exposures for the L1b files.
         long_exposures = numpy.where(numpy.around(exposure_time.sec) == 1)
         long_exposure_files = numpy.array(all_files)[long_exposures]
-    
+
         # Now go through all of the requested times and download/print the files.
         # Skip the download if the current file is the same one as the last.
         last_file = ' '
@@ -353,19 +365,19 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
                 f = requests.get(long_exposure_files[which_file])
                 open(outdir+os.path.basename(long_exposure_files[which_file]), 'wb').write(f.content)
 
-    
+
 def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
                  only_long_exposures=False, only_short_exposures=False, only_short_flare_exposures=False):
     """
-    Read SUVI L1b FITS or netCDF files or L2 HDR composite FITS files and 
-    return a `~sunpy.map.Map` or a `~sunpy.map.MapSequence`. For SUVI L1b 
-    FITS files, the broken FITS header is fixed automatically (broken 
+    Read SUVI L1b FITS or netCDF files or L2 HDR composite FITS files and
+    return a `~sunpy.map.Map` or a `~sunpy.map.MapSequence`. For SUVI L1b
+    FITS files, the broken FITS header is fixed automatically (broken
     because of the wrong implementation of the CONTINUE convention).
 
     .. note::
         The first file in the (sorted, if sort_files=True) list determines what
         will be accepted further on, i.e. L2 HDR composites or L1b files. If L1b
-        files are appearing in a file list that started with an L2 HDR composite, 
+        files are appearing in a file list that started with an L2 HDR composite,
         they will be rejected (and vice versa). The type of file is determined
         by pattern matching in the filenames, e.g. "-L1b-Fe171" for a 171 L1b file
         and "-l2-ci171" for a 171 L2 HDR composite. If those patterns are not found
@@ -376,13 +388,13 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
     files: `str` or `list` of `str`
         File(s) to read.
 
-    sort_files: `bool`, optional. Default: True. 
-        If True, sorts the input file list (ascending). 
+    sort_files: `bool`, optional. Default: True.
+        If True, sorts the input file list (ascending).
 
-    verbose: `bool`, optional. Default: False. 
-        If True, prints the filenames while reading. 
+    verbose: `bool`, optional. Default: False.
+        If True, prints the filenames while reading.
 
-    despike_L1b: `bool`, optional. Default: False. 
+    despike_L1b: `bool`, optional. Default: False.
         If True and input is L1b, data will get despiked
         with the standard filter_width=7. Can not be used
         for early SUVI files where the DQF extension is
@@ -396,13 +408,13 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         If True, only short exposure L1b files from the input list will be
         accepted and converted to a map. Ignored for L2 HDR composites and
         any wavelengths other than 94 and 131 (because for everything >131,
-        there are no observations that are labeled "short", only "long" and 
+        there are no observations that are labeled "short", only "long" and
         "short_flare").
 
     only_short_flare_exposures: `bool`, optional. Default: False.
         If True, only short flare exposure L1b files from the input list will
         be accepted and converted to a map. Ignored for L2 HDR composites.
-    
+
     Returns
     -------
     `~sunpy.map.Map`, `~sunpy.map.MapSequence`, or `None`.
@@ -436,7 +448,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         # Test for L1b or composite based on the filename
         if composites:
             if any(fn in os.path.basename(tmp_file) for fn in composite_matches):
-                tmp_header, tmp_data = read_suvi(tmp_file)
+                tmp_header, tmp_data = sunkit_instruments.io.read_suvi(tmp_file)
                 datas.append(tmp_data)
                 headers.append(tmp_header)
             else:
@@ -444,10 +456,10 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         else:
             if any(fn in os.path.basename(tmp_file) for fn in L1b_matches):
                 if despike_L1b:
-                    tmp_header, tmp_data, dqf_mask = read_suvi(tmp_file, return_DQF=True)
+                    tmp_header, tmp_data, dqf_mask = sunkit_instruments.io.read_suvi(tmp_file, return_DQF=True)
                     tmp_data = despike_L1b_image((tmp_data, dqf_mask))
                 else:
-                    tmp_header, tmp_data = read_suvi(tmp_file)
+                    tmp_header, tmp_data = sunkit_instruments.io.read_suvi(tmp_file)
                 if only_long_exposures:
                     if 'long_exposure' in tmp_header['SCI_OBJ']:
                         datas.append(tmp_data)
@@ -477,8 +489,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
     else:
         warn_user("List of data/headers is empty.")
         return None
-    
-    
+
 def fix_L1b_header(input_filename):
     """
     Fix a SUVI L1b FITS file header (broken due to the wrong
@@ -486,13 +497,13 @@ def fix_L1b_header(input_filename):
 
     .. note::
         astropy versions <=4.2.0 will do this faster, because we can
-        still use the `astropy.io.fits.header.Header.to_string()` method. 
-        Starting with astropy version 4.2.1, the 
+        still use the `astropy.io.fits.header.Header.to_string()` method.
+        Starting with astropy version 4.2.1, the
         `astropy.io.fits.header.Header.to_string()` method will not work
         anymore due to FITS header consistency checks that cannot
         be overridden. The solution for that is not very elegant
         in the code here (reading the FITS file directly as bytes
-        until we hit a UnicodeDecodeError), but it is the only one 
+        until we hit a UnicodeDecodeError), but it is the only one
         that works as far as I know.
 
     .. note::
@@ -512,7 +523,7 @@ def fix_L1b_header(input_filename):
     try:
         # First try it with the astropy .to_string() method, as this is the easiest.
         hdr = fits.getheader(input_filename)
-        hdr_str = hdr.tostring()    
+        hdr_str = hdr.tostring()
     except VerifyError:
         # Read the file manually as bytes until we hit a UnicodeDecodeError, i.e.
         # until we reach the data part. Since astropy version 4.2.1, we can't use
@@ -545,13 +556,13 @@ def fix_L1b_header(input_filename):
         in_file.close()
         if is_gz_file:
             os.remove(file_to_open)
-        
+
     # Make a list of strings with a length of 80
     hdr_list = [hdr_str[i:i+80] for i in range(0, len(hdr_str), 80)]
 
     # Remove all the empty entries
-    while(" "*80 in hdr_list) : 
-        hdr_list.remove(" "*80) 
+    while(" "*80 in hdr_list) :
+        hdr_list.remove(" "*80)
 
     # Make a new string list where we put all the information together correctly
     hdr_list_new = []
@@ -567,7 +578,7 @@ def fix_L1b_header(input_filename):
                     else:
                         # Raise exception here because there should be an ampersand at the end of a CONTINUE'd keyword
                         raise RuntimeError("There should be an ampersand at the end of a CONTINUE'd keyword.")
-                
+
                     tmp_count = 1
                     while hdr_list[count+tmp_count][0:8] == 'CONTINUE':
                         ampersand_pos = hdr_list[count+tmp_count].find('&')
@@ -578,7 +589,7 @@ def fix_L1b_header(input_filename):
                             else:
                                 # Raise exception here because there should be a single quote after CONTINUE
                                 raise RuntimeError("There should be two single quotes after CONTINUE. Did not find any.")
-                        
+
                         else:
                             # If there is no ampersand at the end anymore, it means the entry ends here.
                             # Read from the first to the second single quote in this case.
@@ -590,15 +601,15 @@ def fix_L1b_header(input_filename):
                                 else:
                                     # Raise exception here because there should be a second single quote after CONTINUE
                                     raise RuntimeError("There should be two single quotes after CONTINUE. Found the first, but not the second.")
-                                
+
                             else:
                                 # Raise exception here because there should be a (first) single quote after CONTINUE
                                 raise RuntimeError("There should be two single quotes after CONTINUE. Did not find any.")
 
                         tmp_count += 1
-                        
+
                     hdr_list_new.append(new_entry)
-            
+
                 else:
                     continue
 
@@ -618,10 +629,10 @@ def fix_L1b_header(input_filename):
                 rest       = "CONTINUE  '"+ rest[78:]
             this_entry = this_entry + rest
             hdr_list_new[count] = this_entry
-    
+
     # Now we should have the correct list of strings. Since we can't convert a list to a
     # FITS header directly, we have to convert it to a string first, separated by "\n".
-    hdr_str_new = '\n'.join([str(item) for item in hdr_list_new]) 
+    hdr_str_new = '\n'.join([str(item) for item in hdr_list_new])
 
     # And finally we create the new corrected astropy FITS header from that string
     hdr_corr = fits.Header.fromstring(hdr_str_new, sep='\n')
@@ -629,14 +640,13 @@ def fix_L1b_header(input_filename):
     # Return the corrected header
     return hdr_corr
 
-
 def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='long'):
     """
-    Get the SUVI instrument response for a specific wavelength channel, 
-    spacecraft, CCD temperature, and exposure type. the_input can either 
-    be an L1b filename (FITS or netCDF), in which case all of those 
-    parameters are read automatically from the metadata, or the parameters 
-    can be passed manually, with the_input specifying the desired wavelength 
+    Get the SUVI instrument response for a specific wavelength channel,
+    spacecraft, CCD temperature, and exposure type. the_input can either
+    be an L1b filename (FITS or netCDF), in which case all of those
+    parameters are read automatically from the metadata, or the parameters
+    can be passed manually, with the_input specifying the desired wavelength
     channel.
 
     Parameters
@@ -645,24 +655,32 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
         Either an L1b filename (FITS or netCDF), or an integer specifying the
         wavelength channel. Valid wavelength channels: 94, 131, 171, 195, 284, and 304.
 
-    spacecraft: `str` or `int`, optional. Default: 16. 
-        Which spacecraft. Can either be the full spacecraft name, or just the number. 
-        Valid: "GOES-16", "GOES-17", 16, and 17. 
+    spacecraft: `str` or `int`, optional. Default: 16.
+        Which spacecraft. Can either be the full spacecraft name, or just the number.
+        Valid: "GOES-16", "GOES-17", 16, and 17.
 
-    ccd_temperature: `float`, optional. Default: -60. 
+    ccd_temperature: `float`, optional. Default: -60.
         The CCD temperature, in degrees Celsius. Needed for getting
         the correct gain number.
 
     exposure_type: `str`, optional. Default: "long".
         The exposure type of the SUVI image. Can be:
-        "long", "short", "short_flare" for 94 and 131; 
+        "long", "short", "short_flare" for 94 and 131;
         "long", "short_flare" for 171, 195, 284, and 304.
-        The exposure type is needed for the correct focal plane 
+        The exposure type is needed for the correct focal plane
         filter selection.
+
+    Returns
+    -------
+    `dict` with the instrument response information.
+        Keys: "wavelength", "effective_area", "response",
+        "wavelength_channel", "spacecraft", "ccd_temperature",
+        "exposure_type", "flight_model", "gain", "solid_angle",
+        "geometric_area", "filter_setup".
     """
-    
+
     if isinstance(the_input, str):
-        hdr = read_suvi(the_input, return_header_only=True)
+        hdr = sunkit_instruments.io.read_suvi(the_input, return_header_only=True)
         wavelength_channel = int(hdr['WAVELNTH'])
         spacecraft = int(hdr['TELESCOP'].replace(' ','').replace('G',''))
         ccd_temperature = (hdr['CCD_TMP1'] + hdr['CCD_TMP2'])/2.
@@ -671,18 +689,18 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
         wavelength_channel = the_input
     else:
         raise TypeError("Input not recognized, must be str for filename or int for wavelength channel.")
-    
+
     valid_wavelength_channels = [94, 131, 171, 195, 284, 304]
     if wavelength_channel not in valid_wavelength_channels:
         raise ValueError("Wavelength channel"+str(wavelength_channel)+" not recognized. Valid: "+str(valid_wavelength_channels))
-        
+
     valid_spacecraft = ['GOES-16', 'GOES-17', 16, 17]
     if spacecraft not in valid_spacecraft:
         raise ValueError("Spacecraft "+str(spacecraft)+" not recognized. Valid: "+str(valid_spacecraft))
 
     if isinstance(spacecraft, str):
         spacecraft = int(spacecraft.split('-')[1])
-    
+
     flight_model = {16: 'FM1', 17: 'FM2'}
 
     # The setup for filter wheel 1 and 2 for the different exposure types
@@ -712,7 +730,7 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
         effective_area = eff_area[:,1] * u.cm * u.cm
     else:
         effective_area = eff_area[:,2] * u.cm * u.cm
-    
+
     # Get gain
     gain_table = numpy.loadtxt(gain_file, skiprows=7)
     temp_x = gain_table[:,0]
@@ -722,26 +740,25 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
 
     geometric_area = 19.362316 * u.cm * u.cm
     solid_angle = ((2.5/3600. * (numpy.pi/180.))**2.) * u.sr
-    master_e_per_phot = ((6.626068e-34 * (u.J/u.Hz)) * (2.99792458e8 * (u.m/u.s)))/(wave.to(u.m) * ((u.eV.to(u.J, 3.65)) * u.J))    
+    master_e_per_phot = ((6.626068e-34 * (u.J/u.Hz)) * (2.99792458e8 * (u.m/u.s)))/(wave.to(u.m) * ((u.eV.to(u.J, 3.65)) * u.J))
 
     response = effective_area * (master_e_per_phot/gain)
 
     response_info = {'wavelength': wave, 'effective_area': effective_area * (u.ct/u.ph), 'response': response,
                      'wavelength_channel': wavelength_channel, 'spacecraft': 'GOES-'+str(spacecraft),
-                     'ccd_temperature': ccd_temperature * u.deg_C, 'exposure_type': exposure_type, 
+                     'ccd_temperature': ccd_temperature * u.deg_C, 'exposure_type': exposure_type,
                      'flight_model': flight_model[spacecraft], 'gain': numpy.float64(gain),
-                     'solid_angle': solid_angle, 'geometric_area': geometric_area, 
+                     'solid_angle': solid_angle, 'geometric_area': geometric_area,
                      'filter_setup': filter_setup[wavelength_channel][exposure_type]}
 
     return response_info
-
 
 def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10,10)):
     """
     Read a SUVI L2 Thematic Map FITS file and plot it.
 
     .. note::
-        SUVI L2 Thematic Maps are recognized by pattern matching in the 
+        SUVI L2 Thematic Maps are recognized by pattern matching in the
         filenames, i.e. it must contain "-l2-thmap". If this pattern is
         not found in the filename, it will not be recognized.
 
@@ -754,14 +771,14 @@ def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10,1
     input_filename: `str`
         File to read.
 
-    timestamp: `bool`, optional. Default: True. 
-        If True, plots the timestamp of the observation. 
+    timestamp: `bool`, optional. Default: True.
+        If True, plots the timestamp of the observation.
 
-    legend: `bool`, optional. Default: True. 
+    legend: `bool`, optional. Default: True.
         If True, plots a legend with the different classes.
 
     figsize: `tuple`, optional. Default: (10, 10).
-        The size of the figure. Should not be smaller than 
+        The size of the figure. Should not be smaller than
         (7, 7) to look decent.
     """
 
@@ -771,29 +788,7 @@ def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10,1
         if timestamp:
             time_st = hdu[0].header['DATE-OBS'][0:19]
         hdu.close()
-        
-        SOLAR_CLASSES = [('unlabeled', 0),
-                        ('outer_space', 1),
-                        ('bright_region', 3),
-                        ('filament', 4),
-                        ('prominence', 5),
-                        ('coronal_hole', 6),
-                        ('quiet_sun', 7),
-                        ('limb', 8),
-                        ('flare', 9)]
-            
-        SOLAR_CLASS_NAME = {number: theme for theme, number in SOLAR_CLASSES}
-        
-        SOLAR_COLORS = {"unlabeled": "white",
-                        "outer_space": "black",
-                        "bright_region": "#F0E442",
-                        "filament": "#D55E00",
-                        "prominence": "#E69F00",
-                        "coronal_hole": "#009E73",
-                        "quiet_sun": "#0072B2",
-                        "limb": "#56B4E9",
-                        "flare": "#CC79A7"}
-            
+
         colortable = [SOLAR_COLORS[SOLAR_CLASS_NAME[i]] if i in SOLAR_CLASS_NAME else 'black'
                       for i in range(max(list(SOLAR_CLASS_NAME.keys())) + 1)]
         cmap = ListedColormap(colortable)
@@ -810,313 +805,3 @@ def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10,1
         fig.show()
     else:
         raise ValueError("File "+input_filename+" does not look like a SUVI L2 Thematic Map.")
-
-
-def read_suvi(input_filename, return_DQF=False, return_header_only=False):
-    """
-    Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file. 
-    Return data and header, optionally the data quality flag array (DQF)
-    for L1b files. For SUVI L1b FITS files, the broken FITS header is 
-    fixed automatically (broken because of the wrong implementation of 
-    the CONTINUE convention). This read function is intented to provide 
-    a consistent file interface for FITS and netCDF, L1b and L2. 
-
-    .. note::
-        The type of file is determined by pattern matching in the 
-        filenames, e.g. "-L1b-Fe171" for a 171 L1b file and "-l2-ci171" 
-        for a 171 L2 HDR composite. If those patterns are not found
-        in the filename, the files will not be recognized.
-
-    .. note::
-        If input_filename is an L1b netCDF file, the information from
-        the netCDF file is transformed into a FITS header.
-
-    Parameters
-    ----------
-    input_filename: `str`
-        File to read.
-
-    return_DQF: `bool`, optional. Default: False. 
-        If True, also returns the data quality flag array (DQF, only for L1b files). 
-
-    return_header_only: `bool`, optional. Default: False. 
-        If True, does not return the data array (but optionally the DQF). 
-
-    Returns
-    -------
-    header: `astropy.io.fits.header.Header`
-        header, if return_header_only is True. 
-
-    header, data: `astropy.io.fits.header.Header`, `~numpy.ndarray`
-        header and data.
-
-    header, dqf: `astropy.io.fits.header.Header`, `~numpy.ndarray`
-        header and data quality flags, if both return_header_only and return_DQF
-        are True.
-
-    header, data, dqf: `astropy.io.fits.header.Header`, `~numpy.ndarray`, `~numpy.ndarray`
-        header, data, and data quality flags if return_DQF is True.
-    """
-    fits_file_extensions = ('.fits', '.fts', '.fits.gz', 'fts.gz', 'fits.bz', 'fts.bz')
-    netCDF_file_extensions = ('.nc', '.nc.gz', '.nc.bz', '.cdf', '.cdf.gz', '.cdf.bz')
-    
-    composite_matches = ['-l2-ci094', '-l2-ci131', '-l2-ci171', '-l2-ci195', '-l2-ci284', '-l2-ci304']
-    L1b_matches = ['-L1b-Fe093', '-L1b-Fe131', '-L1b-Fe171', '-L1b-Fe195', '-L1b-Fe284', '-L1b-He303']
-
-    IS_COMPOSITE = False
-    
-    # If it is a fits file, it is easy!
-    if input_filename.lower().endswith(fits_file_extensions):
-        # Based on the filename, determine if we are dealing
-        # with L1b files or HDR composites (or neither).
-        if any(fn in os.path.basename(input_filename) for fn in composite_matches):
-            if return_header_only:
-                header = fits.getheader(input_filename, 1)
-            else:
-                hdu = fits.open(input_filename)
-                data, header = hdu[1].data, hdu[1].header
-                hdu.close()
-            IS_COMPOSITE = True
-        elif any(fn in os.path.basename(input_filename) for fn in L1b_matches):
-            hdu = fits.open(input_filename)
-            if return_header_only:
-                header = fix_L1b_header(input_filename)
-            else:
-                hdu = fits.open(input_filename)
-                data, header = hdu[0].data, fix_L1b_header(input_filename)
-            if return_DQF:
-                dqf = hdu[1].data
-            hdu.close()
-        else:
-            raise ValueError("File "+input_filename+" does not look like a SUVI L1b FITS file or L2 HDR composite.")
-                
-    # If it is a netCDF file on the other hand...
-    elif input_filename.lower().endswith(netCDF_file_extensions):
-        # This is how the global attributes of the netCDF file get
-        # mapped to the corresponding FITS header keywords.
-        tag_mapping = {'instrument_id':           'INST_ID',  
-                       'platform_ID':             'TELESCOP', 
-                       'instrument_type':         'INSTRUME', 
-                       'project':                 'PROJECT',  
-                       'institution':             'ORIGIN', 
-                       'production_site':         'PRODSITE', 
-                       'naming_authority':        'NAMEAUTH',                                       
-                       'production_environment':  'PROD_ENV', 
-                       'production_data_source':  'DATA_SRC', 
-                       'processing_level':        'LEVEL', 
-                       'algorithm_version':       'CREATOR', 
-                       'title':                   'TITLE', 
-                       'keywords_vocabulary':     'KEYVOCAB', 
-                       'date_created':            'DATE', 
-                       'orbital_slot':            'ORB_SLOT', 
-                       'dataset_name':            'FILENAME', 
-                       'iso_series_metadata_id':  'ISO_META', 
-                       'id':                      'UUID', 
-                       'LUT_Filenames':           'LUT_NAME', 
-                       'license':                 'LICENSE', 
-                       'keywords':                'KEYWORDS', 
-                       'summary':                 'SUMMARY'}
-
-        # Mapping for the FITS header keywords and their comments
-        tag_comment_mapping = {'SIMPLE':    'file does conform to FITS standard'             , \
-                               'BITPIX':    'number of bits per data pixel'                  , \
-                               'NAXIS':     'number of data axes'                            , \
-                               'NAXIS1':    'length of data axis 1'                          , \
-                               'NAXIS2':    'length of data axis 2'                          , \
-                               'EXTEND':    'FITS dataset may contain extensions'            , \
-                               'IMSENUMB':  '[1] Image Serial Number'                        , \
-                               'CRPIX1':    '[1] center of sun pixel in image along 1st axis', \
-                               'CRPIX2':    '[1] center of sun pixel in image along 2nd axis', \
-                               'CDELT1':    '[arcsec] 1st axis detector plate scale @ref pix', \
-                               'CDELT2':    '[arcsec] 2nd axis detector plate scale @ref pix', \
-                               'DIAM_SUN':  '[count] sun diameter in pixels'                 , \
-                               'CUNIT1':    '1st axis detector plate scale units'            , \
-                               'CUNIT2':    '2nd axis detector plate scale units'            , \
-                               'ORIENT':    'orientation of image'                           , \
-                               'CROTA':     '[degree] solar north pole angular offset'       , \
-                               'SOLAR_B0':  '[degree] solar equator angular offset'          , \
-                               'PC1_1':     '[1] 1st row, 1st col 2D transformation matrix'  , \
-                               'PC1_2':     '[1] 1st row, 2nd col 2D transformation matrix'  , \
-                               'PC2_1':     '[1] 2nd row, 1st col 2D transformation matrix'  , \
-                               'PC2_2':     '[1] 2nd row, 2nd col 2D transformation matrix'  , \
-                               'CSYER1':    '[arcsec] 1st axis systematic errors'            , \
-                               'CSYER2':    '[arcsec] 2nd axis systematic errors'            , \
-                               'WCSNAME':   'solar image coordinate system type'             , \
-                               'CTYPE1':    '1st axis coordinate system name'                , \
-                               'CTYPE2':    '2nd axis coordinate system name'                , \
-                               'CRVAL1':    '[degree] longitude of sun center for HPLN-TAN'  , \
-                               'CRVAL2':    '[degree] latitude of sun center for HPLT-TAN'   , \
-                               'LONPOLE':   '[degree] longitude of celestial north pole'     , \
-                               'TIMESYS':   'principal time system'                          , \
-                               'DATE-OBS':  'sun observation start time on sat'              , \
-                               'DATE-END':  'sun observation end time on sat'                , \
-                               'CMD_EXP':   '[s] commanded imaging exposure time'            , \
-                               'EXPTIME':   '[s] actual imaging exposure time'               , \
-                               'OBSGEO-X':  '[m] observing platform ECEF X coordinate'       , \
-                               'OBSGEO-Y':  '[m] observing platform ECEF Y coordinate'       , \
-                               'OBSGEO-Z':  '[m] observing platform ECEF Z coordinate'       , \
-                               'DSUN_OBS':  '[m] distance to center of sun'                  , \
-                               'OBJECT':    'object being viewed'                            , \
-                               'SCI_OBJ':   'science objective of observation'               , \
-                               'WAVEUNIT':  'solar image wavelength units'                   , \
-                               'WAVELNTH':  '[angstrom] solar image wavelength'              , \
-                               'IMG_MIN':   '[W m-2 sr-1] minimum radiance in image'         , \
-                               'IMG_MAX':   '[W m-2 sr-1] maximum radiance in image'         , \
-                               'IMG_MEAN':  '[W m-2 sr-1] mean radiance in image'            , \
-                               'FILTER1':   'forward filter setting mnemonic'                , \
-                               'FILTER2':   'aft filter setting mnemonic'                    , \
-                               'GOOD_PIX':  '[count] number of good quality pixels in image' , \
-                               'FIX_PIX':   '[count] number of corrected pixels in image'    , \
-                               'SAT_PIX':   '[count] number of saturated pixels in image'    , \
-                               'MISS_PIX':  '[count] number of missing pixels in image'      , \
-                               'IMGTII':    '[W m-2] total irradiance of image'              , \
-                               'IMGTIR':    '[W m-2 sr-1] total radiance of image'           , \
-                               'IMG_SDEV':  '[W m-2 sr-1] std dev of radiance in image'      , \
-                               'EFF_AREA':  '[m2] effective telescope area'                  , \
-                               'APSELPOS':  '[1] aperture selector setting'                  , \
-                               'INSTRESP':  '[count photon-1 cm-2] instrument response, used', \
-                               'PHOT_ENG':  '[J] photon energy, used in the calculation of r', \
-                               'RSUN':      '[count] solar angular radius in pixels'         , \
-                               'HGLT_OBS':  '[degree] Heliographic Stonyhurst Latitude of th', \
-                               'HGLN_OBS':  '[degree] Heliographic Stonyhurst Longitude of t', \
-                               'HEEX_OBS':  '[m] Heliocentric Earth Ecliptic X-axis coordina', \
-                               'HEEY_OBS':  '[m] Heliocentric Earth Ecliptic Y-axis coordina', \
-                               'HEEZ_OBS':  '[m] Heliocentric Earth Ecliptic Z-axis coordina', \
-                               'FILTPOS1':  '[1] forward filter wheel setting'               , \
-                               'FILTPOS2':  '[1] aft filter wheel setting'                   , \
-                               'YAW_FLIP':  '[1] 0=upright 1=neither 2=inverted'             , \
-                               'CCD_READ':  '[1] CCD cnfg: 0=no cnfg 1=left amp 2=right amp' , \
-                               'ECLIPSE':   '[1] sun obscured: 0=no eclipse 1=penumbra,prece', \
-                               'CONTAMIN':  '[angstrom] contamination thickness in angstroms', \
-                               'CONT_FLG':  '[1] contamination correction: 0=true 1=false'   , \
-                               'DATE-BKE':  'last contamination bake-out end time'           , \
-                               'DER_SNR':   '[W m-2 sr-1] CCD signal to noise ratio'         , \
-                               'SAT_THR':   '[W m-2 sr-1] CCD saturation point'              , \
-                               'CCD_BIAS':  '[count] CCD background electronic noise'        , \
-                               'CCD_TMP1':  '[degrees_C] sensor 1 camera temperature'        , \
-                               'CCD_TMP2':  '[degrees_C] sensor 2 camera temperature'        , \
-                               'DATE-DFM':  'median value dark frame time stamp'             , \
-                               'NDFRAMES':  '[count] number of source dark frames'           , \
-                               'DATE-DF0':  '1st observed dark frame time stamp'             , \
-                               'DATE-DF1':  '2nd observed dark frame time stamp'             , \
-                               'DATE-DF2':  '3rd observed dark frame time stamp'             , \
-                               'DATE-DF3':  '4th observed dark frame time stamp'             , \
-                               'DATE-DF4':  '5th observed dark frame time stamp'             , \
-                               'DATE-DF5':  '6th observed dark frame time stamp'             , \
-                               'DATE-DF6':  '7th observed dark frame time stamp'             , \
-                               'DATE-DF7':  '8th observed dark frame time stamp'             , \
-                               'DATE-DF8':  '9th observed dark frame time stamp'             , \
-                               'DATE-DF9':  '10th observed dark frame time stamp'            , \
-                               'SOLCURR1':  '[count] solar array current chan 1-4 in DN'     , \
-                               'SOLCURR2':  '[count] solar array current chan 5-8 in DN'     , \
-                               'SOLCURR3':  '[count] solar array current chan 9-12 in DN'    , \
-                               'SOLCURR4':  '[count] solar array current chan 13-16 in DN'   , \
-                               'PCTL0ERR':  '[percent] uncorrectable L0 error pct'           , \
-                               'LONGSTRN':  'The HEASARC Long String Convention may be used'}
-            
-        if any(fn in os.path.basename(input_filename) for fn in L1b_matches):        
-            tmp_file = h5py.File(input_filename, 'r')
-            # Get the data first
-            data = tmp_file['RAD'][:]
-            # Get BLANK, BZERO, BSCALE, and BUNIT from the RAD attributes
-            blank  = tmp_file['RAD'].attrs['_FillValue'][0]
-            bzero  = tmp_file['RAD'].attrs['add_offset'][0]
-            bscale = tmp_file['RAD'].attrs['scale_factor'][0]
-            bunit  = tmp_file['RAD'].attrs['units'].tobytes().decode('utf-8').rstrip('\x00')
-            # Multiply the data accordingly
-            data = data*bscale+bzero
-            # Get the DQF if requested
-            if return_DQF:
-                dqf = tmp_file['DQF'][:]
-            # Now deal with the header. Create a dictionary from the
-            # the netCDF keys, and a copy of it.
-            d = dict((key,tmp_file[key][...]) for key in tmp_file.keys())
-            tmp_d = d.copy()
-            # Discard everything where the key name is longer than 8 characters,
-            # plus specific entries we have to deal with manually.
-            for key, value in d.items():
-                if len(key) > 8:
-                    del tmp_d[key]
-                elif key in ['RAD', 'DQF', 'NAXIS1', 'NAXIS2']:
-                    del tmp_d[key]
-            for key, value in tmp_d.items():
-                if isinstance(value, numpy.ndarray):
-                    # We only want single values for the header, no arrays of length 1.
-                    # We convert everything that looks like an integer to a long,
-                    # everything that looks like a float to float64, and byte strings
-                    # to actual strings.
-                    if value.ndim == 0:
-                        if value.dtype in [numpy.int8, numpy.int16, numpy.int32, numpy.int64,
-                                           numpy.uint8, numpy.uint16, numpy.uint32, numpy.uint64]:
-                            tmp_d[key] = numpy.longlong(value)
-                        elif value.dtype in [numpy.float16, numpy.float32, numpy.float64]:
-                            tmp_d[key] = numpy.float64(value)
-                    else:
-                        if value.dtype == '|S1':
-                            # Byte string to actual string, and removing weird characters
-                            tmp_d[key] = value.tobytes().decode('utf-8').rstrip('\x00')
-            # Now deal with the dates (float in the netCDF). Transform to readable string,
-            # ignore bakeout date because it is always -999.
-            for key, value in tmp_d.items():
-                if key.startswith('DATE') and key != 'DATE-BKE':
-                    # Explanation for the odd time creation: the SUVI files say they use the
-                    # the J2000 epoch, but they do not: the reference time is 2000-01-01 at
-                    # 12:00:00 *UTC*, whereas the reference time for J2000 is in *TT*. So in
-                    # order to get the time right, we need to define it in TT, but add the
-                    # offset of 69.184 seconds between UTC and TT.
-                    the_readable_date = Time('2000-01-01T12:01:09.184', scale='tt')+value*u.s
-                    tmp_d[key] = the_readable_date.utc.value                
-            # Add NAXIS1 and NAXIS2 manually, because they are odd coming from the netCDF
-            tmp_d['NAXIS1'] = None
-            tmp_d['NAXIS2'] = None
-            # Same for BLANK, BSCALE, and BZERO
-            tmp_d['BLANK']  = None
-            tmp_d['BSCALE'] = None
-            tmp_d['BZERO']  = None
-            tmp_d['BUNIT']  = None
-            header = fits.Header.fromkeys(tmp_d.keys())
-            for keyword in header:
-                header[keyword] = tmp_d[keyword]
-            # Add all the info from the global attributes
-            for att, val in tmp_file.attrs.items():
-                if att in tag_mapping:
-                    header[tag_mapping[att]] = val.tobytes().decode('utf-8').rstrip('\x00')
-            tmp_file.close()
-            # And some manual info
-            header['NAXIS1'] = data.shape[0]
-            header['NAXIS2'] = data.shape[1]
-            header['BLANK']  = blank
-            header['BSCALE'] = bscale
-            header['BZERO']  = bzero
-            header['BUNIT']  = bunit
-            # Add fits header comments for known keywords as defined above
-            for keyword in header:
-                if keyword in tag_comment_mapping:
-                    header.set(keyword, header[keyword], tag_comment_mapping[keyword])
-            # Add EXTEND, EXTVER, EXTNAME, and LONGSTR
-            header.append(('EXTEND', True, 'FITS dataset may contain extensions'))
-            header.append(('EXTVER', 1, ''))
-            header.append(('EXTNAME', 'DATA', ''))
-            header.append(('LONGSTRN', 'OGIP 1.0', 'The HEASARC Long String Convention may be used'))
-        else:
-            raise ValueError("File "+input_filename+" does not look like a SUVI L1b netCDF file.")
-    else:
-        raise ValueError("File "+input_filename+" does not look like a valid FITS or netCDF file.")
-
-    if IS_COMPOSITE:
-        if return_header_only:
-            return header
-        else:
-            return header, data
-    else:
-        if return_header_only:
-            if return_DQF:
-                return header, dqf
-            else:
-                return header
-        else:
-            if return_DQF:
-                return header, data, dqf
-            else:
-                return header, data
-
