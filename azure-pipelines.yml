@@ -37,6 +37,7 @@ stages:
   - stage: FirstPhaseTests
     displayName: Core Tests
     jobs:
+    - template: check-skip.yml@OpenAstronomy
     - template: run-tox-env.yml@OpenAstronomy
       parameters:
         default_python: '3.8'
@@ -45,15 +46,12 @@ stages:
         toxdeps: tox-pypi-filter
         posargs: -n=4
         envs:
-          - linux: codestyle
-            name: style_check
-            pytest: false
-            libraries: {}
           - linux: py39
 
   - stage: SecondPhaseTests
     displayName: Stage 2 Tests
     dependsOn: FirstPhaseTests
+    condition: and(succeeded(), ne(dependencies.FirstPhaseTests.outputs['check_skip.search.found'], 'true'))
     jobs:
     - template: run-tox-env.yml@OpenAstronomy
       parameters:
