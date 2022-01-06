@@ -2,7 +2,6 @@ import os
 import gzip
 import tempfile
 from os.path import expanduser
-
 import matplotlib.pyplot as plt
 import numpy
 import requests
@@ -11,23 +10,14 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter
-
 import sunpy.map
 from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits.verify import VerifyError
 from astropy.time import Time, TimeDelta
 from sunpy.util.exceptions import warn_user
-
 import sunkit_instruments
-
-__all__ = ["despike_L1b_image",
-           "download_data_from_NOAA",
-           "files_to_map",
-           "fix_L1b_header",
-           "get_response",
-           "plot_thematic_map"]
-
+    
 SOLAR_CLASSES = [('unlabeled', 0),
                  ('outer_space', 1),
                  ('bright_region', 3),
@@ -49,6 +39,15 @@ SOLAR_COLORS = {"unlabeled": "white",
                 "quiet_sun": "#0072B2",
                 "limb": "#56B4E9",
                 "flare": "#CC79A7"}
+
+    
+__all__ = ["despike_L1b_image",
+           "download_data_from_NOAA",
+           "files_to_map",
+           "fix_L1b_header",
+           "get_response",
+           "plot_thematic_map"]
+
 
 def despike_L1b_image(the_input, filter_width=7, return_map=False):
     """
@@ -96,7 +95,7 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     elif isinstance(the_input, str):
         L1b_matches = ['-L1b-Fe093', '-L1b-Fe131', '-L1b-Fe171', '-L1b-Fe195', '-L1b-Fe284', '-L1b-He303']
         if any(fn in os.path.basename(the_input) for fn in L1b_matches):
-            header, image, dqf_mask = sunkit_instruments.io.read_suvi(the_input, return_DQF=True)
+            header, image, dqf_mask = sunkit_instruments.suvi.read_suvi(the_input, return_DQF=True)
         else:
             raise ValueError("File "+the_input+" does not look like a SUVI L1b file.")
     else:
@@ -114,11 +113,13 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     else:
         return despiked_image
 
+    
 # helper function: parser for the SUVI websites using BeautifulSoup
 def _list_url_directory(url, ext=''):
     page = requests.get(url).text
     soup = BeautifulSoup(page, 'html.parser')
     return [url + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+
 
 def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=None,
                             composites=False, query_only=False, verbose=False):
@@ -335,8 +336,11 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
             else:
                 if verbose:
                     print('Composite: ', these_files[which_file])
-                f = requests.get(these_files[which_file])
-                open(outdir+os.path.basename(these_files[which_file]), 'wb').write(f.content)
+                try:
+                    f = requests.get(these_files[which_file])
+                    open(outdir+os.path.basename(these_files[which_file]), 'wb').write(f.content)
+                finally:
+                    f.close()
 
     else:
         end_time = Time(end_time, scale='utc', format='isot')
@@ -362,8 +366,11 @@ def download_data_from_NOAA(date_time, spacecraft=16, wavelength=171, outdir=Non
             else:
                 if verbose:
                     print('Long exposure: ', long_exposure_files[which_file])
-                f = requests.get(long_exposure_files[which_file])
-                open(outdir+os.path.basename(long_exposure_files[which_file]), 'wb').write(f.content)
+                try:
+                    f = requests.get(long_exposure_files[which_file])
+                    open(outdir+os.path.basename(long_exposure_files[which_file]), 'wb').write(f.content)
+                finally:
+                    f.close()
 
 
 def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
@@ -448,7 +455,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         # Test for L1b or composite based on the filename
         if composites:
             if any(fn in os.path.basename(tmp_file) for fn in composite_matches):
-                tmp_header, tmp_data = sunkit_instruments.io.read_suvi(tmp_file)
+                tmp_header, tmp_data = sunkit_instruments.suvi.read_suvi(tmp_file)
                 datas.append(tmp_data)
                 headers.append(tmp_header)
             else:
@@ -456,10 +463,10 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         else:
             if any(fn in os.path.basename(tmp_file) for fn in L1b_matches):
                 if despike_L1b:
-                    tmp_header, tmp_data, dqf_mask = sunkit_instruments.io.read_suvi(tmp_file, return_DQF=True)
+                    tmp_header, tmp_data, dqf_mask = sunkit_instruments.suvi.read_suvi(tmp_file, return_DQF=True)
                     tmp_data = despike_L1b_image((tmp_data, dqf_mask))
                 else:
-                    tmp_header, tmp_data = sunkit_instruments.io.read_suvi(tmp_file)
+                    tmp_header, tmp_data = sunkit_instruments.suvi.read_suvi(tmp_file)
                 if only_long_exposures:
                     if 'long_exposure' in tmp_header['SCI_OBJ']:
                         datas.append(tmp_data)
@@ -489,6 +496,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
     else:
         warn_user("List of data/headers is empty.")
         return None
+
 
 def fix_L1b_header(input_filename):
     """
@@ -640,6 +648,7 @@ def fix_L1b_header(input_filename):
     # Return the corrected header
     return hdr_corr
 
+
 def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='long'):
     """
     Get the SUVI instrument response for a specific wavelength channel,
@@ -680,7 +689,7 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
     """
 
     if isinstance(the_input, str):
-        hdr = sunkit_instruments.io.read_suvi(the_input, return_header_only=True)
+        hdr = sunkit_instruments.suvi.read_suvi(the_input, return_header_only=True)
         wavelength_channel = int(hdr['WAVELNTH'])
         spacecraft = int(hdr['TELESCOP'].replace(' ','').replace('G',''))
         ccd_temperature = (hdr['CCD_TMP1'] + hdr['CCD_TMP2'])/2.
@@ -752,6 +761,7 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
                      'filter_setup': filter_setup[wavelength_channel][exposure_type]}
 
     return response_info
+
 
 def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10,10)):
     """

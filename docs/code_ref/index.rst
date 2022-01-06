@@ -13,5 +13,4 @@ Code Reference
    iris
    lyra
    rhessi
-   io
    suvi

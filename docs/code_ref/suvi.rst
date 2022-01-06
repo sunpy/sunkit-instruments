@@ -8,7 +8,5 @@ instrument on the GOES-R series of satellites.
     `here <https://noaa-goes16.s3.amazonaws.com/index.html>`__ for L1b netCDF files (publicly
     available Amazon S3 bucket, look on page 2 after all the ABI data).
 
-.. note::
-    A function for reading SUVI files can be found in the `sunkit_instruments.io` package.
 
 .. automodapi:: sunkit_instruments.suvi
