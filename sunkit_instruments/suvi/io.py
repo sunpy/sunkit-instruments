@@ -1,24 +1,28 @@
-import os, h5py, numpy
+import os
+
+import h5py
+import numpy
+
+from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from astropy import units as u
-from astropy.io.fits.verify import VerifyError
+
 from sunkit_instruments.suvi import fix_L1b_header
 
 __all__ = ["read_suvi"]
 
 def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     """
-    Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file. 
+    Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file.
     Return data and header, optionally the data quality flag array (DQF)
-    for L1b files. For SUVI L1b FITS files, the broken FITS header is 
-    fixed automatically (broken because of the wrong implementation of 
-    the CONTINUE convention). This read function is intented to provide 
-    a consistent file interface for FITS and netCDF, L1b and L2. 
+    for L1b files. For SUVI L1b FITS files, the broken FITS header is
+    fixed automatically (broken because of the wrong implementation of
+    the CONTINUE convention). This read function is intented to provide
+    a consistent file interface for FITS and netCDF, L1b and L2.
 
     .. note::
-        The type of file is determined by pattern matching in the 
-        filenames, e.g. "-L1b-Fe171" for a 171 L1b file and "-l2-ci171" 
+        The type of file is determined by pattern matching in the
+        filenames, e.g. "-L1b-Fe171" for a 171 L1b file and "-l2-ci171"
         for a 171 L2 HDR composite. If those patterns are not found
         in the filename, the files will not be recognized.
 
@@ -31,16 +35,16 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     input_filename: `str`
         File to read.
 
-    return_DQF: `bool`, optional. Default: False. 
-        If True, also returns the data quality flag array (DQF, only for L1b files). 
+    return_DQF: `bool`, optional. Default: False.
+        If True, also returns the data quality flag array (DQF, only for L1b files).
 
-    return_header_only: `bool`, optional. Default: False. 
-        If True, does not return the data array (but optionally the DQF). 
+    return_header_only: `bool`, optional. Default: False.
+        If True, does not return the data array (but optionally the DQF).
 
     Returns
     -------
     header: `astropy.io.fits.header.Header`
-        header, if return_header_only is True. 
+        header, if return_header_only is True.
 
     header, data: `astropy.io.fits.header.Header`, `~numpy.ndarray`
         header and data.
@@ -54,12 +58,12 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     """
     fits_file_extensions = ('.fits', '.fts', '.fits.gz', 'fts.gz', 'fits.bz', 'fts.bz')
     netCDF_file_extensions = ('.nc', '.nc.gz', '.nc.bz', '.cdf', '.cdf.gz', '.cdf.bz')
-    
+
     composite_matches = ['-l2-ci094', '-l2-ci131', '-l2-ci171', '-l2-ci195', '-l2-ci284', '-l2-ci304']
     L1b_matches = ['-L1b-Fe093', '-L1b-Fe131', '-L1b-Fe171', '-L1b-Fe195', '-L1b-Fe284', '-L1b-He303']
 
     IS_COMPOSITE = False
-    
+
     # If it is a fits file, it is easy!
     if input_filename.lower().endswith(fits_file_extensions):
         # Based on the filename, determine if we are dealing
@@ -84,32 +88,32 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
             hdu.close()
         else:
             raise ValueError("File "+input_filename+" does not look like a SUVI L1b FITS file or L2 HDR composite.")
-                
+
     # If it is a netCDF file on the other hand...
     elif input_filename.lower().endswith(netCDF_file_extensions):
         # This is how the global attributes of the netCDF file get
         # mapped to the corresponding FITS header keywords.
-        tag_mapping = {'instrument_id':           'INST_ID',  
-                       'platform_ID':             'TELESCOP', 
-                       'instrument_type':         'INSTRUME', 
-                       'project':                 'PROJECT',  
-                       'institution':             'ORIGIN', 
-                       'production_site':         'PRODSITE', 
-                       'naming_authority':        'NAMEAUTH',                                       
-                       'production_environment':  'PROD_ENV', 
-                       'production_data_source':  'DATA_SRC', 
-                       'processing_level':        'LEVEL', 
-                       'algorithm_version':       'CREATOR', 
-                       'title':                   'TITLE', 
-                       'keywords_vocabulary':     'KEYVOCAB', 
-                       'date_created':            'DATE', 
-                       'orbital_slot':            'ORB_SLOT', 
-                       'dataset_name':            'FILENAME', 
-                       'iso_series_metadata_id':  'ISO_META', 
-                       'id':                      'UUID', 
-                       'LUT_Filenames':           'LUT_NAME', 
-                       'license':                 'LICENSE', 
-                       'keywords':                'KEYWORDS', 
+        tag_mapping = {'instrument_id':           'INST_ID',
+                       'platform_ID':             'TELESCOP',
+                       'instrument_type':         'INSTRUME',
+                       'project':                 'PROJECT',
+                       'institution':             'ORIGIN',
+                       'production_site':         'PRODSITE',
+                       'naming_authority':        'NAMEAUTH',
+                       'production_environment':  'PROD_ENV',
+                       'production_data_source':  'DATA_SRC',
+                       'processing_level':        'LEVEL',
+                       'algorithm_version':       'CREATOR',
+                       'title':                   'TITLE',
+                       'keywords_vocabulary':     'KEYVOCAB',
+                       'date_created':            'DATE',
+                       'orbital_slot':            'ORB_SLOT',
+                       'dataset_name':            'FILENAME',
+                       'iso_series_metadata_id':  'ISO_META',
+                       'id':                      'UUID',
+                       'LUT_Filenames':           'LUT_NAME',
+                       'license':                 'LICENSE',
+                       'keywords':                'KEYWORDS',
                        'summary':                 'SUMMARY'}
 
         # Mapping for the FITS header keywords and their comments
@@ -208,8 +212,8 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
                                'SOLCURR4':  '[count] solar array current chan 13-16 in DN'   , \
                                'PCTL0ERR':  '[percent] uncorrectable L0 error pct'           , \
                                'LONGSTRN':  'The HEASARC Long String Convention may be used'}
-            
-        if any(fn in os.path.basename(input_filename) for fn in L1b_matches):        
+
+        if any(fn in os.path.basename(input_filename) for fn in L1b_matches):
             tmp_file = h5py.File(input_filename, 'r')
             # Get the data first
             data = tmp_file['RAD'][:]
@@ -260,7 +264,7 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
                     # order to get the time right, we need to define it in TT, but add the
                     # offset of 69.184 seconds between UTC and TT.
                     the_readable_date = Time('2000-01-01T12:01:09.184', scale='tt')+value*u.s
-                    tmp_d[key] = the_readable_date.utc.value                
+                    tmp_d[key] = the_readable_date.utc.value
             # Add NAXIS1 and NAXIS2 manually, because they are odd coming from the netCDF
             tmp_d['NAXIS1'] = None
             tmp_d['NAXIS2'] = None
