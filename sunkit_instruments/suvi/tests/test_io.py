@@ -52,7 +52,7 @@ def test_io_read_suvi_files():
 
     L1b_nc_header, L1b_nc_data, L1b_nc_dqf = suvi.read_suvi(L1b_nc, return_DQF=True)
     L1b_fits_header, L1b_fits_data, L1b_fits_dqf = suvi.read_suvi(L1b_fits, return_DQF=True)
-    L2_header, L2_data = suvi.read_suvi(L2_composite)
+    L2_header, L2_data, _ = suvi.read_suvi(L2_composite)
 
     assert isinstance(L1b_nc_header, astropy.io.fits.header.Header)
     assert isinstance(L1b_fits_header, astropy.io.fits.header.Header)

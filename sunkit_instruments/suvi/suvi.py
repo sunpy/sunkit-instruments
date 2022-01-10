@@ -1,6 +1,4 @@
 import os
-import gzip
-import tempfile
 from os.path import expanduser
 import matplotlib.pyplot as plt
 import numpy
@@ -44,7 +42,6 @@ SOLAR_COLORS = {"unlabeled": "white",
 __all__ = ["despike_L1b_image",
            "download_data_from_NOAA",
            "files_to_map",
-           "fix_L1b_header",
            "get_response",
            "plot_thematic_map"]
 
@@ -455,7 +452,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
         # Test for L1b or composite based on the filename
         if composites:
             if any(fn in os.path.basename(tmp_file) for fn in composite_matches):
-                tmp_header, tmp_data = sunkit_instruments.suvi.read_suvi(tmp_file)
+                tmp_header, tmp_data, _ = sunkit_instruments.suvi.read_suvi(tmp_file)
                 datas.append(tmp_data)
                 headers.append(tmp_header)
             else:
@@ -466,7 +463,7 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
                     tmp_header, tmp_data, dqf_mask = sunkit_instruments.suvi.read_suvi(tmp_file, return_DQF=True)
                     tmp_data = despike_L1b_image((tmp_data, dqf_mask))
                 else:
-                    tmp_header, tmp_data = sunkit_instruments.suvi.read_suvi(tmp_file)
+                    tmp_header, tmp_data, _ = sunkit_instruments.suvi.read_suvi(tmp_file)
                 if only_long_exposures:
                     if 'long_exposure' in tmp_header['SCI_OBJ']:
                         datas.append(tmp_data)
@@ -496,157 +493,6 @@ def files_to_map(files, sort_files=True, verbose=False, despike_L1b=False,
     else:
         warn_user("List of data/headers is empty.")
         return None
-
-
-def fix_L1b_header(input_filename):
-    """
-    Fix a SUVI L1b FITS file header (broken due to the wrong
-    implementation of the CONTINUE keyword convention).
-
-    .. note::
-        astropy versions <=4.2.0 will do this faster, because we can
-        still use the `astropy.io.fits.header.Header.to_string()` method.
-        Starting with astropy version 4.2.1, the
-        `astropy.io.fits.header.Header.to_string()` method will not work
-        anymore due to FITS header consistency checks that cannot
-        be overridden. The solution for that is not very elegant
-        in the code here (reading the FITS file directly as bytes
-        until we hit a UnicodeDecodeError), but it is the only one
-        that works as far as I know.
-
-    .. note::
-        If the input file it gzipped, an unzipped file in the default
-        tmp directory will be used and deleted afterwards.
-
-    Parameters
-    ----------
-    input_filename: `str`
-        Filename of the L1b file with the corrupt FITS header.
-
-    Returns
-    -------
-    hdr_corr: `astropy.io.fits.header.Header`
-        Corrected FITS header.
-    """
-    try:
-        # First try it with the astropy .to_string() method, as this is the easiest.
-        hdr = fits.getheader(input_filename)
-        hdr_str = hdr.tostring()
-    except VerifyError:
-        # Read the file manually as bytes until we hit a UnicodeDecodeError, i.e.
-        # until we reach the data part. Since astropy version 4.2.1, we can't use
-        # the .to_string() method anymore because of FITS header consistency checks
-        # that cannot be overridden, and they won't fix it unfortunately. If the
-        # input file is a .gz file, we need to unpack it first to the tmp directory.
-        temp_dir = tempfile.gettempdir()
-
-        split_filename = os.path.splitext(os.path.basename(input_filename))
-        if split_filename[1] == '.gz':
-            is_gz_file = True
-            with gzip.open(input_filename, 'r') as f_in, open(temp_dir + split_filename[0], 'wb') as f_out:
-                f_out.write(f_in.read())
-            file_to_open = temp_dir + split_filename[0]
-        else:
-            is_gz_file = False
-            file_to_open = input_filename
-
-        hdr_str = ''
-        with open(file_to_open, 'rb') as in_file:
-            counter = 1
-            while True:
-                try:
-                    this_line = in_file.read(counter)
-                    this_str = this_line.decode("utf-8")
-                    hdr_str += this_str
-                    counter += 1
-                except UnicodeDecodeError:
-                    break
-        in_file.close()
-        if is_gz_file:
-            os.remove(file_to_open)
-
-    # Make a list of strings with a length of 80
-    hdr_list = [hdr_str[i:i+80] for i in range(0, len(hdr_str), 80)]
-
-    # Remove all the empty entries
-    while(" "*80 in hdr_list) :
-        hdr_list.remove(" "*80)
-
-    # Make a new string list where we put all the information together correctly
-    hdr_list_new = []
-    for count, item in enumerate(hdr_list):
-        if count <= len(hdr_list)-2:
-            if hdr_list[count][0:8] != 'CONTINUE' and hdr_list[count+1][0:8] != 'CONTINUE':
-                hdr_list_new.append(hdr_list[count])
-            else:
-                if hdr_list[count][0:8] != 'CONTINUE' and hdr_list[count+1][0:8] == 'CONTINUE':
-                    ampersand_pos = hdr_list[count].find('&')
-                    if ampersand_pos != -1:
-                        new_entry = hdr_list[count][0:ampersand_pos]
-                    else:
-                        # Raise exception here because there should be an ampersand at the end of a CONTINUE'd keyword
-                        raise RuntimeError("There should be an ampersand at the end of a CONTINUE'd keyword.")
-
-                    tmp_count = 1
-                    while hdr_list[count+tmp_count][0:8] == 'CONTINUE':
-                        ampersand_pos = hdr_list[count+tmp_count].find('&')
-                        if ampersand_pos != -1:
-                            first_sq_pos = hdr_list[count+tmp_count].find("'")
-                            if first_sq_pos != -1:
-                                new_entry = new_entry+hdr_list[count+tmp_count][first_sq_pos+1:ampersand_pos]
-                            else:
-                                # Raise exception here because there should be a single quote after CONTINUE
-                                raise RuntimeError("There should be two single quotes after CONTINUE. Did not find any.")
-
-                        else:
-                            # If there is no ampersand at the end anymore, it means the entry ends here.
-                            # Read from the first to the second single quote in this case.
-                            first_sq_pos = hdr_list[count+tmp_count].find("'")
-                            if first_sq_pos != -1:
-                                second_sq_pos = hdr_list[count+tmp_count][first_sq_pos+1:].find("'")
-                                if second_sq_pos != -1:
-                                    new_entry = new_entry+hdr_list[count+tmp_count][first_sq_pos+1:second_sq_pos+1+first_sq_pos].rstrip()+"'"
-                                else:
-                                    # Raise exception here because there should be a second single quote after CONTINUE
-                                    raise RuntimeError("There should be two single quotes after CONTINUE. Found the first, but not the second.")
-
-                            else:
-                                # Raise exception here because there should be a (first) single quote after CONTINUE
-                                raise RuntimeError("There should be two single quotes after CONTINUE. Did not find any.")
-
-                        tmp_count += 1
-
-                    hdr_list_new.append(new_entry)
-
-                else:
-                    continue
-
-        else:
-            # Add END at the end of the header
-            hdr_list_new.append(hdr_list[count])
-
-    # Now we stitch together the CONTINUE information correctly,
-    # with a "\n" at the end that we use as a separator later on
-    # when we convert from a string to an astropy header.
-    for count, item in enumerate(hdr_list_new):
-        if len(item) > 80:
-            this_entry = item[0:78]+"&'\n"
-            rest       = "CONTINUE  '"+item[78:]
-            while len(rest) > 80:
-                this_entry = this_entry + rest[0:78] + "&'\n"
-                rest       = "CONTINUE  '"+ rest[78:]
-            this_entry = this_entry + rest
-            hdr_list_new[count] = this_entry
-
-    # Now we should have the correct list of strings. Since we can't convert a list to a
-    # FITS header directly, we have to convert it to a string first, separated by "\n".
-    hdr_str_new = '\n'.join([str(item) for item in hdr_list_new])
-
-    # And finally we create the new corrected astropy FITS header from that string
-    hdr_corr = fits.Header.fromstring(hdr_str_new, sep='\n')
-
-    # Return the corrected header
-    return hdr_corr
 
 
 def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='long'):
@@ -689,7 +535,7 @@ def get_response(the_input, spacecraft=16, ccd_temperature=-60., exposure_type='
     """
 
     if isinstance(the_input, str):
-        hdr = sunkit_instruments.suvi.read_suvi(the_input, return_header_only=True)
+        hdr, _, _ = sunkit_instruments.suvi.read_suvi(the_input, return_header_only=True)
         wavelength_channel = int(hdr['WAVELNTH'])
         spacecraft = int(hdr['TELESCOP'].replace(' ','').replace('G',''))
         ccd_temperature = (hdr['CCD_TMP1'] + hdr['CCD_TMP2'])/2.
