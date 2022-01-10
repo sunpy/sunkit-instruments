@@ -1,6 +1,5 @@
 import os
 from os.path import expanduser
-
 import matplotlib.pyplot as plt
 import numpy
 import requests
@@ -9,14 +8,12 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter
-
 import sunpy.map
 from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits.verify import VerifyError
 from astropy.time import Time, TimeDelta
 from sunpy.util.exceptions import warn_user
-
 import sunkit_instruments
 
 SOLAR_CLASSES = [('unlabeled', 0),
