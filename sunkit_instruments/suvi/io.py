@@ -9,7 +9,6 @@ import numpy
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from sunkit_instruments.suvi import fix_L1b_header
 
 # allow all possible file extensions for FITS and netCDF
 FITS_FILE_EXTENSIONS = ('.fits', '.fts', '.fits.gz', 'fts.gz', 'fits.bz', 'fts.bz')
