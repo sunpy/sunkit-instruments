@@ -1,10 +1,13 @@
 import shutil
 import os.path
+
 import numpy
 import pytest
 import requests
+
 import astropy
 import sunpy
+
 from sunkit_instruments import suvi
 from sunkit_instruments.data.test import rootdir
 

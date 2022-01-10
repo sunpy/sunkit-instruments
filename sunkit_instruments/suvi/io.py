@@ -1,14 +1,15 @@
-import os, h5py, numpy, tempfile, gzip
-from astropy.io import fits
-from astropy.time import Time
-from astropy import units as u
-from astropy.io.fits.verify import VerifyError
 import os
+import gzip
+import tempfile
+
 import h5py
 import numpy
+
 from astropy import units as u
 from astropy.io import fits
+from astropy.io.fits.verify import VerifyError
 from astropy.time import Time
+
 from sunkit_instruments.suvi import fix_L1b_header
 
 # allow all possible file extensions for FITS and netCDF
@@ -21,27 +22,27 @@ L1B_MATCHES = ['-L1b-Fe093', '-L1b-Fe131', '-L1b-Fe171', '-L1b-Fe195', '-L1b-Fe2
 
 # This is how the global attributes of the netCDF file get
 # mapped to the corresponding FITS header keywords.
-TAG_MAPPING = {'instrument_id':           'INST_ID' ,  
-               'platform_ID':             'TELESCOP', 
-               'instrument_type':         'INSTRUME', 
-               'project':                 'PROJECT' ,  
-               'institution':             'ORIGIN'  , 
-               'production_site':         'PRODSITE', 
-               'naming_authority':        'NAMEAUTH',                                       
-               'production_environment':  'PROD_ENV', 
-               'production_data_source':  'DATA_SRC', 
-               'processing_level':        'LEVEL'   , 
-               'algorithm_version':       'CREATOR' , 
-               'title':                   'TITLE'   , 
-               'keywords_vocabulary':     'KEYVOCAB', 
-               'date_created':            'DATE'    , 
-               'orbital_slot':            'ORB_SLOT', 
-               'dataset_name':            'FILENAME', 
-               'iso_series_metadata_id':  'ISO_META', 
-               'id':                      'UUID'    , 
-               'LUT_Filenames':           'LUT_NAME', 
-               'license':                 'LICENSE' , 
-               'keywords':                'KEYWORDS', 
+TAG_MAPPING = {'instrument_id':           'INST_ID' ,
+               'platform_ID':             'TELESCOP',
+               'instrument_type':         'INSTRUME',
+               'project':                 'PROJECT' ,
+               'institution':             'ORIGIN'  ,
+               'production_site':         'PRODSITE',
+               'naming_authority':        'NAMEAUTH',
+               'production_environment':  'PROD_ENV',
+               'production_data_source':  'DATA_SRC',
+               'processing_level':        'LEVEL'   ,
+               'algorithm_version':       'CREATOR' ,
+               'title':                   'TITLE'   ,
+               'keywords_vocabulary':     'KEYVOCAB',
+               'date_created':            'DATE'    ,
+               'orbital_slot':            'ORB_SLOT',
+               'dataset_name':            'FILENAME',
+               'iso_series_metadata_id':  'ISO_META',
+               'id':                      'UUID'    ,
+               'LUT_Filenames':           'LUT_NAME',
+               'license':                 'LICENSE' ,
+               'keywords':                'KEYWORDS',
                'summary':                 'SUMMARY'}
 
 # Mapping for the FITS header keywords and their comments
@@ -140,7 +141,7 @@ TAG_COMMENT_MAPPING = {'SIMPLE':    'file does conform to FITS standard'        
                        'SOLCURR4':  '[count] solar array current chan 13-16 in DN'   ,
                        'PCTL0ERR':  '[percent] uncorrectable L0 error pct'           ,
                        'LONGSTRN':  'The HEASARC Long String Convention may be used'}
-    
+
 
 __all__ = ["fix_L1b_header",
             "read_suvi"]
@@ -301,7 +302,7 @@ def fix_L1b_header(input_filename):
 def _read_fits(input_filename, return_DQF=False, return_header_only=False):
     data = None
     dqf = None
-    
+
     # Based on the filename, determine if we are dealing
     # with L1b files or HDR composites (or neither).
     if any(fn in os.path.basename(input_filename) for fn in COMPOSITE_MATCHES):
@@ -321,17 +322,16 @@ def _read_fits(input_filename, return_DQF=False, return_header_only=False):
         if return_DQF:
             dqf = hdu[1].data
         hdu.close()
-        is_composite = False
     else:
-        raise ValueError("File "+input_filename+" does not look like a SUVI L1b FITS file or L2 HDR composite.")    
+        raise ValueError("File "+input_filename+" does not look like a SUVI L1b FITS file or L2 HDR composite.")
 
     return {'header': header, 'data': data, 'dqf': dqf}
-    
+
 # read_netCDF helper function
 def _read_netCDF(input_filename, return_DQF=False, return_header_only=False):
     data = None
     dqf = None
-    if any(fn in os.path.basename(input_filename) for fn in L1B_MATCHES):        
+    if any(fn in os.path.basename(input_filename) for fn in L1B_MATCHES):
         tmp_file = h5py.File(input_filename, 'r')
         # Get the data first
         data = tmp_file['RAD'][:]
@@ -382,7 +382,7 @@ def _read_netCDF(input_filename, return_DQF=False, return_header_only=False):
                 # order to get the time right, we need to define it in TT, but add the
                 # offset of 69.184 seconds between UTC and TT.
                 the_readable_date = Time('2000-01-01T12:01:09.184', scale='tt')+value*u.s
-                tmp_d[key] = the_readable_date.utc.value                
+                tmp_d[key] = the_readable_date.utc.value
         # Add NAXIS1 and NAXIS2 manually, because they are odd coming from the netCDF
         tmp_d['NAXIS1'] = None
         tmp_d['NAXIS2'] = None
@@ -419,7 +419,7 @@ def _read_netCDF(input_filename, return_DQF=False, return_header_only=False):
         raise ValueError("File "+input_filename+" does not look like a SUVI L1b netCDF file.")
 
     return {'header': header, 'data': data, 'dqf': dqf}
-    
+
 def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     """
     Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file.
@@ -444,27 +444,27 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     input_filename: `str`
         File to read.
 
-    return_DQF: `bool`, optional. Default: False. 
+    return_DQF: `bool`, optional. Default: False.
         If True, returns the data quality flag array (DQF, only for L1b files), otherwise `None` for dqf.
 
-    return_header_only: `bool`, optional. Default: False. 
-        If True, does not read the data array and returns `None` for data (the DQF can still be requested). 
+    return_header_only: `bool`, optional. Default: False.
+        If True, does not read the data array and returns `None` for data (the DQF can still be requested).
 
     Returns
     -------
     header, data, dqf: `astropy.io.fits.header.Header`, `~numpy.ndarray` (or `None` if return_header_only was set), `~numpy.ndarray` (or `None` if return_DQF was not set)
         header, data, and data quality flags.
     """
-    
+
     # If it is a fits file...
     if input_filename.lower().endswith(FITS_FILE_EXTENSIONS):
         file_info = _read_fits(input_filename, return_DQF=return_DQF, return_header_only=return_header_only)
-                
+
     # If it is a netCDF file...
     elif input_filename.lower().endswith(NETCDF_FILE_EXTENSIONS):
         file_info = _read_netCDF(input_filename, return_DQF=return_DQF, return_header_only=return_header_only)
 
     else:
         raise ValueError("File "+input_filename+" does not look like a valid FITS or netCDF file.")
-    
+
     return file_info['header'], file_info['data'], file_info['dqf']
