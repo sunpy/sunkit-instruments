@@ -612,13 +612,13 @@ def split_series_using_lytaf(timearray, data, lytaf):
 
         if h == limit - 1:
             # can't index h+1 here. Go to end of series
-            subtimes = time_array[disc[h]: -1]
-            subdata = data[disc[h]: -1]
+            subtimes = time_array[disc[h] : -1]
+            subdata = data[disc[h] : -1]
             subseries = {"subtimes": subtimes, "subdata": subdata}
             split_series.append(subseries)
         else:
-            subtimes = time_array[disc[h]: disc[h + 1]]
-            subdata = data[disc[h]: disc[h + 1]]
+            subtimes = time_array[disc[h] : disc[h + 1]]
+            subdata = data[disc[h] : disc[h + 1]]
             subseries = {"subtimes": subtimes, "subdata": subdata}
             split_series.append(subseries)
 
