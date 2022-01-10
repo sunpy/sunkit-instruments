@@ -1,10 +1,14 @@
-import os.path
-import requests
 import shutil
-import astropy
+import os.path
+
 import pytest
+import requests
+
+import astropy
+
 from sunkit_instruments import suvi
 from sunkit_instruments.data.test import rootdir
+
 
 @pytest.mark.remote_data
 def test_io_download_suvi_testdata(tmp_path):
@@ -35,16 +39,16 @@ def test_io_download_suvi_testdata(tmp_path):
     dst1 = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650006108_e20213650006118_c20213650006321.fits.gz")
     dst2 = os.path.join(rootdir, "dr_suvi-l2-ci171_g16_s20211231T000800Z_e20211231T001200Z_v1-0-1.fits")
     dst3 = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650022109_e20213650022119_c20213650022323.nc")
-    
+
     shutil.copyfile(str(outfile1), dst1)
     shutil.copyfile(str(outfile2), dst2)
     shutil.copyfile(str(outfile3), dst3)
-    
+
     assert os.path.exists(dst1)
     assert os.path.exists(dst2)
     assert os.path.exists(dst3)
 
-    
+
 def test_io_read_suvi_files():
     L1b_nc = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650022109_e20213650022119_c20213650022323.nc")
     L1b_fits = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650006108_e20213650006118_c20213650006321.fits.gz")

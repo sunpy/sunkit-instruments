@@ -1,5 +1,6 @@
 import os
 from os.path import expanduser
+
 import matplotlib.pyplot as plt
 import numpy
 import requests
@@ -8,14 +9,16 @@ from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter
+
 import sunpy.map
 from astropy import units as u
 from astropy.io import fits
 from astropy.io.fits.verify import VerifyError
 from astropy.time import Time, TimeDelta
 from sunpy.util.exceptions import warn_user
+
 import sunkit_instruments
-    
+
 SOLAR_CLASSES = [('unlabeled', 0),
                  ('outer_space', 1),
                  ('bright_region', 3),
@@ -38,7 +41,7 @@ SOLAR_COLORS = {"unlabeled": "white",
                 "limb": "#56B4E9",
                 "flare": "#CC79A7"}
 
-    
+
 __all__ = ["despike_L1b_image",
            "download_data_from_NOAA",
            "files_to_map",
@@ -110,7 +113,7 @@ def despike_L1b_image(the_input, filter_width=7, return_map=False):
     else:
         return despiked_image
 
-    
+
 # helper function: parser for the SUVI websites using BeautifulSoup
 def _list_url_directory(url, ext=''):
     page = requests.get(url).text

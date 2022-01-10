@@ -1,10 +1,13 @@
 import shutil
 import os.path
+
 import numpy
 import pytest
 import requests
+
 import astropy
 import sunpy
+
 from sunkit_instruments import suvi
 from sunkit_instruments.data.test import rootdir
 
@@ -21,7 +24,7 @@ def test_suvi_testdata_exists(tmp_path):
     dst1 = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650006108_e20213650006118_c20213650006321.fits.gz")
     dst2 = os.path.join(rootdir, "dr_suvi-l2-ci171_g16_s20211231T000800Z_e20211231T001200Z_v1-0-1.fits")
     dst3 = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650022109_e20213650022119_c20213650022323.nc")
-    
+
     if not os.path.exists(dst1):
         try:
             f1 = requests.get("https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l1b/"+
@@ -31,7 +34,7 @@ def test_suvi_testdata_exists(tmp_path):
             f1.close()
         outfile1 = tmp_path / "OR_SUVI-L1b-Fe171_G16_s20213650006108_e20213650006118_c20213650006321.fits.gz"
         shutil.copyfile(str(outfile1), dst1)
-        
+
     if not os.path.exists(dst2):
         try:
             f2 = requests.get("https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/data/"+
@@ -41,7 +44,7 @@ def test_suvi_testdata_exists(tmp_path):
             f2.close()
         outfile2 = tmp_path / "dr_suvi-l2-ci171_g16_s20211231T000800Z_e20211231T001200Z_v1-0-1.fits"
         shutil.copyfile(str(outfile2), dst2)
-        
+
     if not os.path.exists(dst3):
         try:
             f3 = requests.get("https://noaa-goes16.s3.amazonaws.com/SUVI-L1b-Fe171/2021/365/00/"+
