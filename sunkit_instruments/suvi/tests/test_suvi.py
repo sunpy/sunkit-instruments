@@ -10,13 +10,6 @@ from sunkit_instruments.data.test import rootdir
 
 
 @pytest.mark.remote_data
-def test_suvi_download_from_NOAA(tmp_path):
-    suvi.download_data_from_NOAA('2021-02-03T12:30:00', outdir=str(tmp_path), verbose=True)
-    outfile = tmp_path / 'OR_SUVI-L1b-Fe171_G16_s20210341229311_e20210341229321_c20210341229525.fits.gz'
-    assert outfile.exists()
-
-
-@pytest.mark.remote_data
 def test_suvi_testdata_exists(tmp_path):
     dst1 = os.path.join(rootdir, "OR_SUVI-L1b-Fe171_G16_s20213650006108_e20213650006118_c20213650006321.fits.gz")
     dst2 = os.path.join(rootdir, "dr_suvi-l2-ci171_g16_s20211231T000800Z_e20211231T001200Z_v1-0-1.fits")
