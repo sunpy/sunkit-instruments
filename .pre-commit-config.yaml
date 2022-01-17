@@ -13,7 +13,7 @@ repos:
       - id: isort
         args: ['--sp','setup.cfg']
         exclude: ".*(.fits|.fts|.fit|.txt|tca.*|extern.*|.rst|.md|docs/conf.py)$"
-  - repo: https://github.com/ambv/black
+  - repo: https://github.com/psf/black
     rev: 21.12b0
     hooks:
       - id: black
