@@ -717,7 +717,7 @@ def _goes_get_chianti_em(
     <Quantity [3.45200672e+48, 3.45200672e+48] 1 / cm3>
     """
     # Check inputs are of correct type
-    longflux = longflux.to(u.W / u.m ** 2)
+    longflux = longflux.to(u.W / u.m**2)
     temp = temp.to(u.MK)
     # Ignore zero values raising a numpy warning here
     with np.errstate(invalid="ignore"):
@@ -768,7 +768,7 @@ def _goes_get_chianti_em(
     ):
         raise ValueError(
             "All values in temp must be within the range "
-            "{} - {} MK.".format(np.min(10 ** modeltemp), np.max(10 ** modeltemp))
+            "{} - {} MK.".format(np.min(10**modeltemp), np.max(10**modeltemp))
         )
 
     # Perform spline fit to model data
@@ -911,7 +911,7 @@ def calculate_radiative_loss_rate(goests, force_download=False, download_dir=Non
 )
 @u.quantity_input
 def _calc_rad_loss(
-    temp: u.MK, em: u.cm ** -3, obstime=None, force_download=False, download_dir=None
+    temp: u.MK, em: u.cm**-3, obstime=None, force_download=False, download_dir=None
 ):
     """
     Finds radiative loss rate of coronal plasma over all wavelengths.
@@ -992,7 +992,7 @@ def _calc_rad_loss(
         download_dir = get_and_create_download_dir()
     # Check inputs are correct
     temp = temp.to(u.K)
-    em = em.to(1 / u.cm ** 3)
+    em = em.to(1 / u.cm**3)
     if len(temp) != len(em):
         raise ValueError("temp and em must all have same number of elements.")
 
@@ -1336,7 +1336,7 @@ def flareclass_to_flux(flareclass):
 
 
 @u.quantity_input
-def flux_to_flareclass(goesflux: u.watt / u.m ** 2):
+def flux_to_flareclass(goesflux: u.watt / u.m**2):
     """
     Converts X-ray flux into the corresponding GOES flare class.
 
@@ -1389,8 +1389,8 @@ def flux_to_flareclass(goesflux: u.watt / u.m ** 2):
         str_class = "X"
         decade = -4
     else:
-        str_class = conversion_dict.get(u.Quantity(10 ** decade, "W/m**2"))
-    goes_subclass = 10 ** -decade * goesflux.to("W/m**2").value
+        str_class = conversion_dict.get(u.Quantity(10**decade, "W/m**2"))
+    goes_subclass = 10**-decade * goesflux.to("W/m**2").value
     return f"{str_class}{goes_subclass:.3g}"
 
 
