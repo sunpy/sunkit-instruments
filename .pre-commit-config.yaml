@@ -14,7 +14,7 @@ repos:
         args: ['--sp','setup.cfg']
         exclude: ".*(.fits|.fts|.fit|.txt|tca.*|extern.*|.rst|.md|docs/conf.py)$"
   - repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 22.3.0
     hooks:
       - id: black
         exclude: ".*(.fits|.fts|.fit|.txt|tca.*|extern.*|.rst|.md)$"
