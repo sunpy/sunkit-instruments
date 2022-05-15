@@ -3,10 +3,7 @@ import gzip
 import tempfile
 
 import h5py
-import matplotlib.pyplot as plt
 import numpy
-from matplotlib.colors import ListedColormap
-from matplotlib.patches import Patch
 
 import sunpy.map
 from astropy import units as u
@@ -15,12 +12,17 @@ from astropy.io.fits.verify import VerifyError
 from astropy.time import Time
 from sunpy.util.exceptions import warn_user
 
-from sunkit_instruments.suvi.io import read_suvi
+from sunkit_instruments.suvi._variables import (
+    COMPOSITE_MATCHES,
+    L1B_MATCHES,
+    TAG_COMMENT_MAPPING,
+    TAG_MAPPING,
+)
 
-__all__ = ["fix_L1b_header", "read_suvi"]
+__all__ = ["read_suvi"]
 
 
-def fix_L1b_header(input_filename):
+def _fix_l1b_header(filename):
     """
     Fix a SUVI L1b FITS file header (broken due to the wrong
     implementation of the CONTINUE keyword convention).
@@ -42,17 +44,17 @@ def fix_L1b_header(input_filename):
 
     Parameters
     ----------
-    input_filename: `str`
+    filename: `str`
         Filename of the L1b file with the corrupt FITS header.
 
     Returns
     -------
-    hdr_corr: `astropy.io.fits.header.Header`
+    `astropy.io.fits.header.Header`
         Corrected FITS header.
     """
     try:
         # First try it with the astropy .to_string() method, as this is the easiest.
-        hdr = fits.getheader(input_filename)
+        hdr = fits.getheader(filename)
         hdr_str = hdr.tostring()
     except VerifyError:
         # Read the file manually as bytes until we hit a UnicodeDecodeError, i.e.
@@ -61,41 +63,35 @@ def fix_L1b_header(input_filename):
         # that cannot be overridden, and they won't fix it unfortunately. If the
         # input file is a .gz file, we need to unpack it first to the tmp directory.
         temp_dir = tempfile.gettempdir()
-        split_filename = os.path.splitext(os.path.basename(input_filename))
+        split_filename = os.path.splitext(os.path.basename(filename))
         if split_filename[1] == ".gz":
             is_gz_file = True
-            with gzip.open(input_filename, "r") as f_in, open(
+            with gzip.open(filename, "r") as f_in, open(
                 temp_dir + split_filename[0], "wb"
             ) as f_out:
                 f_out.write(f_in.read())
             file_to_open = temp_dir + split_filename[0]
         else:
             is_gz_file = False
-            file_to_open = input_filename
-
+            file_to_open = filename
         hdr_str = ""
-        with open(file_to_open, "rb") as in_file:
+        with open(file_to_open, "rb") as file:
             counter = 1
             while True:
                 try:
-                    this_line = in_file.read(counter)
+                    this_line = file.read(counter)
                     this_str = this_line.decode("utf-8")
                     hdr_str += this_str
                     counter += 1
                 except UnicodeDecodeError:
                     break
-        in_file.close()
         if is_gz_file:
             os.remove(file_to_open)
-
     # Make a list of strings with a length of 80
     hdr_list = [hdr_str[i : i + 80] for i in range(0, len(hdr_str), 80)]
-
     # Remove all the empty entries
     while " " * 80 in hdr_list:
         hdr_list.remove(" " * 80)
-
-    # Make a new string list where we put all the information together correctly
     hdr_list_new = []
     for count, item in enumerate(hdr_list):
         if count <= len(hdr_list) - 2:
@@ -113,11 +109,9 @@ def fix_L1b_header(input_filename):
                     if ampersand_pos != -1:
                         new_entry = hdr_list[count][0:ampersand_pos]
                     else:
-                        # Raise exception here because there should be an ampersand at the end of a CONTINUE'd keyword
                         raise RuntimeError(
                             "There should be an ampersand at the end of a CONTINUE'd keyword."
                         )
-
                     tmp_count = 1
                     while hdr_list[count + tmp_count][0:8] == "CONTINUE":
                         ampersand_pos = hdr_list[count + tmp_count].find("&")
@@ -131,11 +125,9 @@ def fix_L1b_header(input_filename):
                                     ]
                                 )
                             else:
-                                # Raise exception here because there should be a single quote after CONTINUE
                                 raise RuntimeError(
                                     "There should be two single quotes after CONTINUE. Did not find any."
                                 )
-
                         else:
                             # If there is no ampersand at the end anymore, it means the entry ends here.
                             # Read from the first to the second single quote in this case.
@@ -156,28 +148,20 @@ def fix_L1b_header(input_filename):
                                         + "'"
                                     )
                                 else:
-                                    # Raise exception here because there should be a second single quote after CONTINUE
                                     raise RuntimeError(
                                         "There should be two single quotes after CONTINUE. Found the first, but not the second."
                                     )
-
                             else:
-                                # Raise exception here because there should be a (first) single quote after CONTINUE
                                 raise RuntimeError(
                                     "There should be two single quotes after CONTINUE. Did not find any."
                                 )
-
                         tmp_count += 1
-
                     hdr_list_new.append(new_entry)
-
                 else:
                     continue
-
         else:
             # Add END at the end of the header
             hdr_list_new.append(hdr_list[count])
-
     # Now we stitch together the CONTINUE information correctly,
     # with a "\n" at the end that we use as a separator later on
     # when we convert from a string to an astropy header.
@@ -190,161 +174,142 @@ def fix_L1b_header(input_filename):
                 rest = "CONTINUE  '" + rest[78:]
             this_entry = this_entry + rest
             hdr_list_new[count] = this_entry
-
     # Now we should have the correct list of strings. Since we can't convert a list to a
     # FITS header directly, we have to convert it to a string first, separated by "\n".
     hdr_str_new = "\n".join([str(item) for item in hdr_list_new])
-
-    # And finally we create the new corrected astropy FITS header from that string
     hdr_corr = fits.Header.fromstring(hdr_str_new, sep="\n")
-
-    # Return the corrected header
     return hdr_corr
 
 
-# read_fits helper function
-def _read_fits(input_filename, return_DQF=False, return_header_only=False):
-    data = None
-    dqf = None
-
-    # Based on the filename, determine if we are dealing
-    # with L1b files or HDR composites (or neither).
-    if any(fn in os.path.basename(input_filename) for fn in COMPOSITE_MATCHES):
-        if return_header_only:
-            header = fits.getheader(input_filename, 1)
-        else:
-            hdu = fits.open(input_filename)
+def _read_fits(filename):
+    """
+    Read a FITS file and return the header, data and dqf.
+    """
+    if any(fn in os.path.basename(filename) for fn in COMPOSITE_MATCHES):
+        with fits.open(filename) as hdu:
             data, header = hdu[1].data, hdu[1].header
-            hdu.close()
-    elif any(fn in os.path.basename(input_filename) for fn in L1B_MATCHES):
-        hdu = fits.open(input_filename)
-        if return_header_only:
-            header = fix_L1b_header(input_filename)
-        else:
-            hdu = fits.open(input_filename)
-            data, header = hdu[0].data, fix_L1b_header(input_filename)
-        if return_DQF:
-            dqf = hdu[1].data
-        hdu.close()
+            dqf = None
+    elif any(fn in os.path.basename(filename) for fn in L1B_MATCHES):
+        with fits.open(filename) as hdu:
+            data, header, dqf = hdu[0].data, _fix_l1b_header(filename), hdu[1].data
     else:
         raise ValueError(
-            "File "
-            + input_filename
-            + " does not look like a SUVI L1b FITS file or L2 HDR composite."
+            f"File {filename} does not look like a SUVI L1b FITS file or L2 HDR composite."
         )
+    return header, data, dqf
 
-    return {"header": header, "data": data, "dqf": dqf}
+
+def _make_cdf_header(header_info):
+    header_info_copy = header_info.copy()
+    # Discard everything where the key name is longer than 8 characters,
+    # plus specific entries we have to deal with manually.
+    for key, value in header_info.items():
+        if len(key) > 8:
+            del header_info_copy[key]
+        elif key in ["RAD", "DQF", "NAXIS1", "NAXIS2"]:
+            del header_info_copy[key]
+    for key, value in header_info_copy.items():
+        if isinstance(value, numpy.ndarray):
+            # We only want single values for the header, no arrays of length 1.
+            # We convert everything that looks like an integer to a long,
+            # everything that looks like a float to float64, and byte strings
+            # to actual strings.
+            if value.ndim == 0:
+                if value.dtype in [
+                    numpy.int8,
+                    numpy.int16,
+                    numpy.int32,
+                    numpy.int64,
+                    numpy.uint8,
+                    numpy.uint16,
+                    numpy.uint32,
+                    numpy.uint64,
+                ]:
+                    header_info_copy[key] = numpy.longlong(value)
+                elif value.dtype in [numpy.float16, numpy.float32, numpy.float64]:
+                    header_info_copy[key] = numpy.float64(value)
+            else:
+                if value.dtype == "|S1":
+                    # Byte string to actual string, and removing weird characters
+                    header_info_copy[key] = (
+                        value.tobytes().decode("utf-8").rstrip("\x00")
+                    )
+    # Now deal with the dates (float in the netCDF). Transform to readable string,
+    # ignore bakeout date because it is always -999.
+    for key, value in header_info_copy.items():
+        if key.startswith("DATE") and key != "DATE-BKE":
+            # Explanation for the odd time creation: the SUVI files say they use the
+            # the J2000 epoch, but they do not: the reference time is 2000-01-01 at
+            # 12:00:00 *UTC*, whereas the reference time for J2000 is in *TT*. So in
+            # order to get the time right, we need to define it in TT, but add the
+            # offset of 69.184 seconds between UTC and TT.
+            the_readable_date = (
+                Time("2000-01-01T12:01:09.184", scale="tt") + value * u.s
+            )
+            header_info_copy[key] = the_readable_date.utc.value
+    # Add NAXIS1 and NAXIS2 manually, because they are odd coming from the netCDF
+    header_info_copy["NAXIS1"] = None
+    header_info_copy["NAXIS2"] = None
+    # Same for BLANK, BSCALE, and BZERO
+    header_info_copy["BLANK"] = None
+    header_info_copy["BSCALE"] = None
+    header_info_copy["BZERO"] = None
+    header_info_copy["BUNIT"] = None
+    header = fits.Header.fromkeys(header_info_copy.keys())
+    for keyword in header:
+        header[keyword] = header_info_copy[keyword]
+    # Add fits header comments for known keywords as defined above
+    for keyword in header:
+        if keyword in TAG_COMMENT_MAPPING:
+            header.set(keyword, header[keyword], TAG_COMMENT_MAPPING[keyword])
+    # Add EXTEND, EXTVER, EXTNAME, and LONGSTR
+    header.append(("EXTEND", True, "FITS dataset may contain extensions"))
+    header.append(("EXTVER", 1, ""))
+    header.append(("EXTNAME", "DATA", ""))
+    header.append(
+        ("LONGSTRN", "OGIP 1.0", "The HEASARC Long String Convention may be used")
+    )
 
 
-# read_netCDF helper function
-def _read_netCDF(input_filename, return_DQF=False, return_header_only=False):
-    data = None
-    dqf = None
-    if any(fn in os.path.basename(input_filename) for fn in L1B_MATCHES):
-        tmp_file = h5py.File(input_filename, "r")
-        # Get the data first
-        data = tmp_file["RAD"][:]
-        # Get BLANK, BZERO, BSCALE, and BUNIT from the RAD attributes
-        blank = tmp_file["RAD"].attrs["_FillValue"][0]
-        bzero = tmp_file["RAD"].attrs["add_offset"][0]
-        bscale = tmp_file["RAD"].attrs["scale_factor"][0]
-        bunit = tmp_file["RAD"].attrs["units"].tobytes().decode("utf-8").rstrip("\x00")
-        # Multiply the data accordingly
-        data = data * bscale + bzero
-        # Get the DQF if requested
-        if return_DQF:
+def _read_netCDF(filename):
+    """
+    Read a CDF file and return the header, data and dqf.
+    """
+    if any(fn in os.path.basename(filename) for fn in L1B_MATCHES):
+        with h5py.File(filename, "r") as tmp_file:
+            data = tmp_file["RAD"][:]
+
+            blank = tmp_file["RAD"].attrs["_FillValue"][0]
+            bzero = tmp_file["RAD"].attrs["add_offset"][0]
+            bscale = tmp_file["RAD"].attrs["scale_factor"][0]
+            bunit = (
+                tmp_file["RAD"].attrs["units"].tobytes().decode("utf-8").rstrip("\x00")
+            )
+
+            data = data * bscale + bzero
             dqf = tmp_file["DQF"][:]
-        # Now deal with the header. Create a dictionary from the
-        # the netCDF keys, and a copy of it.
-        d = dict((key, tmp_file[key][...]) for key in tmp_file.keys())
-        tmp_d = d.copy()
-        # Discard everything where the key name is longer than 8 characters,
-        # plus specific entries we have to deal with manually.
-        for key, value in d.items():
-            if len(key) > 8:
-                del tmp_d[key]
-            elif key in ["RAD", "DQF", "NAXIS1", "NAXIS2"]:
-                del tmp_d[key]
-        for key, value in tmp_d.items():
-            if isinstance(value, numpy.ndarray):
-                # We only want single values for the header, no arrays of length 1.
-                # We convert everything that looks like an integer to a long,
-                # everything that looks like a float to float64, and byte strings
-                # to actual strings.
-                if value.ndim == 0:
-                    if value.dtype in [
-                        numpy.int8,
-                        numpy.int16,
-                        numpy.int32,
-                        numpy.int64,
-                        numpy.uint8,
-                        numpy.uint16,
-                        numpy.uint32,
-                        numpy.uint64,
-                    ]:
-                        tmp_d[key] = numpy.longlong(value)
-                    elif value.dtype in [numpy.float16, numpy.float32, numpy.float64]:
-                        tmp_d[key] = numpy.float64(value)
-                else:
-                    if value.dtype == "|S1":
-                        # Byte string to actual string, and removing weird characters
-                        tmp_d[key] = value.tobytes().decode("utf-8").rstrip("\x00")
-        # Now deal with the dates (float in the netCDF). Transform to readable string,
-        # ignore bakeout date because it is always -999.
-        for key, value in tmp_d.items():
-            if key.startswith("DATE") and key != "DATE-BKE":
-                # Explanation for the odd time creation: the SUVI files say they use the
-                # the J2000 epoch, but they do not: the reference time is 2000-01-01 at
-                # 12:00:00 *UTC*, whereas the reference time for J2000 is in *TT*. So in
-                # order to get the time right, we need to define it in TT, but add the
-                # offset of 69.184 seconds between UTC and TT.
-                the_readable_date = (
-                    Time("2000-01-01T12:01:09.184", scale="tt") + value * u.s
-                )
-                tmp_d[key] = the_readable_date.utc.value
-        # Add NAXIS1 and NAXIS2 manually, because they are odd coming from the netCDF
-        tmp_d["NAXIS1"] = None
-        tmp_d["NAXIS2"] = None
-        # Same for BLANK, BSCALE, and BZERO
-        tmp_d["BLANK"] = None
-        tmp_d["BSCALE"] = None
-        tmp_d["BZERO"] = None
-        tmp_d["BUNIT"] = None
-        header = fits.Header.fromkeys(tmp_d.keys())
-        for keyword in header:
-            header[keyword] = tmp_d[keyword]
-        # Add all the info from the global attributes
-        for att, val in tmp_file.attrs.items():
-            if att in TAG_MAPPING:
-                header[TAG_MAPPING[att]] = val.tobytes().decode("utf-8").rstrip("\x00")
-        tmp_file.close()
-        # And some manual info
-        header["NAXIS1"] = data.shape[0]
-        header["NAXIS2"] = data.shape[1]
-        header["BLANK"] = blank
-        header["BSCALE"] = bscale
-        header["BZERO"] = bzero
-        header["BUNIT"] = bunit
-        # Add fits header comments for known keywords as defined above
-        for keyword in header:
-            if keyword in TAG_COMMENT_MAPPING:
-                header.set(keyword, header[keyword], TAG_COMMENT_MAPPING[keyword])
-        # Add EXTEND, EXTVER, EXTNAME, and LONGSTR
-        header.append(("EXTEND", True, "FITS dataset may contain extensions"))
-        header.append(("EXTVER", 1, ""))
-        header.append(("EXTNAME", "DATA", ""))
-        header.append(
-            ("LONGSTRN", "OGIP 1.0", "The HEASARC Long String Convention may be used")
-        )
+
+            header_info = dict((key, tmp_file[key][...]) for key in tmp_file.keys())
+            header = _make_cdf_header(header_info)
+            # Deal with this here as we require the file.
+            for att, val in tmp_file.attrs.items():
+                if att in TAG_MAPPING:
+                    header[TAG_MAPPING[att]] = (
+                        val.tobytes().decode("utf-8").rstrip("\x00")
+                    )
+            header["NAXIS1"] = data.shape[0]
+            header["NAXIS2"] = data.shape[1]
+            header["BLANK"] = blank
+            header["BSCALE"] = bscale
+            header["BZERO"] = bzero
+            header["BUNIT"] = bunit
+
     else:
-        raise ValueError(
-            "File " + input_filename + " does not look like a SUVI L1b netCDF file."
-        )
-
-    return {"header": header, "data": data, "dqf": dqf}
+        raise ValueError(f"File {filename} does not look like a SUVI L1b netCDF file.")
+    return header, data, dqf
 
 
-def read_suvi(input_filename, return_DQF=False, return_header_only=False):
+def read_suvi(filename):
     """
     Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file.
     Return data and header, optionally the data quality flag array (DQF)
@@ -368,15 +333,10 @@ def read_suvi(input_filename, return_DQF=False, return_header_only=False):
     input_filename: `str`
         File to read.
 
-    return_DQF: `bool`, optional. Default: False.
-        If True, returns the data quality flag array (DQF, only for L1b files), otherwise `None` for dqf.
-
-    return_header_only: `bool`, optional. Default: False.
-        If True, does not read the data array and returns `None` for data (the DQF can still be requested).
-
     Returns
     -------
-    header, data, dqf: `astropy.io.fits.header.Header`, `~numpy.ndarray` (or `None` if return_header_only was set), `~numpy.ndarray` (or `None` if return_DQF was not set)
+    `astropy.io.fits.header.Header`, `~numpy.ndarray`, `~numpy.ndarray`
+        header, data, dqf
         header, data, and data quality flags.
     """
 
@@ -562,76 +522,3 @@ def files_to_map(
     else:
         warn_user("List of data/headers is empty.")
         return None
-
-
-def plot_thematic_map(input_filename, timestamp=True, legend=True, figsize=(10, 10)):
-    """
-    Read a SUVI L2 Thematic Map FITS file and plot it.
-
-    .. note::
-        SUVI L2 Thematic Maps are recognized by pattern matching in the
-        filenames, i.e. it must contain "-l2-thmap". If this pattern is
-        not found in the filename, it will not be recognized.
-
-    .. note::
-       GOES-16 L2 Thematic Maps are available
-       `here. <https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/data/suvi-l2-thmap/>`__
-
-    Parameters
-    ----------
-    input_filename: `str`
-        File to read.
-
-    timestamp: `bool`, optional. Default: True.
-        If True, plots the timestamp of the observation.
-
-    legend: `bool`, optional. Default: True.
-        If True, plots a legend with the different classes.
-
-    figsize: `tuple`, optional. Default: (10, 10).
-        The size of the figure. Should not be smaller than
-        (7, 7) to look decent.
-    """
-
-    if "-l2-thmap" in os.path.basename(input_filename):
-        hdu = fits.open(input_filename)
-        thmap_data = hdu[0].data
-        if timestamp:
-            time_st = hdu[0].header["DATE-OBS"][0:19]
-        hdu.close()
-
-        colortable = [
-            SOLAR_COLORS[SOLAR_CLASS_NAME[i]] if i in SOLAR_CLASS_NAME else "black"
-            for i in range(max(list(SOLAR_CLASS_NAME.keys())) + 1)
-        ]
-        cmap = ListedColormap(colortable)
-
-        fig, ax = plt.subplots(constrained_layout=True, figsize=figsize)
-        ax.imshow(
-            thmap_data,
-            origin="lower",
-            cmap=cmap,
-            vmin=-1,
-            vmax=len(colortable),
-            interpolation="none",
-        )
-        ax.set_axis_off()
-        if timestamp:
-            ax.text(10, 1245, time_st, fontsize=14, color="white")
-        if legend:
-            legend_elements = [
-                Patch(facecolor=color, edgecolor="black", label=label.replace("_", " "))
-                for label, color in SOLAR_COLORS.items()
-            ]
-            ax.legend(
-                handles=legend_elements,
-                loc="upper right",
-                ncol=3,
-                fancybox=True,
-                shadow=False,
-            )
-        fig.show()
-    else:
-        raise ValueError(
-            "File " + input_filename + " does not look like a SUVI L2 Thematic Map."
-        )

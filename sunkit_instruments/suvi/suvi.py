@@ -71,7 +71,7 @@ def despike_l1b_file(filename, filter_width=7):
     `~sunpy.map.Map`
         The despiked L1b image as a `~sunpy.map.Map`.
     """
-    image, header, dqf_mask = read_suvi(filename, return_DQF=True)
+    image, header, dqf_mask = read_suvi(filename)
     despiked_image = _despike(image, dqf_mask, filter_width)
     return sunpy.map.Map(despiked_image, header)
 
@@ -147,7 +147,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         * "filter_setup"
     """
     if isinstance(request, str):
-        _, header, _ = read_suvi(request, return_header_only=True)
+        header, _, _ = read_suvi(request)
         wavelength_channel = int(header["WAVELNTH"])
         spacecraft = int(header["TELESCOP"].replace(" ", "").replace("G", ""))
         ccd_temperature = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0

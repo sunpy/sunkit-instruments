@@ -1,3 +1,23 @@
+# Allow all possible file extensions for FITS and netCDF
+FITS_FILE_EXTENSIONS = (".fits", ".fts", ".fits.gz", "fts.gz", "fits.bz", "fts.bz")
+NETCDF_FILE_EXTENSIONS = (".nc", ".nc.gz", ".nc.bz", ".cdf", ".cdf.gz", ".cdf.bz")
+# Naming scheme for SUVI files
+COMPOSITE_MATCHES = [
+    "-l2-ci094",
+    "-l2-ci131",
+    "-l2-ci171",
+    "-l2-ci195",
+    "-l2-ci284",
+    "-l2-ci304",
+]
+L1B_MATCHES = [
+    "-L1b-Fe093",
+    "-L1b-Fe131",
+    "-L1b-Fe171",
+    "-L1b-Fe195",
+    "-L1b-Fe284",
+    "-L1b-He303",
+]
 VALID_WAVELENGTH_CHANNELS = [94, 131, 171, 195, 284, 304]
 VALID_SPACECRAFT = [16, 17]
 FLIGHT_MODEL = {16: "FM1", 17: "FM2"}
@@ -29,29 +49,6 @@ FILTER_SETUP = {
         "long": {"FW1": "thin_aluminum", "FW2": "open"},
         "short_flare": {"FW1": "thin_aluminum", "FW2": "thin_aluminum"},
     },
-}
-SOLAR_CLASSES = [
-    ("unlabeled", 0),
-    ("outer_space", 1),
-    ("bright_region", 3),
-    ("filament", 4),
-    ("prominence", 5),
-    ("coronal_hole", 6),
-    ("quiet_sun", 7),
-    ("limb", 8),
-    ("flare", 9),
-]
-SOLAR_CLASS_NAME = {number: theme for theme, number in SOLAR_CLASSES}
-SOLAR_COLORS = {
-    "unlabeled": "white",
-    "outer_space": "black",
-    "bright_region": "#F0E442",
-    "filament": "#D55E00",
-    "prominence": "#E69F00",
-    "coronal_hole": "#009E73",
-    "quiet_sun": "#0072B2",
-    "limb": "#56B4E9",
-    "flare": "#CC79A7",
 }
 # This is how the global attributes of the netCDF file get
 # mapped to the corresponding FITS header keywords.
@@ -176,4 +173,27 @@ TAG_COMMENT_MAPPING = {
     "SOLCURR4": "[count] solar array current chan 13-16 in DN",
     "PCTL0ERR": "[percent] uncorrectable L0 error pct",
     "LONGSTRN": "The HEASARC Long String Convention may be used",
+}
+SOLAR_CLASSES = [
+    ("unlabeled", 0),
+    ("outer_space", 1),
+    ("bright_region", 3),
+    ("filament", 4),
+    ("prominence", 5),
+    ("coronal_hole", 6),
+    ("quiet_sun", 7),
+    ("limb", 8),
+    ("flare", 9),
+]
+SOLAR_CLASS_NAME = {number: theme for theme, number in SOLAR_CLASSES}
+SOLAR_COLORS = {
+    "unlabeled": "white",
+    "outer_space": "black",
+    "bright_region": "#F0E442",
+    "filament": "#D55E00",
+    "prominence": "#E69F00",
+    "coronal_hole": "#009E73",
+    "quiet_sun": "#0072B2",
+    "limb": "#56B4E9",
+    "flare": "#CC79A7",
 }
