@@ -13,9 +13,9 @@ import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import Latitude, Longitude
+from astropy.io import fits
 from astropy.time import TimeDelta
 from sunpy.coordinates import sun
-from sunpy.io.fits import fits
 from sunpy.time import TimeRange, parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
 from sunpy.util.decorators import add_common_docstring
