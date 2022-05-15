@@ -13,7 +13,6 @@ from sunkit_instruments.suvi._variables import (
     VALID_SPACECRAFT,
     VALID_WAVELENGTH_CHANNELS,
 )
-from sunkit_instruments.suvi.io import read_suvi
 
 __all__ = [
     "despike_l1b_file",
@@ -146,6 +145,9 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         * "geometric_area"
         * "filter_setup"
     """
+    # Avoid circular import
+    from sunkit_instruments.suvi.io import read_suvi
+
     if isinstance(request, str):
         header, _, _ = read_suvi(request)
         wavelength_channel = int(header["WAVELNTH"])

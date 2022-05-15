@@ -1,5 +1,6 @@
 import os
 import gzip
+import logging
 import tempfile
 
 import h5py
@@ -14,12 +15,15 @@ from sunpy.util.exceptions import warn_user
 
 from sunkit_instruments.suvi._variables import (
     COMPOSITE_MATCHES,
+    FITS_FILE_EXTENSIONS,
     L1B_MATCHES,
+    NETCDF_FILE_EXTENSIONS,
     TAG_COMMENT_MAPPING,
     TAG_MAPPING,
 )
+from sunkit_instruments.suvi.suvi import despike_l1b_array
 
-__all__ = ["read_suvi"]
+__all__ = ["read_suvi", "files_to_map"]
 
 
 def _fix_l1b_header(filename):
@@ -263,7 +267,7 @@ def _make_cdf_header(header_info):
         if keyword in TAG_COMMENT_MAPPING:
             header.set(keyword, header[keyword], TAG_COMMENT_MAPPING[keyword])
     # Add EXTEND, EXTVER, EXTNAME, and LONGSTR
-    header.append(("EXTEND", True, "FITS dataset may contain extensions"))
+    header.append(("EXTEND", True, "FITS dataet may contain extensions"))
     header.append(("EXTVER", 1, ""))
     header.append(("EXTNAME", "DATA", ""))
     header.append(
@@ -276,23 +280,21 @@ def _read_netCDF(filename):
     Read a CDF file and return the header, data and dqf.
     """
     if any(fn in os.path.basename(filename) for fn in L1B_MATCHES):
-        with h5py.File(filename, "r") as tmp_file:
-            data = tmp_file["RAD"][:]
+        with h5py.File(filename, "r") as afile:
+            data = afile["RAD"][:]
 
-            blank = tmp_file["RAD"].attrs["_FillValue"][0]
-            bzero = tmp_file["RAD"].attrs["add_offset"][0]
-            bscale = tmp_file["RAD"].attrs["scale_factor"][0]
-            bunit = (
-                tmp_file["RAD"].attrs["units"].tobytes().decode("utf-8").rstrip("\x00")
-            )
+            blank = afile["RAD"].attrs["_FillValue"][0]
+            bzero = afile["RAD"].attrs["add_offset"][0]
+            bscale = afile["RAD"].attrs["scale_factor"][0]
+            bunit = afile["RAD"].attrs["units"].tobytes().decode("utf-8").rstrip("\x00")
 
             data = data * bscale + bzero
-            dqf = tmp_file["DQF"][:]
+            dqf = afile["DQF"][:]
 
-            header_info = dict((key, tmp_file[key][...]) for key in tmp_file.keys())
+            header_info = dict((key, afile[key][...]) for key in afile.keys())
             header = _make_cdf_header(header_info)
             # Deal with this here as we require the file.
-            for att, val in tmp_file.attrs.items():
+            for att, val in afile.attrs.items():
                 if att in TAG_MAPPING:
                     header[TAG_MAPPING[att]] = (
                         val.tobytes().decode("utf-8").rstrip("\x00")
@@ -312,11 +314,14 @@ def _read_netCDF(filename):
 def read_suvi(filename):
     """
     Read a SUVI L1b FITS or netCDF file or a L2 HDR composite FITS file.
-    Return data and header, optionally the data quality flag array (DQF)
-    for L1b files. For SUVI L1b FITS files, the broken FITS header is
-    fixed automatically (broken because of the wrong implementation of
-    the CONTINUE convention). This read function is intented to provide
-    a consistent file interface for FITS and netCDF, L1b and L2.
+
+    Returns header, data and the data quality flag array (DQF) for L1b files.
+
+    For SUVI L1b FITS files, the broken FITS header is fixed automatically
+    (broken because of the wrong implementation of the CONTINUE convention).
+
+    This read function is intended to provide a consistent file interface
+    for FITS and netCDF, L1b and L2.
 
     .. note::
         The type of file is determined by pattern matching in the
@@ -325,47 +330,32 @@ def read_suvi(filename):
         in the filename, the files will not be recognized.
 
     .. note::
-        If input_filename is an L1b netCDF file, the information from
+        If ``filename`` is an L1b netCDF file, the information from
         the netCDF file is transformed into a FITS header.
 
     Parameters
     ----------
-    input_filename: `str`
+    filename : `str`
         File to read.
 
     Returns
     -------
     `astropy.io.fits.header.Header`, `~numpy.ndarray`, `~numpy.ndarray`
-        header, data, dqf
-        header, data, and data quality flags.
+        Header, data, and data quality flags.
     """
-
-    # If it is a fits file...
-    if input_filename.lower().endswith(FITS_FILE_EXTENSIONS):
-        file_info = _read_fits(
-            input_filename, return_DQF=return_DQF, return_header_only=return_header_only
-        )
-
-    # If it is a netCDF file...
-    elif input_filename.lower().endswith(NETCDF_FILE_EXTENSIONS):
-        file_info = _read_netCDF(
-            input_filename, return_DQF=return_DQF, return_header_only=return_header_only
-        )
-
+    if filename.lower().endswith(FITS_FILE_EXTENSIONS):
+        header, data, dqf = _read_fits(filename)
+    elif filename.lower().endswith(NETCDF_FILE_EXTENSIONS):
+        header, data, dqf = _read_netCDF(filename)
     else:
         raise ValueError(
-            "File "
-            + input_filename
-            + " does not look like a valid FITS or netCDF file."
+            f"File {filename} does not look like a valid FITS or netCDF file."
         )
-
-    return file_info["header"], file_info["data"], file_info["dqf"]
+    return header, data, dqf
 
 
 def files_to_map(
     files,
-    sort_files=True,
-    verbose=False,
     despike_L1b=False,
     only_long_exposures=False,
     only_short_exposures=False,
@@ -390,30 +380,20 @@ def files_to_map(
     ----------
     files: `str` or `list` of `str`
         File(s) to read.
-
-    sort_files: `bool`, optional. Default: True.
-        If True, sorts the input file list (ascending).
-
-    verbose: `bool`, optional. Default: False.
-        If True, prints the filenames while reading.
-
     despike_L1b: `bool`, optional. Default: False.
         If True and input is L1b, data will get despiked
         with the standard filter_width=7. Can not be used
         for early SUVI files where the DQF extension is
         missing.
-
     only_long_exposures: `bool`, optional. Default: False.
         If True, only long exposure L1b files from the input list will be
         accepted and converted to a map. Ignored for L2 HDR composites.
-
     only_short_exposures: `bool`, optional. Default: False.
         If True, only short exposure L1b files from the input list will be
         accepted and converted to a map. Ignored for L2 HDR composites and
         any wavelengths other than 94 and 131 (because for everything >131,
         there are no observations that are labeled "short", only "long" and
         "short_flare").
-
     only_short_flare_exposures: `bool`, optional. Default: False.
         If True, only short flare exposure L1b files from the input list will
         be accepted and converted to a map. Ignored for L2 HDR composites.
@@ -421,104 +401,62 @@ def files_to_map(
     Returns
     -------
     `~sunpy.map.Map`, `~sunpy.map.MapSequence`, or `None`.
-        A map (sequence) of the SUVI data, or None if no
+        A map (sequence) of the SUVI data, or `None` if no
         data was found matching the given criteria.
     """
-
     # If it is just one filename as a string, convert it to a list.
     if isinstance(files, str):
         files = [files]
-    else:
-        if sort_files:
-            files = sorted(files)
-
-    # Based on the filename of the first file, determine if we are
-    # dealing with L1b files or HDR composites (or neither).
-    composite_matches = [
-        "-l2-ci094",
-        "-l2-ci131",
-        "-l2-ci171",
-        "-l2-ci195",
-        "-l2-ci284",
-        "-l2-ci304",
-    ]
-    L1b_matches = [
-        "-L1b-Fe093",
-        "-L1b-Fe131",
-        "-L1b-Fe171",
-        "-L1b-Fe195",
-        "-L1b-Fe284",
-        "-L1b-He303",
-    ]
-    if any(fn in os.path.basename(files[0]) for fn in composite_matches):
+    files = sorted(files)
+    if any(fn in os.path.basename(files[0]) for fn in COMPOSITE_MATCHES):
         composites = True
-    elif any(fn in os.path.basename(files[0]) for fn in L1b_matches):
+    elif any(fn in os.path.basename(files[0]) for fn in L1B_MATCHES):
         composites = False
     else:
         raise ValueError(
-            "First file "
-            + files[0]
-            + " does not look like a SUVI L1b file or L2 HDR composite."
+            f"First file {files[0]} does not look like a SUVI L1b file or L2 HDR composite."
         )
 
-    datas = []
+    data = []
     headers = []
-    for tmp_file in files:
-        if verbose:
-            print("Reading", tmp_file)
-        # Test for L1b or composite based on the filename
+    for afile in files:
+        logging.debug(f"Reading {afile}")
         if composites:
-            if any(fn in os.path.basename(tmp_file) for fn in composite_matches):
-                tmp_header, tmp_data, _ = sunkit_instruments.suvi.read_suvi(tmp_file)
-                datas.append(tmp_data)
-                headers.append(tmp_header)
+            if any(fn in os.path.basename(afile) for fn in COMPOSITE_MATCHES):
+                header, data, _ = read_suvi(afile)
+                data.append(header)
+                headers.append(data)
             else:
                 warn_user(
-                    "File "
-                    + tmp_file
-                    + " does not look like a SUVI L2 HDR composite. Skipping."
+                    f"File {afile} does not look like a SUVI L2 HDR composite. Skipping."
                 )
         else:
-            if any(fn in os.path.basename(tmp_file) for fn in L1b_matches):
+            if any(fn in os.path.basename(afile) for fn in L1B_MATCHES):
                 if despike_L1b:
-                    tmp_header, tmp_data, dqf_mask = sunkit_instruments.suvi.read_suvi(
-                        tmp_file, return_DQF=True
-                    )
-                    tmp_data = despike_L1b_image((tmp_data, dqf_mask))
+                    header, data, dqf_mask = read_suvi(afile)
+                    data = despike_l1b_array((data, dqf_mask))
                 else:
-                    tmp_header, tmp_data, _ = sunkit_instruments.suvi.read_suvi(
-                        tmp_file
-                    )
+                    header, data, _ = read_suvi(afile)
                 if only_long_exposures:
-                    if "long_exposure" in tmp_header["SCI_OBJ"]:
-                        datas.append(tmp_data)
-                        headers.append(tmp_header)
+                    if "long_exposure" in header["SCI_OBJ"]:
+                        data.append(data)
+                        headers.append(header)
                 elif only_short_exposures:
-                    if "short_exposure" in tmp_header["SCI_OBJ"]:
-                        datas.append(tmp_data)
-                        headers.append(tmp_header)
+                    if "short_exposure" in header["SCI_OBJ"]:
+                        data.append(data)
+                        headers.append(header)
                 elif only_short_flare_exposures:
-                    if "short_flare_exposure" in tmp_header["SCI_OBJ"]:
-                        datas.append(tmp_data)
-                        headers.append(tmp_header)
+                    if "short_flare_exposure" in header["SCI_OBJ"]:
+                        data.append(data)
+                        headers.append(header)
                 else:
-                    datas.append(tmp_data)
-                    headers.append(tmp_header)
+                    data.append(data)
+                    headers.append(header)
             else:
-                warn_user(
-                    "File "
-                    + tmp_file
-                    + " does not look like a SUVI L1b file. Skipping."
-                )
-
-    if len(datas) == 1 and len(headers) == 1:
-        # Make a single map if it is just one file
-        suvimap = sunpy.map.Map(datas[0], headers[0])
-        return suvimap
-    elif len(datas) > 1 and len(headers) > 1:
-        # Make a map sequence for multiple files
-        suvimap = sunpy.map.Map(list(zip(datas, headers)), sequence=True)
-        return suvimap
+                warn_user(f"File {afile} does not look like a SUVI L1b file. Skipping.")
+    if len(data) == len(headers) == 1:
+        return sunpy.map.Map(data[0], headers[0])
+    elif len(data) > 1 and len(headers) > 1:
+        return sunpy.map.Map(list(zip(data, headers)), sequence=True)
     else:
         warn_user("List of data/headers is empty.")
-        return None
