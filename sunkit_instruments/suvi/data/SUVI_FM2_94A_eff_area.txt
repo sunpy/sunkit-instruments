@@ -4,7 +4,7 @@
 ; EA(lam) = PM(lam) * SM(lam) * EntFilt(lam) * FW1(lam) * ...
 ;           FW2(lam) * QE(lam) * Geom_Area
 ; Degradation due to contamination is not included
-; 
+;
 ; File Generated 12-Apr-2019 - Updated 19-Jun-2020
 ;-------------------------------------------------------
 ; Geometric Area = 19.362316 cm^2
