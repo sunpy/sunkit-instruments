@@ -214,9 +214,9 @@ def _remove_lytaf_events(
         ...   time, channels=[channel_1, channel_2], artifacts=['LAR'])  # doctest: +SKIP
     """
     # Check inputs
-    if channels and type(channels) is not list:
+    if channels and not isinstance(channels, list):
         raise TypeError(
-            "channels must be None or a list of numpy arrays " "of dtype 'float64'."
+            f"channels must be None or a list of numpy arrays of dtype 'float64', not {type(channels)}"
         )
     if not artifacts:
         raise ValueError("User has supplied no artifacts to remove.")

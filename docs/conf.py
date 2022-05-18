@@ -3,9 +3,7 @@ Configuration file for the Sphinx documentation builder.
 """
 # -- stdlib imports ------------------------------------------------------------
 import os
-import sys
 import datetime
-from pkg_resources import get_distribution
 from packaging.version import Version
 
 # -- Read the Docs Specific Configuration --------------------------------------
@@ -83,6 +81,7 @@ intersphinx_mapping = {
     "reproject": ("https://reproject.readthedocs.io/en/stable/", None),
     "aiapy": ("https://aiapy.readthedocs.io/en/stable/", None),
 }
+default_role = "obj"
 
 # -- Options for HTML output ---------------------------------------------------
 from sunpy_sphinx_theme.conf import *  # NOQA

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import numpy
+import numpy as np
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter
 
@@ -37,11 +37,11 @@ def _despike(image, dqf_mask, filter_width):
         The filter width for the Gaussian filter, default is 7.
         If NaNs are still present in the despiked image, try increasing this value.
     """
-    image_with_nans = numpy.copy(image)
-    image_with_nans[numpy.where(dqf_mask == 4)] = numpy.nan
-    indices = numpy.where(numpy.isnan(image_with_nans))
+    image_with_nans = np.copy(image)
+    image_with_nans[np.where(dqf_mask == 4)] = np.nan
+    indices = np.where(np.isnan(image_with_nans))
     image_gaussian_filtered = gaussian_filter(image, filter_width)
-    despiked_image = numpy.copy(image_with_nans)
+    despiked_image = np.copy(image_with_nans)
     despiked_image[indices] = image_gaussian_filtered[indices]
     return despiked_image
 
@@ -70,7 +70,10 @@ def despike_l1b_file(filename, filter_width=7):
     `~sunpy.map.Map`
         The despiked L1b image as a `~sunpy.map.Map`.
     """
-    image, header, dqf_mask = read_suvi(filename)
+    # Avoid circular import
+    from sunkit_instruments.suvi.io import read_suvi
+
+    header, image, dqf_mask = read_suvi(filename)
     despiked_image = _despike(image, dqf_mask, filter_width)
     return sunpy.map.Map(despiked_image, header)
 
@@ -160,7 +163,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         wavelength_channel = request
     else:
         raise TypeError(
-            "Input not recognized, must be str for filename or int for wavelength channel."
+            f"Input not recognized, must be str for filename or int for wavelength channel, not {type(request)}"
         )
 
     if wavelength_channel not in VALID_WAVELENGTH_CHANNELS:
@@ -180,21 +183,21 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
     )
     gain_file = PATH_TO_FILES / f"SUVI_{FLIGHT_MODEL[spacecraft]}_gain.txt"
 
-    eff_area = numpy.loadtxt(eff_area_file, skiprows=12)
+    eff_area = np.loadtxt(eff_area_file, skiprows=12)
     wave = eff_area[:, 0] * u.Angstrom
     if FILTER_SETUP[wavelength_channel][exposure_type]["FW2"] == "open":
         effective_area = eff_area[:, 1] * u.cm * u.cm
     else:
         effective_area = eff_area[:, 2] * u.cm * u.cm
 
-    gain_table = numpy.loadtxt(gain_file, skiprows=7)
+    gain_table = np.loadtxt(gain_file, skiprows=7)
     temp_x = gain_table[:, 0]
     gain_y = gain_table[:, 1]
     gain_vs_temp = interpolate.interp1d(temp_x, gain_y)
     gain = gain_vs_temp(ccd_temperature)
 
     geometric_area = 19.362316 * u.cm * u.cm
-    solid_angle = ((2.5 / 3600.0 * (numpy.pi / 180.0)) ** 2.0) * u.sr
+    solid_angle = ((2.5 / 3600.0 * (np.pi / 180.0)) ** 2.0) * u.sr
     master_e_per_phot = (
         (6.626068e-34 * (u.J / u.Hz)) * (2.99792458e8 * (u.m / u.s))
     ) / (wave.to(u.m) * ((u.eV.to(u.J, 3.65)) * u.J))

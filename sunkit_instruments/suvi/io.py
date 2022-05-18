@@ -2,6 +2,7 @@ import os
 import gzip
 import logging
 import tempfile
+from pathlib import Path
 
 import h5py
 import numpy
@@ -9,7 +10,6 @@ import numpy
 import sunpy.map
 from astropy import units as u
 from astropy.io import fits
-from astropy.io.fits.verify import VerifyError
 from astropy.time import Time
 from sunpy.util.exceptions import warn_user
 
@@ -59,26 +59,23 @@ def _fix_l1b_header(filename):
         # First try it with the astropy .to_string() method, as this is the easiest.
         hdr = fits.getheader(filename)
         hdr_str = hdr.tostring()
-    except VerifyError:
+    except Exception:
         # Read the file manually as bytes until we hit a UnicodeDecodeError, i.e.
         # until we reach the data part. Since astropy version 4.2.1, we can't use
         # the .to_string() method anymore because of FITS header consistency checks
         # that cannot be overridden, and they won't fix it unfortunately. If the
         # input file is a .gz file, we need to unpack it first to the tmp directory.
         temp_dir = tempfile.gettempdir()
-        split_filename = os.path.splitext(os.path.basename(filename))
-        if split_filename[1] == ".gz":
+        name = Path(filename).name
+        is_gz_file = False
+        if name.endswith(".gz"):
             is_gz_file = True
-            with gzip.open(filename, "r") as f_in, open(
-                temp_dir + split_filename[0], "wb"
-            ) as f_out:
-                f_out.write(f_in.read())
-            file_to_open = temp_dir + split_filename[0]
-        else:
-            is_gz_file = False
-            file_to_open = filename
+            with gzip.open(filename, "r") as gfile:
+                filename = str(Path(temp_dir) / name[:-3])
+                with open(filename, "wb") as file_out:
+                    file_out.write(gfile.read())
         hdr_str = ""
-        with open(file_to_open, "rb") as file:
+        with open(filename, "rb") as file:
             counter = 1
             while True:
                 try:
@@ -89,7 +86,7 @@ def _fix_l1b_header(filename):
                 except UnicodeDecodeError:
                     break
         if is_gz_file:
-            os.remove(file_to_open)
+            os.remove(filename)
     # Make a list of strings with a length of 80
     hdr_list = [hdr_str[i : i + 80] for i in range(0, len(hdr_str), 80)]
     # Remove all the empty entries
@@ -190,7 +187,7 @@ def _read_fits(filename):
     """
     if any(fn in os.path.basename(filename) for fn in COMPOSITE_MATCHES):
         with fits.open(filename) as hdu:
-            data, header = hdu[1].data, hdu[1].header
+            data, header = hdu[1].data, _fix_l1b_header(filename)
             dqf = None
     elif any(fn in os.path.basename(filename) for fn in L1B_MATCHES):
         with fits.open(filename) as hdu:
@@ -272,6 +269,7 @@ def _make_cdf_header(header_info):
     header.append(
         ("LONGSTRN", "OGIP 1.0", "The HEASARC Long String Convention may be used")
     )
+    return header
 
 
 def _read_netCDF(filename):
@@ -304,7 +302,6 @@ def _read_netCDF(filename):
             header["BSCALE"] = bscale
             header["BZERO"] = bzero
             header["BUNIT"] = bunit
-
     else:
         raise ValueError(f"File {filename} does not look like a SUVI L1b netCDF file.")
     return header, data, dqf
@@ -355,7 +352,7 @@ def read_suvi(filename):
 
 def files_to_map(
     files,
-    despike_L1b=False,
+    despike_l1b=False,
     only_long_exposures=False,
     only_short_exposures=False,
     only_short_flare_exposures=False,
@@ -379,7 +376,7 @@ def files_to_map(
     ----------
     files: `str` or `list` of `str`
         File(s) to read.
-    despike_L1b: `bool`, optional. Default: False.
+    despike_l1b: `bool`, optional. Default: False.
         If True and input is L1b, data will get despiked
         with the standard filter_width=7. Can not be used
         for early SUVI files where the DQF extension is
@@ -406,7 +403,6 @@ def files_to_map(
     # Avoid circular imports
     from sunkit_instruments.suvi.suvi import despike_l1b_array
 
-    # If it is just one filename as a string, convert it to a list.
     if isinstance(files, str):
         files = [files]
     files = sorted(files)
@@ -419,46 +415,44 @@ def files_to_map(
             f"First file {files[0]} does not look like a SUVI L1b file or L2 HDR composite."
         )
 
-    data = []
+    datas = []
     headers = []
     for afile in files:
         logging.debug(f"Reading {afile}")
         if composites:
             if any(fn in os.path.basename(afile) for fn in COMPOSITE_MATCHES):
                 header, data, _ = read_suvi(afile)
-                data.append(header)
-                headers.append(data)
+                datas.append(data)
+                headers.append(header)
             else:
                 warn_user(
                     f"File {afile} does not look like a SUVI L2 HDR composite. Skipping."
                 )
         else:
             if any(fn in os.path.basename(afile) for fn in L1B_MATCHES):
-                if despike_L1b:
-                    header, data, dqf_mask = read_suvi(afile)
-                    data = despike_l1b_array((data, dqf_mask))
-                else:
-                    header, data, _ = read_suvi(afile)
+                header, data, dqf_mask = read_suvi(afile)
+                if despike_l1b:
+                    data = despike_l1b_array(data, dqf_mask)
                 if only_long_exposures:
                     if "long_exposure" in header["SCI_OBJ"]:
-                        data.append(data)
+                        datas.append(data)
                         headers.append(header)
                 elif only_short_exposures:
                     if "short_exposure" in header["SCI_OBJ"]:
-                        data.append(data)
+                        datas.append(data)
                         headers.append(header)
                 elif only_short_flare_exposures:
                     if "short_flare_exposure" in header["SCI_OBJ"]:
-                        data.append(data)
+                        datas.append(data)
                         headers.append(header)
                 else:
-                    data.append(data)
+                    datas.append(data)
                     headers.append(header)
             else:
                 warn_user(f"File {afile} does not look like a SUVI L1b file. Skipping.")
-    if len(data) == len(headers) == 1:
-        return sunpy.map.Map(data[0], headers[0])
-    elif len(data) > 1 and len(headers) > 1:
-        return sunpy.map.Map(list(zip(data, headers)), sequence=True)
+    if len(datas) == 1:
+        return sunpy.map.Map(datas[0], headers[0])
+    elif len(datas) > 1:
+        return sunpy.map.Map(list(zip(datas, headers)), sequence=True)
     else:
         warn_user("List of data/headers is empty.")
