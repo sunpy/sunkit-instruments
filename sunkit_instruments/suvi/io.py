@@ -21,7 +21,6 @@ from sunkit_instruments.suvi._variables import (
     TAG_COMMENT_MAPPING,
     TAG_MAPPING,
 )
-from sunkit_instruments.suvi.suvi import despike_l1b_array
 
 __all__ = ["read_suvi", "files_to_map"]
 
@@ -404,6 +403,9 @@ def files_to_map(
         A map (sequence) of the SUVI data, or `None` if no
         data was found matching the given criteria.
     """
+    # Avoid circular imports
+    from sunkit_instruments.suvi.suvi import despike_l1b_array
+
     # If it is just one filename as a string, convert it to a list.
     if isinstance(files, str):
         files = [files]
