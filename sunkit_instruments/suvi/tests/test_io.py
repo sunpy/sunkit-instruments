@@ -8,6 +8,7 @@ from sunpy.util.exceptions import SunpyUserWarning
 
 from sunkit_instruments import suvi
 
+# Test files are all remote data.
 pytestmark = pytest.mark.remote_data
 
 

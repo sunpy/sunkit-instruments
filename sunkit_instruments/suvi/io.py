@@ -187,7 +187,7 @@ def _read_fits(filename):
     """
     if any(fn in os.path.basename(filename) for fn in COMPOSITE_MATCHES):
         with fits.open(filename) as hdu:
-            data, header = hdu[1].data, _fix_l1b_header(filename)
+            data, header = hdu[1].data, hdu[1].header
             dqf = None
     elif any(fn in os.path.basename(filename) for fn in L1B_MATCHES):
         with fits.open(filename) as hdu:
