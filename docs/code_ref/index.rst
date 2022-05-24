@@ -1,8 +1,8 @@
 .. _reference:
 
-==============
-Code Reference
-==============
+=============
+API Reference
+=============
 
 .. toctree::
    :maxdepth: 2
@@ -13,3 +13,4 @@ Code Reference
    iris
    lyra
    rhessi
+   suvi

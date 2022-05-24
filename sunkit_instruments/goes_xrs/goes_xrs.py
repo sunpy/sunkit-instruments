@@ -261,7 +261,7 @@ def calculate_temperature_em(
     """
     # Check that input argument is of correct type
     if not isinstance(goests, timeseries.XRSTimeSeries):
-        raise TypeError("goests must be a XRSTimeSeries object")
+        raise TypeError(f"goests must be a XRSTimeSeries object, not {type(goests)}")
     if not download_dir:
         download_dir = get_and_create_download_dir()
 
@@ -870,7 +870,7 @@ def calculate_radiative_loss_rate(goests, force_download=False, download_dir=Non
         download_dir = get_and_create_download_dir()
     # Check that input argument is of correct type
     if not isinstance(goests, timeseries.XRSTimeSeries):
-        raise TypeError("goests must be a XRSTimeSeries object.")
+        raise TypeError(f"goests must be a XRSTimeSeries object, not {type(goests)}")
 
     # extract temperature and emission measure from GOESLightCurve
     # object and change type to that required by _calc_rad_loss().
@@ -1113,7 +1113,7 @@ def calculate_xray_luminosity(goests):
     """
     # Check that input argument is of correct type
     if not isinstance(goests, timeseries.XRSTimeSeries):
-        raise TypeError("goeslc must be a XRSTimeSeries object.")
+        raise TypeError(f"goeslc must be a XRSTimeSeries object, not {type(goests)}")
     # Find temperature and emission measure with _goes_chianti_tem
     lx_out = _goes_lx(
         goests.quantity("xrsb"),
@@ -1326,7 +1326,7 @@ def flareclass_to_flux(flareclass):
     <Quantity 0.00024 W / m2>
     """
     if not isinstance(flareclass, type("str")):
-        raise TypeError("Input must be a string")
+        raise TypeError(f"Input must be a string, not {type(goests)}")
     # TODO should probably make sure the string is in the expected format.
 
     flareclass = flareclass.upper()

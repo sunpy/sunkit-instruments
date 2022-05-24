@@ -43,8 +43,6 @@ stages:
         default_python: '3.8'
         submodules: false
         coverage: codecov
-        toxdeps: tox-pypi-filter
-        posargs: -n=4
         envs:
           - linux: py39
 
@@ -58,8 +56,6 @@ stages:
         default_python: '3.8'
         submodules: false
         coverage: codecov
-        toxdeps: tox-pypi-filter
-        posargs: -n=4
         libraries:
           apt:
             - graphviz
@@ -70,7 +66,6 @@ stages:
             posargs: " "
             pytest: false
           - linux: py310-online
-          - linux: py38-oldestdeps
 
   - ${{ if or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual')) }}:
     - stage: CronTests
@@ -82,10 +77,9 @@ stages:
           default_python: '3.8'
           submodules: false
           coverage: codecov
-          toxdeps: tox-pypi-filter
-          posargs: -n=4
           envs:
             - linux: py310-devdeps
+            - linux: py38-oldestdeps
 
   # On branches which aren't main, and not Pull Requests, build the wheels but only upload them on tags
   - ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), or(ne(variables['Build.SourceBranchName'], 'main'), eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual'))) }}:

@@ -229,3 +229,6 @@ sunkit_instruments/_version.py
 .history
 *.orig
 .tmp
+
+# Example files
+dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits
