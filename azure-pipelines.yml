@@ -79,6 +79,7 @@ stages:
           coverage: codecov
           envs:
             - linux: py310-devdeps
+            - linux: py38-oldestdeps
 
   # On branches which aren't main, and not Pull Requests, build the wheels but only upload them on tags
   - ${{ if and(ne(variables['Build.Reason'], 'PullRequest'), or(ne(variables['Build.SourceBranchName'], 'main'), eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual'))) }}:
