@@ -1,6 +1,16 @@
 # Allow all possible file extensions for FITS and netCDF
-FITS_FILE_EXTENSIONS = (".fits", ".fts", ".fits.gz", "fts.gz", "fits.bz", "fts.bz")
-NETCDF_FILE_EXTENSIONS = (".nc", ".nc.gz", ".nc.bz", ".cdf", ".cdf.gz", ".cdf.bz")
+FITS_FILE_EXTENSIONS = (
+    ".fits",
+    ".fts",
+    ".fits.gz",
+    "fts.gz",
+)
+NETCDF_FILE_EXTENSIONS = (
+    ".nc",
+    ".nc.gz",
+    ".cdf",
+    ".cdf.gz",
+)
 # Naming scheme for SUVI files
 COMPOSITE_MATCHES = [
     "-l2-ci094",
