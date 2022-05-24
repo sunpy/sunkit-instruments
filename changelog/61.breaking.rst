@@ -1,0 +1,1 @@
+Minimum version of ``sunpy`` is now 4.0 (LTS).
