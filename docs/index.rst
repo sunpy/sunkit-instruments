@@ -14,7 +14,7 @@ A package for instrument-specific data structures and processing in the SunPy ec
    whatsnew/index
 
 
-Note that the code in this package is **not** maintained by or neccesarily contributed by instrument teams.
+Note that the code in this package is **not** maintained by or neccesarily contributed to by instrument teams.
 Some instruments have individual packages for analysis in Python, including:
 
 - `aiapy <https://aiapy.readthedocs.io/en/stable/>`__
