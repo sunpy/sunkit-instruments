@@ -1,4 +1,8 @@
-This package provides helper routines for the SUVI (Solar UltraViolet Imager) instrument on the GOES-R series of satellites.
+====
+SUVI
+====
+
+Helper routines for the Solar UltraViolet Imager (SUVI) instrument on the GOES-R series of satellites.
 
 .. note::
 
