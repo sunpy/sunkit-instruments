@@ -6,16 +6,34 @@ import numpy as np
 from sunpy.time import parse_time
 from astropy.time import Time
 
-goes_ts = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-goes_15 = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_gxrs-l2-irrad_g15_d20170910_v0-0-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
+# goes_ts = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
+# goes_15 = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_gxrs-l2-irrad_g15_d20170910_v0-0-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
 
 
-def calculate_temperature_em(goes_ts, remove_scaling=False):
+def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
     """
-    This calculates the temperature and emission measure from the GOES/XRS flux ratios
+    This calculates the temperature and emission measure from the GOES/XRS flux ratios.
+
+    Parameters
+    ----------
+    goes_ts : `~sunpy.timeseries.XRSTimeSeries`
+        the GOES XRS timeseries to calculate the temperature and emission measure
+    abundance: `~str`
+        default 'coronal'
+    remove_scaling: `Boolean`
+        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. This
+        is only an issue and will need to be used for the older FITS files for 8-15 XRS.
+
+    Return
+    ------
+    dict - a dictionary of the temperature and emission measure (this will be a TimeSeries in future)
+
+    Example
+    -------
+    >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
+    >>> output = calculate_temperature_em(goes_ts)
 
     """
-    # make sure its a GOES-XRS timeseries
     if not isinstance(goes_ts, ts.XRSTimeSeries):
         raise TypeError(f"goests must be a XRSTimeSeries object, not {type(goes_ts)}")
 
@@ -42,14 +60,11 @@ def calculate_temperature_em(goes_ts, remove_scaling=False):
     else:
         shortflux_corrected = shortflux
         
-    output = goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=satellite_number)
+    output = goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=satellite_number, abundance=abundance)
     return output
 
 def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abundances="coronal"):
     '''
-    Satellite number starts counting at 0. 
-    For example, for GOES 15 - you pass 14 to the response table.
-
     Parameters
     ----------
     fluxratio : `~np.array`
@@ -67,6 +82,9 @@ def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abunda
     -----
     url = "https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits"
 
+    Satellite number starts counting at 0. 
+    For example, for GOES 15 - you pass 14 to the response table.
+
     '''
     
     index = np.logical_or(
@@ -79,7 +97,7 @@ def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abunda
     sat = sat-1 # counting starts at 0ß
 
     resp_file_name = 'goes_chianti_response_latest.fits'
-    aa = fits.getdata(resp_file_name, extension=1)
+    aa = fits.getdata(resp_file_name, extension=1) # these are awful variable names, using them for now....
     rcor = aa.FSHORT_COR / aa.FLONG_COR
     rpho = aa.FSHORT_PHO / aa.FLONG_PHO
     
@@ -92,7 +110,6 @@ def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abunda
         modelratio = rpho[sat]
 
     spline = interpolate.splrep(modelratio, modeltemp, s=0)
-    #fluxratio = bratio.values
     temp = interpolate.splev(fluxratio, spline, der=0)
 
     modelflux = aa["FLONG_COR"][sat]
