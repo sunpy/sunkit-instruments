@@ -1,13 +1,12 @@
 from astropy import units as u 
 from astropy.io import fits
+from astropy.time import Time
 from sunpy import timeseries as ts 
+from sunpy.time import parse_time
+from sunpy.data import manager
 from scipy import interpolate
 import numpy as np 
-from sunpy.time import parse_time
-from astropy.time import Time
 
-# goes_ts = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-# goes_15 = ts.TimeSeries("/Users/laura.hayes/dev_things/goes_tests/sci_gxrs-l2-irrad_g15_d20170910_v0-0-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
 
 
 def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
@@ -60,10 +59,15 @@ def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False)
     else:
         shortflux_corrected = shortflux
         
-    output = goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=satellite_number, abundance=abundance)
+    output = _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=satellite_number, abundance=abundance)
     return output
 
-def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abundances="coronal"):
+
+@manager.require('goes_chianti_response_table',
+                ['https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits'],
+                 '4ca9730fb039e8a04407ae0aa4d5e3e2566b93dfe549157aa7c8fc3aa1e3e04d')
+
+def _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abundance="coronal"):
     '''
     Parameters
     ----------
@@ -94,9 +98,9 @@ def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abunda
     fluxratio = shortflux_corrected / longflux_corrected
     fluxratio.value[index] = u.Quantity(0.003*u.W/u.m**2)    
 
-    sat = sat-1 # counting starts at 0ß
+    sat = sat-1 # counting starts at 0
 
-    resp_file_name = 'goes_chianti_response_latest.fits'
+    resp_file_name = manager.get('goes_chianti_response_table')
     aa = fits.getdata(resp_file_name, extension=1) # these are awful variable names, using them for now....
     rcor = aa.FSHORT_COR / aa.FLONG_COR
     rpho = aa.FSHORT_PHO / aa.FLONG_PHO
@@ -104,7 +108,7 @@ def goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abunda
     table_to_response_em = 10.0**(49.-aa["ALOG10EM"][sat])
 
     modeltemp = aa["TEMP_MK"][sat]
-    if abundances=="coronal":
+    if abundance=="coronal":
         modelratio = rcor[sat]
     else:
         modelratio = rpho[sat]
