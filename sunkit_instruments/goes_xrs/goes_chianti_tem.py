@@ -6,7 +6,9 @@ from sunpy.time import parse_time
 from sunpy.data import manager
 from scipy import interpolate
 import numpy as np 
+import pandas as pd
 
+__all__ = ["calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
 
 
 def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
@@ -39,27 +41,9 @@ def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False)
     satellite_number = int(goes_ts.observatory.split("-")[-1])
 
 
-    longflux = goes_ts.quantity("xrsb").to(u.W/u.m**2)
-    shortflux = goes_ts.quantity("xrsa").to(u.W/u.m**2)
 
-    if "xrsb_quality" in goes_ts.columns:
-        longflux[goes_ts.to_dataframe()["xrsb_quality"]!=0] = np.nan
-        shortflux[goes_ts.to_dataframe()["xrsa_quality"]!=0] = np.nan
-
-    obsdate = parse_time(goes_ts.index[0])
-
-    if obsdate <= Time("1983-06-28") and sat==6:
-        longflux_corrected = longflux * (4.43/5.32)
-    else:
-        longflux_corrected = longflux
         
-    if remove_scaling and sat>=8 and sat<16:
-        longflux_corrected = longflux_corrected / 0.7
-        shortflux_corrected = shortflux / 0.85
-    else:
-        shortflux_corrected = shortflux
-        
-    output = _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=satellite_number, abundance=abundance)
+    output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
     return output
 
 
@@ -67,7 +51,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False)
                 ['https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits'],
                  '4ca9730fb039e8a04407ae0aa4d5e3e2566b93dfe549157aa7c8fc3aa1e3e04d')
 
-def _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abundance="coronal"):
+def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False):
     '''
     Parameters
     ----------
@@ -90,7 +74,28 @@ def _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abund
     For example, for GOES 15 - you pass 14 to the response table.
 
     '''
-    
+
+    #--------PREP THE DATA----------#
+    longflux = goes_ts.quantity("xrsb").to(u.W/u.m**2)
+    shortflux = goes_ts.quantity("xrsa").to(u.W/u.m**2)
+
+    if "xrsb_quality" in goes_ts.columns:
+        longflux[goes_ts.to_dataframe()["xrsb_quality"]!=0] = np.nan
+        shortflux[goes_ts.to_dataframe()["xrsa_quality"]!=0] = np.nan
+
+    obsdate = parse_time(goes_ts.index[0])
+
+    if obsdate <= Time("1983-06-28") and satellite_number==6:
+        longflux_corrected = longflux * (4.43/5.32)
+    else:
+        longflux_corrected = longflux
+        
+    if remove_scaling and satellite_number>=8 and satellite_number<16:
+        longflux_corrected = longflux_corrected / 0.7
+        shortflux_corrected = shortflux / 0.85
+    else:
+        shortflux_corrected = shortflux
+
     index = np.logical_or(
         shortflux_corrected < u.Quantity(1e-10*u.W/u.m**2),
         longflux_corrected < u.Quantity(3e-8*u.W/u.m**2),
@@ -98,16 +103,21 @@ def _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abund
     fluxratio = shortflux_corrected / longflux_corrected
     fluxratio.value[index] = u.Quantity(0.003*u.W/u.m**2)    
 
-    sat = sat-1 # counting starts at 0
+    #--------WORK OUT DETECTOR INDEX TO USE BASED ON SATELLITE NUMBER----------#
+    if satellite_number<=15:
+        sat = satellite_number-1 # counting starts at 0
+    else:
+        sat = 15+4*(satellite_number-16)+secondary # to figure out which detector response table to use (see notes)
 
+    #--------READ RESPONSE TABLE----------#
     resp_file_name = manager.get('goes_chianti_response_table')
-    aa = fits.getdata(resp_file_name, extension=1) # these are awful variable names, using them for now....
-    rcor = aa.FSHORT_COR / aa.FLONG_COR
-    rpho = aa.FSHORT_PHO / aa.FLONG_PHO
+    response_table = fits.getdata(resp_file_name, extension=1) 
+    rcor = response_table.FSHORT_COR / response_table.FLONG_COR
+    rpho = response_table.FSHORT_PHO / response_table.FLONG_PHO
     
-    table_to_response_em = 10.0**(49.-aa["ALOG10EM"][sat])
+    table_to_response_em = 10.0**(49.-response_table["ALOG10EM"][sat])
 
-    modeltemp = aa["TEMP_MK"][sat]
+    modeltemp = response_table["TEMP_MK"][sat]
     if abundance=="coronal":
         modelratio = rcor[sat]
     else:
@@ -116,18 +126,58 @@ def _goes_chianti_temp_em(shortflux_corrected, longflux_corrected, sat=15, abund
     spline = interpolate.splrep(modelratio, modeltemp, s=0)
     temp = interpolate.splev(fluxratio, spline, der=0)
 
-    modelflux = aa["FLONG_COR"][sat]
-    modeltemp = aa["TEMP_MK"][sat]
+    modelflux = response_table["FLONG_COR"][sat]
+    modeltemp = response_table["TEMP_MK"][sat]
 
+    #--------CALCULATE THE TEMPERATURE AND EMISSION MEASURE----------#
     spline = interpolate.splrep(modeltemp, modelflux*table_to_response_em, s=0)
     denom = interpolate.splev(temp, spline, der=0)
 
     emission_measure = longflux_corrected.value / denom
 
-    return {"temperature":temp*u.MK, "emission measure":emission_measure*1e49*u.cm**(-3)} 
+    #--------RETURN A SUNPY TIMESERIES----------#
+    goes_times = goes_ts._data.index
+    df = pd.DataFrame({"temperature":temp, "emission measure":emission_measure*1e49}, 
+                       index=goes_times)
+    
+    units = {"temperature": u.MK, "emission measure": u.cm**(-3)}
+    
+    header = {"Info":"Estimated temperature and emission measure"}
+    
+    temp_em = ts.TimeSeries(df, header, units)
+
+    return temp_em
 
 
+def _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance):
+    """
+    This manages which response to use for the GOES primary detectors used in the
+    observations for the GOES-R satellites (i.e. GOES 16 and 17.)
 
+    SECONDARY - values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R
+    This uses the 
+    """
+    # these are the conditions of which combinations of detectors to use
+    secondary_det_conditions = {0: [1, 1], 1:[2, 1], 2:[1, 2], 3:[2, 2]} 
+
+    outputs = []
+    for k in secondary_det_conditions:
+        dets = secondary_det_conditions[k]
+        second_ind = np.where((goes_ts.quantity("primary_detector_a")==dets[0])\
+                             &(goes_ts.quantity("primary_detector_b")==dets[1]))[0]
+        
+        goes_split = ts.TimeSeries(goes_ts._data.iloc[second_ind], goes_ts.units)
+
+        if len(goes_split._data)>0:
+            output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance, secondary=int(k))
+            outputs.append(output)
+
+    if len(outputs>1):
+        full_output = outputs[0].concatenate(outputs[1:])
+    else:
+        full_output = outputs[0]
+
+    return full_output
 
 
 
