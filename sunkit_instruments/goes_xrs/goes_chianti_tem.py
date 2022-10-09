@@ -7,32 +7,34 @@ from sunpy.data import manager
 from scipy import interpolate
 import numpy as np 
 import pandas as pd
+from sunpy.util.exceptions import warn_user
 
-__all__ = ["calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
+__all__ = ["goes_calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
 
 
-def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
+def goes_calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
     """
     This calculates the temperature and emission measure from the GOES/XRS flux ratios.
 
     Parameters
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
-        the GOES XRS timeseries to calculate the temperature and emission measure
-    abundance: `~str`
-        default 'coronal'
+        The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
+    abundance: `~str`, {`coronal` | `photospheric`}
+        Default 'coronal'. Which abundances to use for the calculation.
     remove_scaling: `Boolean`
-        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. This
-        is only an issue and will need to be used for the older FITS files for 8-15 XRS.
+        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. 
+        This is only an issue and will need to be used for the older FITS files for 8-15 XRS.
 
-    Return
-    ------
-    dict - a dictionary of the temperature and emission measure (this will be a TimeSeries in future)
+    Returns
+    -------
+    `~sunpy.timeseries.GenericTimeSeries`
+        Conatins the temperature and emission measure calculated from the input `goes_ts` TimeSeries.
 
     Example
     -------
     >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-    >>> output = calculate_temperature_em(goes_ts)
+    >>> output = goes_calculate_temperature_em(goes_ts)
 
     """
     if not isinstance(goes_ts, ts.XRSTimeSeries):
@@ -40,10 +42,15 @@ def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False)
 
     satellite_number = int(goes_ts.observatory.split("-")[-1])
 
-    if (satellite_number>=16) and ("primary_detector_a" in goes_ts.columns):
-        output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
+    if (satellite_number>=16):  
+        if "primary_detector_a" in goes_ts.columns:
+            output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
+        else:
+            warn_user("No information about primary/secondary detectors in XRSTimeSeries, assuming primary for all")
+            output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
     else: 
         output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
+    
     return output
 
 
@@ -83,7 +90,7 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
         longflux[goes_ts.to_dataframe()["xrsb_quality"]!=0] = np.nan
         shortflux[goes_ts.to_dataframe()["xrsa_quality"]!=0] = np.nan
 
-    obsdate = parse_time(goes_ts.index[0])
+    obsdate = parse_time(goes_ts._data.index[0])
 
     if obsdate <= Time("1983-06-28") and satellite_number==6:
         longflux_corrected = longflux * (4.43/5.32)
@@ -149,7 +156,7 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
     return temp_em
 
 
-def _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance):
+def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     """
     This manages which response to use for the GOES primary detectors used in the
     observations for the GOES-R satellites (i.e. GOES 16 and 17.)
