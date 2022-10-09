@@ -40,10 +40,10 @@ def calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False)
 
     satellite_number = int(goes_ts.observatory.split("-")[-1])
 
-
-
-        
-    output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
+    if (satellite_number>=16) and ("primary_detector_a" in goes_ts.columns):
+        output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
+    else: 
+        output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
     return output
 
 
