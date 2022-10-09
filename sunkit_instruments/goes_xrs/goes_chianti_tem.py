@@ -60,18 +60,24 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=F
 
 def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False):
     '''
+
+
     Parameters
     ----------
-    fluxratio : `~np.array`
-        the ratio of the the short to the long flux channels of GOES-XRS.
+    goes_ts : `~sunpy.timeseries.XRSTimeSeries`
+        The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     sat: `int`
         the GOES satellite number
-    abundances: "coronal" or "photospheric"
+    abundance: `~str`, {`coronal` | `photospheric`}
+        Default 'coronal'. Which abundances to use for the calculation.    abundances: "coronal" or "photospheric"
 
     Returns
     -------
-    temperature : `np.array` - the temperature in MK
-    emission measure : `np.array` - the emission measure in 10^49cm^-3.
+    `~sunpy.timeseries.GenericTimeSeries`
+        Conatins the temperature and emission measure calculated from the input `goes_ts` TimeSeries.
+        The two columns are:
+            `temperature` : the temperature in MK
+            `emission measure` : the emission measure in 10^49cm^-3.
 
     Notes
     -----
@@ -159,11 +165,13 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
 def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     """
     This manages which response to use for the GOES primary detectors used in the
-    observations for the GOES-R satellites (i.e. GOES 16 and 17.)
+    observations for the GOES-R satellites (i.e. GOES 16 and 17).
 
-    SECONDARY - values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R
-    This uses the 
+    SECONDARY - values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
+    This uses the `primary_detector_a/b` columns to figure out which detectors are used for each timestep.
+
     """
+    
     # these are the conditions of which combinations of detectors to use
     secondary_det_conditions = {0: [1, 1], 1:[2, 1], 2:[1, 2], 3:[2, 2]} 
 
