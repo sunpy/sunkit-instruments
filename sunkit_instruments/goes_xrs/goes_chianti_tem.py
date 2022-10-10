@@ -184,10 +184,10 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
         goes_split = ts.TimeSeries(goes_ts._data.iloc[second_ind], goes_ts.units)
 
         if len(goes_split._data)>0:
-            output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance, secondary=int(k))
+            output = _goes_chianti_temp_em(goes_split, satellite_number, abundance=abundance, secondary=int(k))
             outputs.append(output)
 
-    if len(outputs>1):
+    if len(outputs)>1:
         full_output = outputs[0].concatenate(outputs[1:])
     else:
         full_output = outputs[0]
