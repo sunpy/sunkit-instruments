@@ -38,16 +38,27 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=F
 
     """
     if not isinstance(goes_ts, ts.XRSTimeSeries):
-        raise TypeError(f"goests must be a XRSTimeSeries object, not {type(goes_ts)}")
+        raise TypeError(f"goes_ts must be a XRSTimeSeries object, not {type(goes_ts)}")
 
-    satellite_number = int(goes_ts.observatory.split("-")[-1])
+    if goes_ts.observatory is None:
+        raise ValueError(f"The GOES satellite number is not found in the goes_ts")
+    else:        
+        satellite_number = int(goes_ts.observatory.split("-")[-1])
+        if (satellite_number <1) or (satellite_number>17):
+            raise ValueError(f"The GOES satellite number has to be between 1 and 17, {satellite_number} is given")
 
+    # check if GOES-R and whether the primary detector values are given
     if (satellite_number>=16):  
         if "primary_detector_a" in goes_ts.columns:
             output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
         else:
             warn_user("No information about primary/secondary detectors in XRSTimeSeries, assuming primary for all")
             output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
+
+    # check if the older files are passed
+    elif ("Origin" in goes_ts.meta.metas[0]) and (goes_ts.meta.metas[0]["Origin"] == "SDAC/GSFC"):
+        output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance, remove_scaling=True)
+
     else: 
         output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
     
@@ -89,6 +100,8 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
     '''
 
     #--------PREP THE DATA----------#
+
+
     longflux = goes_ts.quantity("xrsb").to(u.W/u.m**2)
     shortflux = goes_ts.quantity("xrsa").to(u.W/u.m**2)
 
