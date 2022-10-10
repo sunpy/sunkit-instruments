@@ -12,7 +12,7 @@ from sunpy.util.exceptions import warn_user
 __all__ = ["goes_calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
 
 
-def goes_calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=False):
+def goes_calculate_temperature_em(goes_ts, abundance="coronal"):
     """
     This calculates the temperature and emission measure from the GOES/XRS flux ratios.
 
@@ -22,9 +22,6 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal", remove_scaling=F
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     abundance: `~str`, {`coronal` | `photospheric`}
         Default 'coronal'. Which abundances to use for the calculation.
-    remove_scaling: `Boolean`
-        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. 
-        This is only an issue and will need to be used for the older FITS files for 8-15 XRS.
 
     Returns
     -------
@@ -81,6 +78,9 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
         the GOES satellite number
     abundance: `~str`, {`coronal` | `photospheric`}
         Default 'coronal'. Which abundances to use for the calculation.    abundances: "coronal" or "photospheric"
+    remove_scaling: `Boolean`
+        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. 
+        This is only an issue and will need to be used for the older FITS files for 8-15 XRS.
 
     Returns
     -------
@@ -100,8 +100,6 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
     '''
 
     #--------PREP THE DATA----------#
-
-
     longflux = goes_ts.quantity("xrsb").to(u.W/u.m**2)
     shortflux = goes_ts.quantity("xrsa").to(u.W/u.m**2)
 
