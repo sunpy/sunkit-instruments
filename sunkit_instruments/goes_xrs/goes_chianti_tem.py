@@ -12,7 +12,7 @@ from sunpy.util.exceptions import warn_user
 __all__ = ["goes_calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
 
 
-def goes_calculate_temperature_em(goes_ts, abundance="coronal"):
+def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     """
     This calculates the temperature and emission measure from the GOES/XRS flux ratios.
 
@@ -20,8 +20,8 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal"):
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
-    abundance: `~str`, {`coronal` | `photospheric`}
-        Default 'coronal'. Which abundances to use for the calculation.
+    abundance: {``coronal`` | ``photospheric``}, optional
+        Which abundances to use for the calculation, the default is ``coronal``.
 
     Returns
     -------
@@ -31,33 +31,33 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal"):
     Example
     -------
     >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-    >>> output = goes_calculate_temperature_em(goes_ts)
+    >>> goes_temp_emiss = goes_calculate_temperature_em(goes_ts)
 
     """
     if not isinstance(goes_ts, ts.XRSTimeSeries):
-        raise TypeError(f"goes_ts must be a XRSTimeSeries object, not {type(goes_ts)}")
+        raise TypeError(f"Input time series must be a XRSTimeSeries instance, not {type(goes_ts)}")
 
     if goes_ts.observatory is None:
-        raise ValueError(f"The GOES satellite number is not found in the goes_ts")
-    else:        
-        satellite_number = int(goes_ts.observatory.split("-")[-1])
-        if (satellite_number <1) or (satellite_number>17):
-            raise ValueError(f"The GOES satellite number has to be between 1 and 17, {satellite_number} is given")
+        raise ValueError(f"The GOES satellite number was not found in the input time series")
+  
+    satellite_number = int(goes_ts.observatory.split("-")[-1])
+    if (satellite_number <1) or (satellite_number>17):
+        raise ValueError(f"GOES satellite number has to be between 1 and 17, {satellite_number} was found.")
 
-    # check if GOES-R and whether the primary detector values are given
+    # Check if GOES-R and whether the primary detector values are given
     if (satellite_number>=16):  
         if "primary_detector_a" in goes_ts.columns:
             output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
         else:
             warn_user("No information about primary/secondary detectors in XRSTimeSeries, assuming primary for all")
-            output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
+            output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
 
-    # check if the older files are passed
+    # Check if the older files are parsed
     elif ("Origin" in goes_ts.meta.metas[0]) and (goes_ts.meta.metas[0]["Origin"] == "SDAC/GSFC"):
-        output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance, remove_scaling=True)
+        output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance, remove_scaling=True)
 
     else: 
-        output = _goes_chianti_temp_em(goes_ts, satellite_number, abundance=abundance)
+        output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
     
     return output
 
@@ -66,40 +66,37 @@ def goes_calculate_temperature_em(goes_ts, abundance="coronal"):
                 ['https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits'],
                  '4ca9730fb039e8a04407ae0aa4d5e3e2566b93dfe549157aa7c8fc3aa1e3e04d')
 
-def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False):
-    '''
-
-
+def _chianti_temp_emiss(goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False):
+    """
     Parameters
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
-    sat: `int`
-        the GOES satellite number
-    abundance: `~str`, {`coronal` | `photospheric`}
-        Default 'coronal'. Which abundances to use for the calculation.    abundances: "coronal" or "photospheric"
-    remove_scaling: `Boolean`
-        Checks whether to remove the SWPC scaling factors. Default False for "true" fluxes from the netcdf files. 
-        This is only an issue and will need to be used for the older FITS files for 8-15 XRS.
+    sat : `int`
+        GOES satellite number.
+    abundance: {``coronal`` | ``photospheric``}, optional
+        Which abundances to use for the calculation, the default is ``coronal``.
+    remove_scaling: `bool`, optional
+        Checks whether to remove the SWPC scaling factors.
+        This is only an issue for the older FITS files for GOES 8-15 XRS.
+        Default is `False` as the netcdf files have the "true" fluxes.
 
     Returns
     -------
     `~sunpy.timeseries.GenericTimeSeries`
-        Conatins the temperature and emission measure calculated from the input `goes_ts` TimeSeries.
+        Contains the temperature and emission measure calculated from the input ``goes_ts`` time series.
         The two columns are:
-            `temperature` : the temperature in MK
-            `emission measure` : the emission measure in 10^49cm^-3.
-
+            ``temperature`` : The temperature in MK.
+            ``emission `measure` : The emission measure.
     Notes
     -----
     url = "https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits"
 
-    Satellite number starts counting at 0. 
+    The response table starts counting the satellite number at 0. 
     For example, for GOES 15 - you pass 14 to the response table.
 
-    '''
+    """
 
-    #--------PREP THE DATA----------#
     longflux = goes_ts.quantity("xrsb").to(u.W/u.m**2)
     shortflux = goes_ts.quantity("xrsa").to(u.W/u.m**2)
 
@@ -127,13 +124,12 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
     fluxratio = shortflux_corrected / longflux_corrected
     fluxratio.value[index] = u.Quantity(0.003*u.W/u.m**2)    
 
-    #--------WORK OUT DETECTOR INDEX TO USE BASED ON SATELLITE NUMBER----------#
+    # Work out detector index to use based on satellite number
     if satellite_number<=15:
         sat = satellite_number-1 # counting starts at 0
     else:
         sat = 15+4*(satellite_number-16)+secondary # to figure out which detector response table to use (see notes)
 
-    #--------READ RESPONSE TABLE----------#
     resp_file_name = manager.get('goes_chianti_response_table')
     response_table = fits.getdata(resp_file_name, extension=1) 
     rcor = response_table.FSHORT_COR / response_table.FLONG_COR
@@ -153,13 +149,12 @@ def _goes_chianti_temp_em(goes_ts, satellite_number, secondary=0, abundance="cor
     modelflux = response_table["FLONG_COR"][sat]
     modeltemp = response_table["TEMP_MK"][sat]
 
-    #--------CALCULATE THE TEMPERATURE AND EMISSION MEASURE----------#
+    # Calculate the temperature and emission measure
     spline = interpolate.splrep(modeltemp, modelflux*table_to_response_em, s=0)
     denom = interpolate.splev(temp, spline, der=0)
 
     emission_measure = longflux_corrected.value / denom
 
-    #--------RETURN A SUNPY TIMESERIES----------#
     goes_times = goes_ts._data.index
     df = pd.DataFrame({"temperature":temp, "emission measure":emission_measure*1e49}, 
                        index=goes_times)
@@ -195,7 +190,7 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
         goes_split = ts.TimeSeries(goes_ts._data.iloc[second_ind], goes_ts.units)
 
         if len(goes_split._data)>0:
-            output = _goes_chianti_temp_em(goes_split, satellite_number, abundance=abundance, secondary=int(k))
+            output = _chianti_temp_emiss(goes_split, satellite_number, abundance=abundance, secondary=int(k))
             outputs.append(output)
 
     if len(outputs)>1:
