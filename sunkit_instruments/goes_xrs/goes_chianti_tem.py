@@ -53,7 +53,7 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
             output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
 
     # Check if the older files are parsed
-    elif ("Origin" in goes_ts.meta.metas[0]) and (goes_ts.meta.metas[0]["Origin"] == "SDAC/GSFC"):
+    elif ("Origin" in goes_ts.meta.metas[0]) and (goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"):
         output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance, remove_scaling=True)
 
     else: 
