@@ -14,11 +14,11 @@ SUVI L2 Thematic Maps are recognized by pattern in the filename, i.e. they conta
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
+from parfive import Downloader
 
 from astropy.io import fits
 
 from sunkit_instruments.suvi._variables import SOLAR_CLASS_NAME, SOLAR_COLORS
-from sunkit_instruments.utils import _download_data
 
 ###############################################################################
 # We start with getting the data. This is done by downloading the data from ``data.ngdc.noaa.gov``.
@@ -29,16 +29,15 @@ from sunkit_instruments.utils import _download_data
 # Using the url:
 # https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/data/suvi-l2-thmap/2022/01/01/dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits
 
-urls = [
+url = [
     "https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/data/suvi-l2-thmap/2022/01/01/dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits"
 ]
-_download_data(urls)
-filename = "dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits"
+(file,) = Downloader.simple_download(url)
 
 ################################################################################
 # First let's read a SUVI L2 Thematic Map FITS file.
 
-with fits.open(filename) as hdu:
+with fits.open(file) as hdu:
     thmap_data = hdu[0].data
     time_stamp = hdu[0].header["DATE-OBS"][0:19]
 
