@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sunpy.util.exceptions import warn_user
 
-__all__ = ["goes_calculate_temperature_em", "_goes_chianti_temp_em", "_manage_goesr_detectors"]
+__all__ = ["calculate_temperature_emiss"]
 
 
 def calculate_temperature_emiss(goes_ts, abundance="coronal"):
@@ -63,7 +63,7 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
 
 
 @manager.require('goes_chianti_response_table',
-                ['https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits'],
+                ['https://sohoftp.nascom.nasa.gov/solarsoft/gen/idl/synoptic/goes/goes_chianti_response_latest.fits'],
                  '4ca9730fb039e8a04407ae0aa4d5e3e2566b93dfe549157aa7c8fc3aa1e3e04d')
 
 def _chianti_temp_emiss(goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False):
