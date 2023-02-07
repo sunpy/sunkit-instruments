@@ -609,7 +609,6 @@ def split_series_using_lytaf(timearray, data, lytaf):
     limit = len(disc)
     # now extract the good data regions and ignore the bad ones
     for h in range(0, limit, 2):
-
         if h == limit - 1:
             # can't index h+1 here. Go to end of series
             subtimes = time_array[disc[h] : -1]
