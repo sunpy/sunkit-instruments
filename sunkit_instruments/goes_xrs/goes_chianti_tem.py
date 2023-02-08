@@ -46,7 +46,7 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
 
     # Check if GOES-R and whether the primary detector values are given
     if (satellite_number>=16):  
-        if "primary_detector_a" in goes_ts.columns:
+        if "xrsa_primary_chan" in goes_ts.columns:
             output = _manage_goesr_detectors(goes_ts, satellite_number, abundance=abundance)
         else:
             warn_user("No information about primary/secondary detectors in XRSTimeSeries, assuming primary for all")
@@ -159,7 +159,7 @@ def _chianti_temp_emiss(goes_ts, satellite_number, secondary=0, abundance="coron
     df = pd.DataFrame({"temperature":temp, "emission measure":emission_measure*1e49}, 
                        index=goes_times)
     
-    units = {"temperature": u.MK, "emission measure": u.cm**(-3)}
+    units = {"temperature": u.MK, "emission_measure": u.cm**(-3)}
     
     header = {"Info":"Estimated temperature and emission measure"}
     
@@ -184,8 +184,8 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     outputs = []
     for k in secondary_det_conditions:
         dets = secondary_det_conditions[k]
-        second_ind = np.where((goes_ts.quantity("primary_detector_a")==dets[0])\
-                             &(goes_ts.quantity("primary_detector_b")==dets[1]))[0]
+        second_ind = np.where((goes_ts.quantity("xrsa_primary_chan")==dets[0])\
+                             &(goes_ts.quantity("xrsb_primary_chan")==dets[1]))[0]
         
         goes_split = ts.TimeSeries(goes_ts._data.iloc[second_ind], goes_ts.units)
 
