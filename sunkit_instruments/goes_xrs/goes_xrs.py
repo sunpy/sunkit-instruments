@@ -1,3 +1,5 @@
+import numpy as np
+
 from astropy import units as u
 from sunpy.time import parse_time
 
