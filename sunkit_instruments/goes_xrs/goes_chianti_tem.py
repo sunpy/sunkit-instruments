@@ -15,7 +15,17 @@ __all__ = ["calculate_temperature_emiss"]
 
 def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     """
-    This calculates the temperature and emission measure from the GOES/XRS flux ratios.
+    This function calculates the isothermal temperature and
+    corresponding volume emission measure of the solar soft X-ray
+    emitting plasma observed by the GOES/XRS.
+
+    These are calculated based on methods described in White et al. 2005 (see notes) for which the GOES fluxes and
+    channel ratios are used together with loop-up tables of CHIANTI atomic models to estimate
+    isothermal tempearture and emission measure. Technically speaking, the method interpolates on the ratio between the long and short
+    wavelength channel fluxes using pre-calcuated tables for the fluxes at a series of temperatures for fixed emission measure.
+
+    The method here is almost an exact replia of what is available in SSWIDL,
+    namely, goes_chianti_tem.pro.
 
     Parameters
     ----------
@@ -33,6 +43,18 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     -------
     >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
     >>> goes_temp_emiss = goes_calculate_temperature_em(goes_ts)
+
+    Notes
+    -----
+
+    See also: https://hesperia.gsfc.nasa.gov/goes/goes.html#Temperature/Emission%20Measure
+
+
+    References
+    ----------
+    .. [1] White, S. M., Thomas, R. J., & Schwartz, R. A. 2005,
+        Sol. Phys., 227, 231, DOI: 10.1007/s11207-005-2445-z
+
     """
     if not isinstance(goes_ts, ts.XRSTimeSeries):
         raise TypeError(
@@ -62,7 +84,8 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
             )
             output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
 
-    # Check if the older files are parsed
+    # Check if the older files are passed, and if so then the scaling factor needs to be removed.
+    # The newer netcdf files now return "true" fluxes so this SWPC factor doesnt need to be removed.
     elif ("Origin" in goes_ts.meta.metas[0]) and (
         goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"
     ):
@@ -87,12 +110,22 @@ def _chianti_temp_emiss(
     goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False
 ):
     """
+
+
+    This uses the latest formulated response tables including the responses for GOES1-17 to interpolate for temperature or emission measure
+    from the measured true fluxes, which is read in from the FITS files goes_chianti_response_latest.fits.
+
+    From the ratio of the two channels the temperature is computed from a spline fit from a lookup response table for 101 temperatures and
+    then the emission measure is derived from the temperature and the long flux.
+
     Parameters
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     sat : `int`
         GOES satellite number.
+    secondary: `int`
+        values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
     abundance: {``coronal`` | ``photospheric``}, optional
         Which abundances to use for the calculation, the default is ``coronal``.
     remove_scaling: `bool`, optional
@@ -109,6 +142,8 @@ def _chianti_temp_emiss(
             ``emission `measure` : The emission measure.
     Notes
     -----
+    Requires goes_chianti_resp.fits produced by goes_chianti_response.pro
+    This file contains the pregenerated responses for default coronal and photospheric ion abundances using Chianti version 9.0.1.
     url = "https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits"
 
     The response table starts counting the satellite number at 0.
@@ -125,17 +160,22 @@ def _chianti_temp_emiss(
 
     obsdate = parse_time(goes_ts._data.index[0])
 
+    # for some reason that I can't find documented anywhere other than in the IDL code the long channel
+    # needs to be scales by this value for GOES-6 before 1983-06-28
     if obsdate <= Time("1983-06-28") and satellite_number == 6:
         longflux_corrected = longflux * (4.43 / 5.32)
     else:
         longflux_corrected = longflux
 
+    # remove the SWPC scaling factors if needed
     if remove_scaling and satellite_number >= 8 and satellite_number < 16:
         longflux_corrected = longflux_corrected / 0.7
         shortflux_corrected = shortflux / 0.85
     else:
         shortflux_corrected = shortflux
 
+    # check where the measurements are considered "good" within the lower limits of the
+    # fluxes. If they lie without the range, they are set to the default 0.003W/m^2.
     index = np.logical_or(
         shortflux_corrected < u.Quantity(1e-10 * u.W / u.m**2),
         longflux_corrected < u.Quantity(3e-8 * u.W / u.m**2),
@@ -143,7 +183,8 @@ def _chianti_temp_emiss(
     fluxratio = shortflux_corrected / longflux_corrected
     fluxratio.value[index] = u.Quantity(0.003 * u.W / u.m**2)
 
-    # Work out detector index to use based on satellite number
+    # Work out detector index to use from the table response based on satellite number
+    # The counting in the table starts at 0, and indexed in an odd way for the GOES-R primary/secondary detectors.
     if satellite_number <= 15:
         sat = satellite_number - 1  # counting starts at 0
     else:
@@ -153,10 +194,12 @@ def _chianti_temp_emiss(
 
     resp_file_name = manager.get("goes_chianti_response_table")
     response_table = fits.getdata(resp_file_name, extension=1)
-    rcor = response_table.FSHORT_COR / response_table.FLONG_COR
-    rpho = response_table.FSHORT_PHO / response_table.FLONG_PHO
+    rcor = response_table.FSHORT_COR / response_table.FLONG_COR  # coronal
+    rpho = response_table.FSHORT_PHO / response_table.FLONG_PHO  # photospheric
 
-    table_to_response_em = 10.0 ** (49.0 - response_table["ALOG10EM"][sat])
+    table_to_response_em = 10.0 ** (
+        49.0 - response_table["ALOG10EM"][sat]
+    )  # for some reason in units of 1e49 ...
 
     modeltemp = response_table["TEMP_MK"][sat]
     if abundance == "coronal":
@@ -164,13 +207,19 @@ def _chianti_temp_emiss(
     else:
         modelratio = rpho[sat]
 
+    # Calculate the temperature and emission measure:
+
+    # get spline fit to model data to get temperatures given the input flux ratio.
     spline = interpolate.splrep(modelratio, modeltemp, s=0)
     temp = interpolate.splev(fluxratio, spline, der=0)
 
-    modelflux = response_table["FLONG_COR"][sat]
+    if abundance == "coronal":
+        modelflux = response_table["FLONG_COR"][sat]
+    else:
+        modelflux = response_table["FLONG_PHO"][sat]
+
     modeltemp = response_table["TEMP_MK"][sat]
 
-    # Calculate the temperature and emission measure
     spline = interpolate.splrep(modeltemp, modelflux * table_to_response_em, s=0)
     denom = interpolate.splev(temp, spline, der=0)
 
@@ -178,7 +227,7 @@ def _chianti_temp_emiss(
 
     goes_times = goes_ts._data.index
     df = pd.DataFrame(
-        {"temperature": temp, "emission measure": emission_measure * 1e49},
+        {"temperature": temp, "emission_measure": emission_measure * 1e49},
         index=goes_times,
     )
 
@@ -186,6 +235,7 @@ def _chianti_temp_emiss(
 
     header = {"Info": "Estimated temperature and emission measure"}
 
+    # return a new timeseries with temperature and emission measure
     temp_em = ts.TimeSeries(df, header, units)
 
     return temp_em
@@ -193,17 +243,24 @@ def _chianti_temp_emiss(
 
 def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     """
-    This manages which response to use for the GOES primary detectors used in the
+    This manages which response to use for the GOES primary and secondary detectors used in the
     observations for the GOES-R satellites (i.e. GOES 16 and 17).
 
-    SECONDARY - values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
-    This uses the `primary_detector_a/b` columns to figure out which detectors are used for each timestep.
+    The GOES 16- and 17- have two detectors for each channel to extend the dynamic range of observations,
+    namely XRS-A1, XRS-A2, XRS-B1, XRS-B2, for xrsa and xrsb, respectively.
+    During large flares, both the primary and secondary detectors may be used and given that each have a different
+    response, we need to match the data at individual times with the correct response.
+
+    Note that the primary channel conditions are values of 0,1,2,3 to indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
+    Here, we use the `xrsa{b}_primary_chan` columns to figure out which detectors are used for each timestep.
 
     """
 
     # these are the conditions of which combinations of detectors to use
     secondary_det_conditions = {0: [1, 1], 1: [2, 1], 2: [1, 2], 3: [2, 2]}
 
+    # here we split the timeseries into sections for which primary or secondary detectors are used
+    # and then calculate the response for each and then concatenate them back together.
     outputs = []
     for k in secondary_det_conditions:
         dets = secondary_det_conditions[k]
