@@ -29,6 +29,8 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     The method here is almost an exact replica of what is available in SSWIDL,
     namely, goes_chianti_tem.pro, and it has been tested against that for consistency.
 
+    It now also works for the GOES-16 and -17 observations, and for the reprocessed netcdf
+    GOES-XRS files for GOES 13-15.
 
     Parameters
     ----------
