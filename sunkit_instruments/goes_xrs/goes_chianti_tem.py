@@ -17,11 +17,11 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     """
     This function calculates the isothermal temperature and
     corresponding volume emission measure of the solar soft X-ray
-    emitting plasma observed by the GOES/XRS.
+    emitting plasma observed by GOES/XRS.
 
     These are calculated based on methods described in White et al. 2005 (see notes)
     for which the GOES fluxes and channel ratios are used together with loop-up tables
-    of CHIANTI atomic models to estimate isothermal tempearture and emission measure.
+    of CHIANTI atomic models to estimate isothermal temperature and emission measure.
     Technically speaking, the method interpolates on the ratio between the long and short
     wavelength channel fluxes using pre-calcuated tables for the fluxes at a series of
     temperatures for fixed emission measure.
@@ -29,34 +29,45 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     The method here is almost an exact replica of what is available in SSWIDL,
     namely, goes_chianti_tem.pro, and it has been tested against that for consistency.
 
-    It now also works for the GOES-16 and -17 observations, and for the reprocessed netcdf
-    GOES-XRS files for GOES 13-15.
+    It now also works for the GOES-16 and -17 data, and for the re-processed netcdf
+    GOES/XRS files for GOES 13-15.
+
+    Also note that this has only been tested on the high resolutions 1s/2s/3s data of GOES/XRS.
 
     Parameters
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
-        The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
+        The GOES/XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     abundance: {``coronal`` | ``photospheric``}, optional
         Which abundances to use for the calculation, the default is ``coronal``.
 
     Returns
     -------
     `~sunpy.timeseries.GenericTimeSeries`
-        Conatins the temperature and emission measure calculated from the input `goes_ts` TimeSeries.
+        Contains the temperature and emission measure calculated from the input ``goes_ts`` time series.
 
     Example
     -------
+    >>> from sunpy import timeseries as ts
+    >>> from sunkit_instruments import goes_xrs
     >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-    >>> goes_temp_emiss = goes_calculate_temperature_em(goes_ts)
+    >>> goes_temp_emiss = goes_xrs.calculate_temperature_emiss(goes_ts)
 
     Notes
     -----
-    This function works with both the NOAA-provided netcdf data, for which the data is given in "true" fluxes
+    This function works with both the NOAA-provided netcdf files, for which the data is given in "true" fluxes
     and with the older FITS files provided by the SDAC, for which the data are scaled to be consistent with GOES-7.
     The routine determines from the `sunpy.timeseries.XRSTimeSeries` metadata
     whether the SWPC scaling factors need to be removed (which are present in the FITS data).
 
     See also: https://hesperia.gsfc.nasa.gov/goes/goes.html#Temperature/Emission%20Measure
+
+    In regards to the re-processed GOES 8-15 data, please refer to the documentation here:
+        * https://www.ncei.noaa.gov/data/goes-space-environment-monitor/access/science/xrs/GOES_1-15_XRS_Science-Quality_Data_Readme.pdf
+    This includes information of the SWPC scaling factors that were applied to prior data (e.g. the FITS data).
+
+    For the GOES-R data please refer to here:
+        * https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/docs/GOES-R_XRS_L2_Data_Readme.pdf
 
     References
     ----------
@@ -176,7 +187,9 @@ def _chianti_temp_emiss(
     else:
         longflux_corrected = longflux
 
-    # remove the SWPC scaling factors if needed
+    # remove the SWPC scaling factors if needed.
+    # The SPWC scaling factors of 0.7 and 0.85 for the XRSA and XSRB channels respectivelt
+    # are documented in the NOAA readme file linked in the docstring.
     if remove_scaling and satellite_number >= 8 and satellite_number < 16:
         longflux_corrected = longflux_corrected / 0.7
         shortflux_corrected = shortflux / 0.85
