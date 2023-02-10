@@ -19,13 +19,16 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     corresponding volume emission measure of the solar soft X-ray
     emitting plasma observed by the GOES/XRS.
 
-    These are calculated based on methods described in White et al. 2005 (see notes) for which the GOES fluxes and
-    channel ratios are used together with loop-up tables of CHIANTI atomic models to estimate
-    isothermal tempearture and emission measure. Technically speaking, the method interpolates on the ratio between the long and short
-    wavelength channel fluxes using pre-calcuated tables for the fluxes at a series of temperatures for fixed emission measure.
+    These are calculated based on methods described in White et al. 2005 (see notes)
+    for which the GOES fluxes and channel ratios are used together with loop-up tables
+    of CHIANTI atomic models to estimate isothermal tempearture and emission measure.
+    Technically speaking, the method interpolates on the ratio between the long and short
+    wavelength channel fluxes using pre-calcuated tables for the fluxes at a series of
+    temperatures for fixed emission measure.
 
-    The method here is almost an exact replia of what is available in SSWIDL,
-    namely, goes_chianti_tem.pro.
+    The method here is almost an exact replica of what is available in SSWIDL,
+    namely, goes_chianti_tem.pro, and it has been tested against that for consistency.
+
 
     Parameters
     ----------
@@ -46,9 +49,12 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
 
     Notes
     -----
+    This function works with both the NOAA-provided netcdf data, for which the data is given in "true" fluxes
+    and with the older FITS files provided by the SDAC, for which the data are scaled to be consistent with GOES-7.
+    The routine determines from the `sunpy.timeseries.XRSTimeSeries` metadata
+    whether the SWPC scaling factors need to be removed (which are present in the FITS data).
 
     See also: https://hesperia.gsfc.nasa.gov/goes/goes.html#Temperature/Emission%20Measure
-
 
     References
     ----------
@@ -110,8 +116,6 @@ def _chianti_temp_emiss(
     goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False
 ):
     """
-
-
     This uses the latest formulated response tables including the responses for GOES1-17 to interpolate for temperature or emission measure
     from the measured true fluxes, which is read in from the FITS files goes_chianti_response_latest.fits.
 
@@ -174,8 +178,9 @@ def _chianti_temp_emiss(
     else:
         shortflux_corrected = shortflux
 
-    # check where the measurements are considered "good" within the lower limits of the
-    # fluxes. If they lie without the range, they are set to the default 0.003W/m^2.
+    # Measurements of short channel flux of less than 1e-10 W/m**2 or
+    # long channel flux less than 3e-8 W/m**2 are not considered good.
+    # Ratio values corresponding to such fluxes are set to 0.003.
     index = np.logical_or(
         shortflux_corrected < u.Quantity(1e-10 * u.W / u.m**2),
         longflux_corrected < u.Quantity(3e-8 * u.W / u.m**2),
