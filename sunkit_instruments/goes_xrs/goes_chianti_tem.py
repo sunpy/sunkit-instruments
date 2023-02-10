@@ -80,6 +80,9 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
             f"GOES satellite number has to be between 1 and 17, {satellite_number} was found."
         )
 
+    allowed_abundances = ["photospheric", "coronal"]
+    if abundance not in allowed_abundances:
+        raise ValueError(f"The abundance can only be ``coronal`` or ``photospheric``.")
     # Check if GOES-R and whether the primary detector values are given
     if satellite_number >= 16:
         if "xrsa_primary_chan" in goes_ts.columns:
