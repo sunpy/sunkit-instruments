@@ -12,7 +12,7 @@ A package for instrument-specific data structures and processing in the SunPy ec
    code_ref/index
    generated/gallery/index
    whatsnew/index
-
+   glossary
 
 Note that the code in this package is **not** maintained by or neccesarily contributed to by instrument teams.
 Some instruments have individual packages for analysis in Python, including:
