@@ -1,0 +1,1 @@
+Added a glossary to the documentation.
