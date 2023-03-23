@@ -17,5 +17,6 @@ A package for instrument-specific data structures and processing in the SunPy ec
 Note that the code in this package is **not** maintained by or neccesarily contributed to by instrument teams.
 Some instruments have individual packages for analysis in Python, including:
 
-- `aiapy <https://aiapy.readthedocs.io/en/stable/>`__
-- `eispac <https://eispac.readthedocs.io/en/latest/>`__
+- `aiapy <https://aiapy.readthedocs.io/>`__
+- `eispac <https://eispac.readthedocs.io/>`__
+- `xrtpy <https://xrtpy.readthedocs.io/>`__
