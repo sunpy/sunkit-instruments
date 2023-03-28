@@ -35,7 +35,7 @@ def test_calculate_temperature_emiss(goes_files):
     assert "temperature" and "emission_measure" in goes_temp_em.columns
     # check units
     assert goes_temp_em.units["emission_measure"].to(u.cm**-3) == 1
-    assert goes_temp_em.units["emission_measure"].to(u.MK) == 1
+    assert goes_temp_em.units["temperature"].to(u.MK) == 1
     # check time index isnt changed
     assert np.all(goeslc.time == goes_temp_em.time)
 
