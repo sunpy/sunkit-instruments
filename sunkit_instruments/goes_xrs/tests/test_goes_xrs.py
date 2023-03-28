@@ -23,10 +23,15 @@ goes16_filepath_nc = get_test_filepath(
 
 
 @pytest.mark.parametrize(
-    "goes_files", [goes15_fits_filepath, goes15_filepath_nc, goes16_filepath_nc]
+    ("goes_files", "max_temperature"),
+    [
+        (goes15_fits_filepath, 11.9 * u.MK),
+        (goes15_filepath_nc, 21.6 * u.MK),
+        (goes16_filepath_nc, 21.9 * u.MK),
+    ],
 )
 @pytest.mark.remote_data
-def test_calculate_temperature_emiss(goes_files):
+def test_calculate_temperature_emiss(goes_files, max_temperature):
     goeslc = timeseries.TimeSeries(goes_files)
     goes_temp_em = goes.calculate_temperature_emiss(goeslc)
     # check that it returns a timeseries
@@ -39,13 +44,22 @@ def test_calculate_temperature_emiss(goes_files):
     # check time index isnt changed
     assert np.all(goeslc.time == goes_temp_em.time)
 
+    assert u.allclose(
+        np.nanmax(goes_temp_em.quantity("temperature")), max_temperature, rtol=1
+    )
+
 
 @pytest.mark.remote_data
 def test_calculate_temperature_emiss_abundances():
     goeslc = timeseries.TimeSeries(goes15_filepath_nc)
     goes_temp_em = goes.calculate_temperature_emiss(goeslc, abundance="photospheric")
     assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
+    # make sure its the right value (different from above test default)
+    assert u.allclose(
+        np.nanmax(goes_temp_em.quantity("temperature")), 23.4 * u.MK, rtol=1
+    )
 
+    # test when an unaccepted abundance is passed.
     with pytest.raises(ValueError):
         goes.calculate_temperature_emiss(goeslc, abundance="hello")
 
