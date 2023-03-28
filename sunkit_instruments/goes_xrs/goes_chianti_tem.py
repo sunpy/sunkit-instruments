@@ -162,7 +162,7 @@ def _chianti_temp_emiss(
         Contains the temperature and emission measure calculated from the input ``goes_ts`` time series.
         The two columns are:
             ``temperature`` : The temperature in MK.
-            ``emission `measure` : The emission measure.
+            ``emission `measure` : The volume emission measure.
     Notes
     -----
     Requires goes_chianti_resp.fits produced by goes_chianti_response.pro
