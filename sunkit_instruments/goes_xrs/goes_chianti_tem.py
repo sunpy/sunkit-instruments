@@ -114,10 +114,15 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
         if ("Origin" in goes_ts.meta.metas[0]) and (
             goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"
         ):
-            remove_scaling=True
+            remove_scaling = True
         else:
-            remove_scaling=False
-        output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance, remove_scaling=remove_scaling)
+            remove_scaling = False
+        output = _chianti_temp_emiss(
+            goes_ts,
+            satellite_number,
+            abundance=abundance,
+            remove_scaling=remove_scaling,
+        )
 
     return output
 
@@ -169,8 +174,9 @@ def _chianti_temp_emiss(
     This file contains the pregenerated responses for default coronal and photospheric ion abundances using Chianti version 9.0.1.
     url = "https://hesperia.gsfc.nasa.gov/ssw/gen/idl/synoptic/goes/goes_chianti_response_latest.fits"
 
-    The response table starts counting the satellite number at 0.
-    For example, for GOES 15 - you pass 14 to the response table.
+    The response table within the fits file starts counting the satellite number at 0.
+    For example, for GOES 15 - then 14 is passed to the response table. This is dealt within the code,
+    the satellite number to be passed to this function should be the actual GOES satellite number.
 
     """
 
@@ -190,9 +196,9 @@ def _chianti_temp_emiss(
     else:
         longflux_corrected = longflux
 
-    # remove the SWPC scaling factors if needed.
-    # The SPWC scaling factors of 0.7 and 0.85 for the XRSA and XSRB channels respectivelt
-    # are documented in the NOAA readme file linked in the docstring.
+    # Remove the SWPC scaling factors if needed.
+    # The SPWC scaling factors of 0.7 and 0.85 for the XRSA and XSRB channels
+    # respectively are documented in the NOAA readme file linked in the docstring.
     if remove_scaling and satellite_number >= 8 and satellite_number < 16:
         longflux_corrected = longflux_corrected / 0.7
         shortflux_corrected = shortflux / 0.85
@@ -207,7 +213,7 @@ def _chianti_temp_emiss(
         longflux_corrected < u.Quantity(3e-8 * u.W / u.m**2),
     )
     fluxratio = shortflux_corrected / longflux_corrected
-    fluxratio.value[index] = u.Quantity(0.003 * u.W / u.m**2)
+    fluxratio.value[index] = u.Quantity(0.003, unit=u.dimensionless)
 
     # Work out detector index to use from the table response based on satellite number
     # The counting in the table starts at 0, and indexed in an odd way for the GOES-R
@@ -226,7 +232,8 @@ def _chianti_temp_emiss(
 
     table_to_response_em = 10.0 ** (
         49.0 - response_table["ALOG10EM"][sat]
-    )  # for some reason in units of 1e49 ...
+    )  # for some reason in units of 1e49 (which was to stop overflow errors since 10^49 was
+    # too big to express as a standard float in IDL.)
 
     modeltemp = response_table["TEMP_MK"][sat]
     modelratio = rcor[sat] if abundance == "coronal" else rpho[sat]
@@ -237,7 +244,11 @@ def _chianti_temp_emiss(
     spline = interpolate.splrep(modelratio, modeltemp, s=0)
     temp = interpolate.splev(fluxratio, spline, der=0)
 
-    modelflux = response_table["FLONG_COR"][sat] if abundance == "coronal" else response_table["FLONG_PHO"][sat]
+    modelflux = (
+        response_table["FLONG_COR"][sat]
+        if abundance == "coronal"
+        else response_table["FLONG_PHO"][sat]
+    )
 
     modeltemp = response_table["TEMP_MK"][sat]
 
