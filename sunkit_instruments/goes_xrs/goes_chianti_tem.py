@@ -49,9 +49,11 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     Example
     -------
     >>> from sunpy import timeseries as ts
+    >>> import sunpy.data.sample  # doctest: +REMOTE_DATA
     >>> from sunkit_instruments import goes_xrs
-    >>> goes_ts = ts.TimeSeries("sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0.nc").truncate("2017-09-10 12:00", "2017-09-10 20:00")
-    >>> goes_temp_emiss = goes_xrs.calculate_temperature_emiss(goes_ts)
+    >>> goes_ts = sunpy.timeseries.TimeSeries(sunpy.data.sample.GOES_XRS_TIMESERIES)
+    >>> goes_flare = goes_ts.truncate("2011-06-07 06:20", "2011-06-07 07:30") # doctest: +REMOTE_DATA
+    >>> goes_temp_emiss = goes_xrs.calculate_temperature_emiss(goes_flare)
 
     Notes
     -----
