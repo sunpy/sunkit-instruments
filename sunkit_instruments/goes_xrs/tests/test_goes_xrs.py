@@ -7,11 +7,73 @@ from astropy.time import Time
 from astropy.units.quantity import Quantity
 from sunpy import timeseries
 from sunpy.time import TimeRange, is_time_equal, parse_time
+from sunpy.util.exceptions import SunpyUserWarning
 
 from sunkit_instruments import goes_xrs as goes
 from sunkit_instruments.data.test import get_test_filepath
 
+# Tests for the GOES temperature and emission measure calculations
+goes15_fits_filepath = get_test_filepath("go1520110607.fits")  # test old FITS files
+goes15_filepath_nc = get_test_filepath(
+    "sci_gxrs-l2-irrad_g15_d20170910_v0-0-0_truncated.nc"
+)  # test re-processed netcdf files
+goes16_filepath_nc = get_test_filepath(
+    "sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0_truncated.nc"
+)  # test the GOES-R data
 
+
+@pytest.mark.parametrize(
+    "goes_files", [goes15_fits_filepath, goes15_filepath_nc, goes16_filepath_nc]
+)
+@pytest.mark.remote_data
+def test_calculate_temperature_emiss(goes_files):
+    goeslc = timeseries.TimeSeries(goes_files)
+    goes_temp_em = goes.calculate_temperature_emiss(goeslc)
+    # check that it returns a timeseries
+    assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
+    # check that both temperature and emission measure in the columns
+    assert "temperature" and "emission_measure" in goes_temp_em.columns
+    # check units
+    assert goes_temp_em.units["emission_measure"].to(u.cm**-3) == 1
+    assert goes_temp_em.units["emission_measure"].to(MK) == 1
+    # check time index isnt changed
+    assert np.all(goeslc.time == goes_temp_em.time)
+
+
+@pytest.mark.remote_data
+def test_calculate_temperature_emiss_abundances():
+    goeslc = timeseries.TimeSeries(goes15_filepath_nc)
+    goes_temp_em = goes.calculate_temperature_emiss(goeslc, abundance="photospheric")
+    assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
+
+    with pytest.raises(ValueError):
+        goes.calculate_temperature_emiss(goeslc, abundance="hello")
+
+
+@pytest.mark.remote_data
+def test_calculate_temperature_emiss_errs():
+    # check when not a XRS timeseries is passed
+    with pytest.raises(TypeError):
+        goes.calculate_temperature_emiss([])
+    lyra_ts = timeseries.TimeSeries(
+        get_test_filepath("lyra_20150101-000000_lev3_std_truncated.fits.gz")
+    )
+    with pytest.raises(TypeError):
+        goes.calculate_temperature_emiss(lyra_ts)
+
+
+@pytest.mark.remote_data
+def test_calculate_temperature_emiss_no_primary_detector_columns_GOESR():
+    goeslc = timeseries.TimeSeries(goes16_filepath_nc)
+    goeslc_removed_col = goeslc.remove_column("xrsa_primary_chan").remove_column(
+        "xrsb_primary_chan"
+    )
+
+    with pytest.warns(SunpyUserWarning):
+        goes.calculate_temperature_emiss(goeslc_removed_col)
+
+
+# Test the other GOES-XRS functionality
 @pytest.mark.remote_data
 def test_goes_event_list():
     # Set a time range to search
@@ -53,46 +115,6 @@ def test_goes_event_list():
     assert is_time_equal(result[0]["end_time"], parse_time((2011, 6, 7, 6, 59)))
     assert result[0]["goes_class"] == "M2.5"
     assert result[0]["noaa_active_region"] == 11226
-
-
-@pytest.fixture
-def goeslc():
-    return timeseries.TimeSeries(get_test_filepath("go1520110607.fits"))
-
-
-@pytest.mark.remote_data
-def test_calculate_temperature_emiss(goeslc):
-    goes_temp_em = goes.calculate_temperature_emiss(goeslc)
-    # check that it returns a timeseries
-    assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
-    # check that both temperature and emission measure in the columns
-    assert "temperature" and "emission_measure" in goes_temp_em.columns
-    # check units
-    assert goes_temp_em.units["emission_measure"].to(u.cm**-3) == 1
-    assert goes_temp_em.units["emission_measure"].to(MK) == 1
-    # check time index isnt changed
-    assert np.all(goeslc.time == goes_temp_em.time)
-
-
-@pytest.mark.remote_data
-def test_calculate_temperature_emiss_abundances(goeslc):
-    goes_temp_em = goes.calculate_temperature_emiss(goeslc, abundances="photospheric")
-    assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
-
-    with pytest.raises(ValueError):
-        goes.calculate_temperature_emiss(goeslc, abundance="hello")
-
-
-@pytest.mark.remote_data
-def test_calculate_temperature_emiss_errs():
-    # check when not a XRS timeseries is passed
-    with pytest.raises(TypeError):
-        goes.calculate_temperature_emiss([])
-    lyra_ts = timeseries.TimeSeries(
-        get_test_filepath("lyra_20150101-000000_lev3_std_truncated.fits.gz")
-    )
-    with pytest.raises(TypeError):
-        goes.calculate_temperature_emiss(lyra_ts)
 
 
 def test_flux_to_classletter():
