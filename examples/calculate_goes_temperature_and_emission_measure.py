@@ -39,7 +39,7 @@ goes_temp_em = goes_xrs.calculate_temperature_emiss(goes_flare)
 # by printing out the column names.
 print(goes_temp_em.columns)
 
-# now lets plot these all together
+# Now let's plot these all together.
 fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
 goes_flare.plot(axes=ax1)
 goes_temp_em.plot(columns=["temperature"], axes=ax2)
