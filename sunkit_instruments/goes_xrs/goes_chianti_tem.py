@@ -283,7 +283,7 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
 
     """
 
-    # these are the conditions of which combinations of detectors to use
+    # These are the conditions for which detector combinations to use.
     secondary_det_conditions = {0: [1, 1], 1: [2, 1], 2: [1, 2], 3: [2, 2]}
 
     # here we split the timeseries into sections for which primary or secondary detectors are used
