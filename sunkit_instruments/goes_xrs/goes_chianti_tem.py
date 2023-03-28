@@ -229,10 +229,7 @@ def _chianti_temp_emiss(
     )  # for some reason in units of 1e49 ...
 
     modeltemp = response_table["TEMP_MK"][sat]
-    if abundance == "coronal":
-        modelratio = rcor[sat]
-    else:
-        modelratio = rpho[sat]
+    modelratio = rcor[sat] if abundance == "coronal" else rpho[sat]
 
     # Calculate the temperature and emission measure:
 
