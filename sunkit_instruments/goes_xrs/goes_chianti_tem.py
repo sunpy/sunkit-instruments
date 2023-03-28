@@ -133,6 +133,8 @@ def _chianti_temp_emiss(
     goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False
 ):
     """
+    Calculate isothermal temperature and emission measure from GOES XRS observations.
+
     This uses the latest formulated response tables including the responses for GOES1-17 to interpolate for temperature or emission measure
     from the measured true fluxes, which is read in from the FITS files goes_chianti_response_latest.fits.
 
