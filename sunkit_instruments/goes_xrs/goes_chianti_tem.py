@@ -22,9 +22,9 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     These are calculated based on methods described in White et al. 2005 (see notes)
     for which the GOES fluxes and channel ratios are used together with loop-up tables
     of CHIANTI atomic models to estimate isothermal temperature and emission measure.
-    Technically speaking, the method interpolates on the ratio between the long and short
-    wavelength channel fluxes using pre-calcuated tables for the fluxes at a series of
-    temperatures for fixed emission measure.
+    Technically speaking, the method interpolates on the channel flux ratio using
+    pre-calcuated tables for the fluxes at a series of temperatures for fixed emission
+    measure.
 
     The method here is almost an exact replica of what is available in SSWIDL,
     namely, goes_chianti_tem.pro, and it has been tested against that for consistency.
