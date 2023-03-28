@@ -33,7 +33,7 @@ goes_flare = goes_ts.truncate("2011-06-07 06:15", "2011-06-07 09:00")
 # takes a sunpy.timeseries.XRSTimeSeries and returns a new GenericTimeSeries
 # which contains both the respective temperature and emission measure values.
 
-goes_temp_em = goes_xrs.calculate_temperature_emiss(goes_flare)
+goes_temp_em = goes_xrs.calculate_temperature_em(goes_flare)
 
 # We can see that goes_temp_em is now a timeseries that contains the temperature and emission measure
 # by printing out the column names.

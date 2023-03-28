@@ -179,3 +179,21 @@ def flux_to_flareclass(goesflux: u.watt / u.m**2):
         str_class = conversion_dict.get(u.Quantity(10**decade, "W/m**2"))
     goes_subclass = 10**-decade * goesflux.to("W/m**2").value
     return f"{str_class}{goes_subclass:.3g}"
+
+
+def calculate_temperature_em(*args, **kwargs):
+    raise NotImplementedError(
+        "This functionality is now provided through sunkit_instruments.goes_xrs.calculate_temperature_em"
+    )
+
+
+def calculate_radiative_loss_rate(*args, **kwargs):
+    raise NotImplementedError(
+        "The functionality to calculate the radiative loss has not yet been implemented in sunkit_instruments"
+    )
+
+
+def calculate_xray_luminosity(*args, **kwargs):
+    raise NotImplementedError(
+        "The functionality to calculate the X-ray luminosity has not yet been implemented in sunkit_instruments"
+    )

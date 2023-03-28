@@ -31,9 +31,9 @@ goes16_filepath_nc = get_test_filepath(
     ],
 )
 @pytest.mark.remote_data
-def test_calculate_temperature_emiss(goes_files, max_temperature):
+def test_calculate_temperature_em(goes_files, max_temperature):
     goeslc = timeseries.TimeSeries(goes_files)
-    goes_temp_em = goes.calculate_temperature_emiss(goeslc)
+    goes_temp_em = goes.calculate_temperature_em(goeslc)
     # check that it returns a timeseries
     assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
     # check that both temperature and emission measure in the columns
@@ -52,7 +52,7 @@ def test_calculate_temperature_emiss(goes_files, max_temperature):
 @pytest.mark.remote_data
 def test_calculate_temperature_emiss_abundances():
     goeslc = timeseries.TimeSeries(goes15_filepath_nc)
-    goes_temp_em = goes.calculate_temperature_emiss(goeslc, abundance="photospheric")
+    goes_temp_em = goes.calculate_temperature_em(goeslc, abundance="photospheric")
     assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
     # make sure its the right value (different from above test default)
     assert u.allclose(
@@ -61,19 +61,19 @@ def test_calculate_temperature_emiss_abundances():
 
     # test when an unaccepted abundance is passed.
     with pytest.raises(ValueError):
-        goes.calculate_temperature_emiss(goeslc, abundance="hello")
+        goes.calculate_temperature_em(goeslc, abundance="hello")
 
 
 @pytest.mark.remote_data
 def test_calculate_temperature_emiss_errs():
     # check when not a XRS timeseries is passed
     with pytest.raises(TypeError):
-        goes.calculate_temperature_emiss([])
+        goes.calculate_temperature_em([])
     lyra_ts = timeseries.TimeSeries(
         get_test_filepath("lyra_20150101-000000_lev3_std_truncated.fits.gz")
     )
     with pytest.raises(TypeError):
-        goes.calculate_temperature_emiss(lyra_ts)
+        goes.calculate_temperature_em(lyra_ts)
 
 
 @pytest.mark.remote_data
@@ -84,7 +84,7 @@ def test_calculate_temperature_emiss_no_primary_detector_columns_GOESR():
     )
 
     with pytest.warns(SunpyUserWarning):
-        goes.calculate_temperature_emiss(goeslc_removed_col)
+        goes.calculate_temperature_em(goeslc_removed_col)
 
 
 # Test the other GOES-XRS functionality

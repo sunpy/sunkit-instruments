@@ -10,10 +10,10 @@ from sunpy.data import manager
 from sunpy.time import parse_time
 from sunpy.util.exceptions import warn_user
 
-__all__ = ["calculate_temperature_emiss"]
+__all__ = ["calculate_temperature_em"]
 
 
-def calculate_temperature_emiss(goes_ts, abundance="coronal"):
+def calculate_temperature_em(goes_ts, abundance="coronal"):
     """
     This function calculates the isothermal temperature and
     corresponding volume emission measure of the solar soft X-ray
@@ -53,7 +53,7 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     >>> from sunkit_instruments import goes_xrs
     >>> goes_ts = ts.TimeSeries(sunpy.data.sample.GOES_XRS_TIMESERIES)
     >>> goes_flare = goes_ts.truncate("2011-06-07 06:20", "2011-06-07 07:30") # doctest: +REMOTE_DATA
-    >>> goes_temp_emiss = goes_xrs.calculate_temperature_emiss(goes_flare)
+    >>> goes_temp_emiss = goes_xrs.calculate_temperature_em(goes_flare)
 
     Notes
     -----
@@ -315,15 +315,3 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
         full_output = outputs[0]
 
     return full_output
-
-
-def calculate_radiative_loss(*args, **kwargs):
-    raise NotImplementedError(
-        "The functionality to calculate the radiative loss has not yet been implemented in sunkit-instr"
-    )
-
-
-def calculate_xray_luminosity(*args, **kwargs):
-    raise NotImplementedError(
-        "The functionality to calculate the X-ray luminosity has not yet been implemented in sunkit-instr"
-    )
