@@ -287,10 +287,10 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     outputs = []
     for k in secondary_det_conditions:
         dets = secondary_det_conditions[k]
-        second_ind = np.where(
+        (second_ind,) = np.where(
             (goes_ts.quantity("xrsa_primary_chan") == dets[0])
             & (goes_ts.quantity("xrsb_primary_chan") == dets[1])
-        )[0]
+        )
 
         goes_split = ts.TimeSeries(goes_ts._data.iloc[second_ind], goes_ts.units)
 
@@ -306,3 +306,15 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
         full_output = outputs[0]
 
     return full_output
+
+
+def calculate_radiative_loss():
+    raise NotImplementedError(
+        "The functionality to calculate the radiative loss has not yet been implemented in sunkit-instr"
+    )
+
+
+def calculate_xray_luminosity():
+    raise NotImplementedError(
+        "The functionality to calculate the X-ray luminositt has not yet been implemented in sunkit-instr"
+    )
