@@ -237,10 +237,7 @@ def _chianti_temp_emiss(
     spline = interpolate.splrep(modelratio, modeltemp, s=0)
     temp = interpolate.splev(fluxratio, spline, der=0)
 
-    if abundance == "coronal":
-        modelflux = response_table["FLONG_COR"][sat]
-    else:
-        modelflux = response_table["FLONG_PHO"][sat]
+    modelflux = response_table["FLONG_COR"][sat] if abundance == "coronal" else response_table["FLONG_PHO"][sat]
 
     modeltemp = response_table["TEMP_MK"][sat]
 
