@@ -183,8 +183,8 @@ def _chianti_temp_emiss(
 
     obsdate = parse_time(goes_ts._data.index[0])
 
-    # for some reason that I can't find documented anywhere other than in the IDL code the long channel
-    # needs to be scales by this value for GOES-6 before 1983-06-28
+    # For some reason that I can't find documented anywhere other than in the IDL code,
+    # the long channel needs to be scaled by this value for GOES-6 before 1983-06-28.
     if obsdate <= Time("1983-06-28") and satellite_number == 6:
         longflux_corrected = longflux * (4.43 / 5.32)
     else:
