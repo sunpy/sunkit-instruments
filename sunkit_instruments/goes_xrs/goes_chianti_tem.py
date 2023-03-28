@@ -20,7 +20,7 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
     emitting plasma observed by GOES/XRS.
 
     These are calculated based on methods described in White et al. 2005 (see notes)
-    for which the GOES fluxes and channel ratios are used together with loop-up tables
+    for which the GOES fluxes and channel ratios are used together with look-up tables
     of CHIANTI atomic models to estimate isothermal temperature and emission measure.
     Technically speaking, the method interpolates on the channel flux ratio using
     pre-calcuated tables for the fluxes at a series of temperatures for fixed emission
