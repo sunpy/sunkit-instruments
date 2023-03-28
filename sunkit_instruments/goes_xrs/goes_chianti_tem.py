@@ -210,7 +210,8 @@ def _chianti_temp_emiss(
     fluxratio.value[index] = u.Quantity(0.003 * u.W / u.m**2)
 
     # Work out detector index to use from the table response based on satellite number
-    # The counting in the table starts at 0, and indexed in an odd way for the GOES-R primary/secondary detectors.
+    # The counting in the table starts at 0, and indexed in an odd way for the GOES-R
+    # primary/secondary detectors.
     if satellite_number <= 15:
         sat = satellite_number - 1  # counting starts at 0
     else:
