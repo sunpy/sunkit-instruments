@@ -1,0 +1,2 @@
+Create new function to calculate the temperature and emission measure from the GOES XRS measurments.
+This also removes the older verison that no longer works for the re-processed netcdf files and new GOES-R data.
