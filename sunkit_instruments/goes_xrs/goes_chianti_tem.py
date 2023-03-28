@@ -110,15 +110,14 @@ def calculate_temperature_emiss(goes_ts, abundance="coronal"):
 
     # Check if the older files are passed, and if so then the scaling factor needs to be removed.
     # The newer netcdf files now return "true" fluxes so this SWPC factor doesnt need to be removed.
-    elif ("Origin" in goes_ts.meta.metas[0]) and (
-        goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"
-    ):
-        output = _chianti_temp_emiss(
-            goes_ts, satellite_number, abundance=abundance, remove_scaling=True
-        )
-
     else:
-        output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
+        if ("Origin" in goes_ts.meta.metas[0]) and (
+            goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"
+        ):
+            remove_scaling=True
+        else:
+            remove_scaling=False
+        output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance, remove_scaling=remove_scaling)
 
     return output
 
