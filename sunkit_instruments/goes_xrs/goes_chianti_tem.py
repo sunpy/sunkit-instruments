@@ -308,13 +308,13 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
     return full_output
 
 
-def calculate_radiative_loss():
+def calculate_radiative_loss(*args, **kwargs):
     raise NotImplementedError(
         "The functionality to calculate the radiative loss has not yet been implemented in sunkit-instr"
     )
 
 
-def calculate_xray_luminosity():
+def calculate_xray_luminosity(*args, **kwargs):
     raise NotImplementedError(
-        "The functionality to calculate the X-ray luminositt has not yet been implemented in sunkit-instr"
+        "The functionality to calculate the X-ray luminosity has not yet been implemented in sunkit-instr"
     )

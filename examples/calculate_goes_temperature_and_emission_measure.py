@@ -1,7 +1,7 @@
 """
-====================================
+======================================================================
 Calculate the GOES-XRS temperature and emission measure during a flare
-====================================
+======================================================================
 
 This example shows you how to estimate the GOES-XRS isothermal temperature and emission measure during a solar flare.
 This is done using the observed flux ratio of the short (0.5-4 angstrom) to long (1-8 angstrom)
@@ -18,16 +18,16 @@ from sunpy.data.sample import GOES_XRS_TIMESERIES
 from sunkit_instruments import goes_xrs
 
 #######################################
-# Lets begin by creating a GOES-XRS timeseries.
+# Let's begin by creating a GOES-XRS timeseries.
 # We can use the sample data here to load in an example of a flare.
 goes_ts = ts.TimeSeries(GOES_XRS_TIMESERIES)
 goes_ts.plot()
 
-# now the estimation is only valid for large fluxes (i.e. during a flare),
-# so lets truncate the timeseries over the time of the flare
+# The estimation is only valid for large fluxes (i.e. during a flare),
+# so let's truncate the timeseries over the time of the flare.
 goes_flare = goes_ts.truncate("2011-06-07 06:15", "2011-06-07 09:00")
 
-# Now lets calculate the temperature and emission measure estimates from
+# Now let's calculate the temperature and emission measure estimates from
 # these channel fluxes. We can do this by using the function
 # `sunkit_instruments.goes_xrs.calculate_temperature_emiss()` which
 # takes a sunpy.timeseries.XRSTimeSeries and returns a new GenericTimeSeries
@@ -35,8 +35,8 @@ goes_flare = goes_ts.truncate("2011-06-07 06:15", "2011-06-07 09:00")
 
 goes_temp_em = goes_xrs.calculate_temperature_emiss(goes_flare)
 
-# now goes_temp_em is a timeseries that contains the temperature and emission measure,
-# we can see this by printing out the column names.
+# We can see that goes_temp_em is now a timeseries that contains the temperature and emission measure
+# by printing out the column names.
 print(goes_temp_em.columns)
 
 # now lets plot these all together
