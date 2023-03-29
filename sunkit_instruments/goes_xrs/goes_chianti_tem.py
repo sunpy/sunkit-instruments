@@ -53,7 +53,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     >>> from sunkit_instruments import goes_xrs
     >>> goes_ts = ts.TimeSeries(sunpy.data.sample.GOES_XRS_TIMESERIES) # doctest: +REMOTE_DATA
     >>> goes_flare = goes_ts.truncate("2011-06-07 06:20", "2011-06-07 07:30") # doctest: +REMOTE_DATA
-    >>> goes_temp_emiss = goes_xrs.calculate_temperature_em(goes_flare)
+    >>> goes_temp_emiss = goes_xrs.calculate_temperature_em(goes_flare) # doctest: +REMOTE_DATA
 
     Notes
     -----
