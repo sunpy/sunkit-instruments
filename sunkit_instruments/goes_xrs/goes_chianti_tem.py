@@ -213,7 +213,7 @@ def _chianti_temp_emiss(
         longflux_corrected < u.Quantity(3e-8 * u.W / u.m**2),
     )
     fluxratio = shortflux_corrected / longflux_corrected
-    fluxratio.value[index] = u.Quantity(0.003, units=u.dimensionless_unscaled)
+    fluxratio.value[index] = u.Quantity(0.003, unit=u.dimensionless_unscaled)
 
     # Work out detector index to use from the table response based on satellite number
     # The counting in the table starts at 0, and indexed in an odd way for the GOES-R
