@@ -19,7 +19,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     corresponding volume emission measure of the solar soft X-ray
     emitting plasma observed by GOES/XRS.
 
-    These are calculated based on methods described in White et al. 2005 (see notes)
+    These are calculated based on methods described in White et al. 2005 [1]_ (see notes)
     for which the GOES fluxes and channel ratios are used together with look-up tables
     of CHIANTI atomic models to estimate isothermal temperature and emission measure.
     Technically speaking, the method interpolates on the channel flux ratio using
@@ -43,7 +43,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
 
     Returns
     -------
-    `~sunpy.timeseries.GenericTimeSeries`
+    output : `~sunpy.timeseries.GenericTimeSeries`
         Contains the temperature and emission measure calculated from the input ``goes_ts`` time series.
 
     Example
