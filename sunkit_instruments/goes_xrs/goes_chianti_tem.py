@@ -38,12 +38,12 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     ----------
     goes_ts : `~sunpy.timeseries.XRSTimeSeries`
         The GOES/XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
-    abundance: {``coronal`` | ``photospheric``}, optional
-        Which abundances to use for the calculation, the default is ``coronal``.
+    abundance: {"coronal", "photospheric"}, optional
+        Which abundances to use for the calculation, the default is "coronal".
 
     Returns
     -------
-    output : `~sunpy.timeseries.GenericTimeSeries`
+    `~sunpy.timeseries.GenericTimeSeries`
         Contains the temperature and emission measure calculated from the input ``goes_ts`` time series.
 
     Example
@@ -65,17 +65,18 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     See also: https://hesperia.gsfc.nasa.gov/goes/goes.html#Temperature/Emission%20Measure
 
     In regards to the re-processed GOES 8-15 data, please refer to the documentation here:
+
         * https://www.ncei.noaa.gov/data/goes-space-environment-monitor/access/science/xrs/GOES_1-15_XRS_Science-Quality_Data_Readme.pdf
-    This includes information of the SWPC scaling factors that were applied to prior data (e.g. the FITS data).
+          This includes information of the SWPC scaling factors that were applied to prior data (e.g. the FITS data).
 
     For the GOES-R data please refer to here:
+
         * https://data.ngdc.noaa.gov/platforms/solar-space-observing-satellites/goes/goes16/l2/docs/GOES-R_XRS_L2_Data_Readme.pdf
 
     References
     ----------
     .. [1] White, S. M., Thomas, R. J., & Schwartz, R. A. 2005,
         Sol. Phys., 227, 231, DOI: 10.1007/s11207-005-2445-z
-
     """
     if not isinstance(goes_ts, ts.XRSTimeSeries):
         raise TypeError(
@@ -84,7 +85,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
 
     if goes_ts.observatory is None:
         raise ValueError(
-            f"The GOES satellite number was not found in the input time series"
+            "The GOES satellite number was not found in the input time series"
         )
 
     satellite_number = int(goes_ts.observatory.split("-")[-1])
@@ -95,7 +96,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
 
     allowed_abundances = ["photospheric", "coronal"]
     if abundance not in allowed_abundances:
-        raise ValueError(f"The abundance can only be ``coronal`` or ``photospheric``.")
+        raise ValueError(f"The abundance can only be "coronal" or "photospheric", not {abundance}.")
     # Check if GOES-R and whether the primary detector values are given
     if satellite_number >= 16:
         if "xrsa_primary_chan" in goes_ts.columns:
@@ -152,10 +153,11 @@ def _chianti_temp_emiss(
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     sat : `int`
         GOES satellite number.
-    secondary: `int`
-        values 0,1,2,3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
-    abundance: {``coronal`` | ``photospheric``}, optional
-        Which abundances to use for the calculation, the default is ``coronal``.
+    secondary: `int`, optional
+        Values 0, 1, 2, 3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
+        Defaults to 0.
+    abundance: {"coronal", "photospheric"}, optional
+        Which abundances to use for the calculation, the default is "coronal".
     remove_scaling: `bool`, optional
         Checks whether to remove the SWPC scaling factors.
         This is only an issue for the older FITS files for GOES 8-15 XRS.
@@ -177,7 +179,6 @@ def _chianti_temp_emiss(
     The response table within the fits file starts counting the satellite number at 0.
     For example, for GOES 15 - then 14 is passed to the response table. This is dealt within the code,
     the satellite number to be passed to this function should be the actual GOES satellite number.
-
     """
 
     longflux = goes_ts.quantity("xrsb").to(u.W / u.m**2)
@@ -189,21 +190,19 @@ def _chianti_temp_emiss(
 
     obsdate = parse_time(goes_ts._data.index[0])
 
+    longflux_corrected = longflux
     # For some reason that I can't find documented anywhere other than in the IDL code,
     # the long channel needs to be scaled by this value for GOES-6 before 1983-06-28.
     if obsdate <= Time("1983-06-28") and satellite_number == 6:
         longflux_corrected = longflux * (4.43 / 5.32)
-    else:
-        longflux_corrected = longflux
 
+    shortflux_corrected = shortflux
     # Remove the SWPC scaling factors if needed.
     # The SPWC scaling factors of 0.7 and 0.85 for the XRSA and XSRB channels
     # respectively are documented in the NOAA readme file linked in the docstring.
     if remove_scaling and satellite_number >= 8 and satellite_number < 16:
         longflux_corrected = longflux_corrected / 0.7
-        shortflux_corrected = shortflux / 0.85
-    else:
-        shortflux_corrected = shortflux
+        shortflux_corrected = shortflux / 0.85        
 
     # Measurements of short channel flux of less than 1e-10 W/m**2 or
     # long channel flux less than 3e-8 W/m**2 are not considered good.
@@ -285,7 +284,6 @@ def _manage_goesr_detectors(goes_ts, satellite_number, abundance="coronal"):
 
     Note that the primary channel conditions are values of 0,1,2,3 to indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
     Here, we use the `xrsa{b}_primary_chan` columns to figure out which detectors are used for each timestep.
-
     """
 
     # These are the conditions for which detector combinations to use.
