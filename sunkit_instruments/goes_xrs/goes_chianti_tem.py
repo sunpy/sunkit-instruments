@@ -12,6 +12,8 @@ from sunpy.util.exceptions import warn_user
 
 __all__ = ["calculate_temperature_em"]
 
+MAX_SUPPORTED_SATELLITE = 17
+
 
 def calculate_temperature_em(goes_ts, abundance="coronal"):
     """
@@ -89,14 +91,16 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
         )
 
     satellite_number = int(goes_ts.observatory.split("-")[-1])
-    if (satellite_number < 1) or (satellite_number > 17):
+    if (satellite_number < 1) or (satellite_number > MAX_SUPPORTED_SATELLITE):
         raise ValueError(
             f"GOES satellite number has to be between 1 and 17, {satellite_number} was found."
         )
 
     allowed_abundances = ["photospheric", "coronal"]
     if abundance not in allowed_abundances:
-        raise ValueError(f"The abundance can only be "coronal" or "photospheric", not {abundance}.")
+        raise ValueError(
+            f"The abundance can only be `coronal` or `photospheric`, not {abundance}."
+        )
     # Check if GOES-R and whether the primary detector values are given
     if satellite_number >= 16:
         if "xrsa_primary_chan" in goes_ts.columns:
@@ -202,7 +206,7 @@ def _chianti_temp_emiss(
     # respectively are documented in the NOAA readme file linked in the docstring.
     if remove_scaling and satellite_number >= 8 and satellite_number < 16:
         longflux_corrected = longflux_corrected / 0.7
-        shortflux_corrected = shortflux / 0.85        
+        shortflux_corrected = shortflux / 0.85
 
     # Measurements of short channel flux of less than 1e-10 W/m**2 or
     # long channel flux less than 3e-8 W/m**2 are not considered good.
