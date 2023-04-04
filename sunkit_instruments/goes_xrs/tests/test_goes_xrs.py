@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
+from scipy.io import readsav
 
 import astropy.units as u
 from astropy.time import Time
@@ -85,6 +86,54 @@ def test_calculate_temperature_emiss_no_primary_detector_columns_GOESR():
 
     with pytest.warns(SunpyUserWarning):
         goes.calculate_temperature_em(goeslc_removed_col)
+
+
+# We also test against the IDL outputs for the GOES-15 and 16 test files
+idl_chianti_tem_15 = get_test_filepath("goes_15_test_chianti_tem_idl.sav")
+idl_chianti_tem_16 = get_test_filepath("goes_16_test_chianti_tem_idl.sav")
+
+
+@pytest.mark.parametrize(
+    ("goes_files", "idl_files"),
+    [
+        (goes15_filepath_nc, idl_chianti_tem_15),
+        (goes16_filepath_nc, idl_chianti_tem_16),
+    ],
+)
+@pytest.mark.remote_data
+def test_comparison_with_IDL_version(goes_files, idl_files):
+    """
+    Test that the outputs are the same for the IDL functionality goes_chianti_tem.pro.
+    To create the test sav files in IDL:
+
+    file15 = "sci_gxrs-l2-irrad_g15_d20170910_v0-0-0_truncated.nc"
+    read_goes_nc, file15, data15
+    goes_chianti_tem, data15.B_FLUX, data15.A_FLUX, temperature, emissions_measure, satellite=15, remove_scaling=0
+    save, temperature, emissions_measure, filename="goes_15_test_chianti_tem_idl.sav"
+
+    """
+    goeslc = timeseries.TimeSeries(goes_files)
+    goes_temp_em = goes.calculate_temperature_em(goeslc)
+
+    idl_output = readsav(idl_files)
+    # in the sunkit-instr version we only calculate the temp/emission measure for
+    # times when the data quality is good, unlike the IDL version. So we need to account for this in the test.
+    (nan_inds,) = np.where(goes_temp_em._data["temperature"].isnull())
+    idl_temperature = idl_output["temperature"].copy()
+    idl_em = idl_output["emissions_measure"].copy()
+    idl_temperature[nan_inds] = np.nan
+    idl_em[nan_inds] = np.nan
+
+    ## Only check during flare
+    np.testing.assert_allclose(
+        idl_temperature[500:], goes_temp_em._data["temperature"].values[500:], rtol=0.01
+    )
+    # IDL output is in units of 1e49, so need to divide goes_temp_em emission measure by this
+    np.testing.assert_allclose(
+        idl_em[500:],
+        goes_temp_em._data["emission_measure"].values[500:] / 1e49,
+        rtol=0.01,
+    )
 
 
 # Test the other GOES-XRS functionality
