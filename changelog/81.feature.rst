@@ -1,3 +1,0 @@
-Create new function (`sunkit_instruments.goes_xrs.calculate_temperature_em`) to calculate the temperature and emission measure from the GOES XRS measurements including the new re-processed XRS data and GOES-R data.
-
-See :ref:`sphx_glr_generated_gallery_calculate_goes_temperature_and_emission_measure.py` for an example.
