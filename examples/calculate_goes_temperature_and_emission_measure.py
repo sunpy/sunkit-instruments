@@ -7,7 +7,6 @@ This example shows you how to estimate the GOES-XRS isothermal temperature and e
 This is done using the observed flux ratio of the short (0.5-4 angstrom) to long (1-8 angstrom)
 channels, based on the methods described in White et al. (2005).
 The functionality available here is the same as the functionality available in SSWIDL.
-
 """
 
 import matplotlib.pyplot as plt

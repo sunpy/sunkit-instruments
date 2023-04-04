@@ -1,3 +1,5 @@
 This removes the older verison of `sunkit_instruments.goes_xrs.calculate_temperature_em` that no longer works for the re-processed netcdf files and new GOES-R data.
-The new `sunkit_instruments.goes_xrs.calculate_temperature_em` function now returns a new sunpy.timeseries.GenericTimeSeries with the temperature and emission measure rather than appending columns to the passed XRSTimeSeries.
+
 This also removes the `sunkit_instruments.goes_xrs.calculate_radiative_loss_rate` and `sunkit_instruments.goes_xrs.calculate_xray_luminosity` functions that also no longer work in their current form.
+
+The new `sunkit_instruments.goes_xrs.calculate_temperature_em` function now returns a new sunpy.timeseries.GenericTimeSeries with the temperature and emission measure rather than appending columns to the passed XRSTimeSeries.
