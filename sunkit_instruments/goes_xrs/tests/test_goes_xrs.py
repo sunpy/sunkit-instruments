@@ -106,10 +106,17 @@ def test_comparison_with_IDL_version(goes_files, idl_files):
     Test that the outputs are the same for the IDL functionality goes_chianti_tem.pro.
     To create the test sav files in IDL:
 
+    ; for netcdf files for GOES<16 need to pass remove_scaling=0 as no scaling in data
     file15 = "sci_gxrs-l2-irrad_g15_d20170910_v0-0-0_truncated.nc"
     read_goes_nc, file15, data15
     goes_chianti_tem, data15.B_FLUX, data15.A_FLUX, temperature, emissions_measure, satellite=15, remove_scaling=0
     save, temperature, emissions_measure, filename="goes_15_test_chianti_tem_idl.sav"
+
+    ; GOES-R need to pass the primary and secondary detectory arrays too
+    file16 = "sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0_truncated.nc"
+    read_goes_nc, file16, data16
+    goes_chianti_tem, data16.XRSB_FLUX, data16.XRSA_FLUX, temperature, emissions_measure, satellite=16, a_prim=data16.XRSA_PRIMARY_CHAN, b_prim=data16.XRSB_PRIMARY_CHAN
+    save, temperature, emissions_measure, filename="goes_16_test_idl.sav"
 
     """
     goeslc = timeseries.TimeSeries(goes_files)
