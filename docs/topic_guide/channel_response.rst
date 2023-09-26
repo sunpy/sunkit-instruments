@@ -17,7 +17,7 @@ It is a useful quantity when performing thermal analysis of imaging data, such a
 The temperature response is defined as,
 
 .. math::
-    
+
     K(T) = \int\mathrm{d}\lambda\,R(\lambda)S(\lambda,T)\quad[\mathrm{DN}\,\mathrm{pixel}^{-1}\,\mathrm{s}^{-1} \,\mathrm{cm}^5]
 
 It has a physical type of DN per pixel per unit time per unit emission measure.
