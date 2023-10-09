@@ -19,7 +19,7 @@ repos:
       - id: black
         exclude: ".*(.fits|.fts|.fit|.nc|.gz|.txt|tca.*|extern.*|.rst|.md)$"
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-ast
       - id: check-case-conflict
