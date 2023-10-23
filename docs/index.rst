@@ -14,7 +14,7 @@ You will need to replace "sunpy" with "sunkit-instruments".
 Getting Help
 ============
 
-Stop by our chat room `#sunpy:matrix.org`_ if you have any questions.
+Stop by our `chat room <https://app.element.io/#/room/#sunpy:openastronomy.org>`__ if you have any questions.
 
 Contributing
 ============
