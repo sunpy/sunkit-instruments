@@ -1,12 +1,11 @@
-import os
 import gzip
 import logging
+import os
 import tempfile
 from pathlib import Path
 
 import h5py
 import numpy
-
 import sunpy.map
 from astropy import units as u
 from astropy.io import fits

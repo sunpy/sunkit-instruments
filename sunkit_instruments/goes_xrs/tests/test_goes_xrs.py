@@ -1,11 +1,10 @@
+import astropy.units as u
 import numpy as np
 import pytest
-from numpy.testing import assert_almost_equal, assert_array_equal
-from scipy.io import readsav
-
-import astropy.units as u
 from astropy.time import Time
 from astropy.units.quantity import Quantity
+from numpy.testing import assert_almost_equal, assert_array_equal
+from scipy.io import readsav
 from sunpy import timeseries
 from sunpy.time import TimeRange, is_time_equal, parse_time
 from sunpy.util.exceptions import SunpyUserWarning

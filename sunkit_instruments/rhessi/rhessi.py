@@ -3,12 +3,11 @@ This module provides processing routines programs to process and analyze RHESSI
 data.
 """
 
-import re
 import csv
-
-import numpy as np
+import re
 
 import astropy.units as u
+import numpy as np
 import sunpy.io
 from astropy.time import Time, TimeDelta
 from sunpy.coordinates import sun

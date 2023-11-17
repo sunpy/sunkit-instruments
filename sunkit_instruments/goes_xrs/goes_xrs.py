@@ -1,5 +1,4 @@
 import numpy as np
-
 from astropy import units as u
 from sunpy.time import parse_time
 
@@ -36,8 +35,7 @@ def get_goes_event_list(timerange, goes_class_filter=None):
         A list of all the flares found for the given time range.
     """
     # Importing hek here to avoid calling code that relies on optional dependencies.
-    import sunpy.net.attrs as attrs
-    from sunpy.net import hek
+    from sunpy.net import attrs, hek
 
     # use HEK module to search for GOES events
     client = hek.HEKClient()

@@ -25,7 +25,7 @@ jobs:
     with:
       submodules: false
       coverage: codecov
-      toxdeps: "'tox<4' tox-pypi-filter"
+      toxdeps: tox-pypi-filter
       posargs: -n auto
       envs: |
         - linux: py311
@@ -36,12 +36,12 @@ jobs:
     with:
       submodules: false
       coverage: codecov
-      toxdeps: "'tox<4' tox-pypi-filter"
+      toxdeps: tox-pypi-filter
       posargs: -n auto
       envs: |
         - macos: py310
         - windows: py39
-        - linux: py38-oldestdeps
+        - linux: py39-oldestdeps
 
   docs:
     needs: [test]
@@ -50,8 +50,7 @@ jobs:
       default_python: '3.9'
       submodules: false
       pytest: false
-      toxdeps: "'tox<4' tox-pypi-filter"
-      cache-key: docs-${{ github.run_id }}
+      toxdeps: tox-pypi-filter
       libraries: |
         apt:
           - graphviz
@@ -63,28 +62,12 @@ jobs:
     needs: [test]
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
     with:
-      default_python: '3.8'
       submodules: false
       coverage: codecov
-      toxdeps: "'tox<4' tox-pypi-filter"
+      toxdeps: tox-pypi-filter
       posargs: -n auto --dist loadgroup
       envs: |
-        - linux: py310-online
-
-  cron:
-    if: |
-      github.event_name == 'workflow_dispatch' || (
-        github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'Run cron CI')
-      )
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
-    with:
-      default_python: '3.8'
-      submodules: false
-      coverage: codecov
-      toxdeps: "'tox<4' tox-pypi-filter"
-      posargs: -n auto
-      envs: |
+        - linux: py311-online
         - linux: py311-devdeps
 
   publish:
@@ -103,6 +86,7 @@ jobs:
     needs: [test]
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@main
     with:
+      python-version: "3.11"
       test_extras: 'dev'
       test_command: 'pytest -p no:warnings --doctest-rst -m "not mpl_image_compare" --pyargs sunkit_instruments'
       submodules: false

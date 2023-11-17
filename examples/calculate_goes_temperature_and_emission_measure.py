@@ -10,7 +10,6 @@ The functionality available here is the same as the functionality available in S
 """
 
 import matplotlib.pyplot as plt
-
 from sunpy import timeseries as ts
 from sunpy.data.sample import GOES_XRS_TIMESERIES
 

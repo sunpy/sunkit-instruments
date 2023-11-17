@@ -2,16 +2,15 @@
 This module provides processing routines for Fermi Gamma-ray Space Telescope
 (FGST), formerly called the Gamma-ray Large Area Space Telescope (GLAST).
 """
-import os
 import copy
-import urllib
+import os
 import tempfile
+import urllib
 from collections import OrderedDict
 
+import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
-
-import astropy.units as u
 from astropy.coordinates import Latitude, Longitude
 from astropy.io import fits
 from astropy.time import TimeDelta
