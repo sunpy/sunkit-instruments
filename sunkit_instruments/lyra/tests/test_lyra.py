@@ -1,11 +1,10 @@
-import os.path
 import datetime
+import os.path
 
+import astropy.units as u
 import numpy as np
 import pandas
 import pytest
-
-import astropy.units as u
 from astropy.time import TimeDelta
 from sunpy import timeseries
 from sunpy.time import is_time_equal, parse_time

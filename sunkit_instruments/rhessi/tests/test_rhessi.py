@@ -1,11 +1,10 @@
 import platform
 import textwrap
-from unittest import mock
 from distutils.version import LooseVersion
+from unittest import mock
 
 import numpy as np
 import pytest
-
 import sunpy.io
 import sunpy.map
 from sunpy.time import is_time_equal, parse_time

@@ -2,16 +2,15 @@
 This module provides processing routines for data captured with the LYRA (Lyman
 Alpha Radiometer) instrument on Proba-2.
 """
-import csv
 import copy
-import sqlite3
+import csv
 import datetime
-from warnings import warn
+import sqlite3
 from urllib.parse import urljoin
+from warnings import warn
 
 import numpy as np
 import pandas
-
 from astropy.time import Time
 from sunpy.data import cache
 from sunpy.time import parse_time

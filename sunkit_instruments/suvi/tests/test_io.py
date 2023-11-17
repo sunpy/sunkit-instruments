@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 import sunpy.map
 from astropy.io import fits
 from sunpy.map.sources.suvi import SUVIMap

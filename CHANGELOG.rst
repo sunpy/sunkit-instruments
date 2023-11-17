@@ -1,3 +1,14 @@
+0.5.0 (2023-11-17)
+==================
+
+Maintenance release, no new features or bugfixes.
+
+Breaking Changes
+----------------
+
+- Increased minimum version of ``sunpy`` to 5.0.0
+- Increased minimum version of Python to 3.9
+
 0.4.0 (2023-04-04)
 ==================
 

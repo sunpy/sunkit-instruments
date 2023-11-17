@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-from scipy import interpolate
-
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
+from scipy import interpolate
 from sunpy import timeseries as ts
 from sunpy.data import manager
 from sunpy.time import parse_time

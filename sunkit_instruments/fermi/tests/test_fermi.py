@@ -1,7 +1,6 @@
+import astropy.units as u
 import pytest
 from numpy.testing import assert_almost_equal
-
-import astropy.units as u
 from sunpy.time import parse_time
 
 from sunkit_instruments import fermi
