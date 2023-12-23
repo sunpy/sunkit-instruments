@@ -80,5 +80,9 @@ def fake_spectra():
     return SourceSpectra(temperature, wavelength, data, density=density)
 
 
+def test_spectra_repr(fake_spectra):
+    assert isinstance(fake_spectra.__repr__(), str)
+
+
 def test_temperature_response(fake_channel, fake_spectra):
     assert isinstance(fake_channel.temperature_response(fake_spectra), u.Quantity)
