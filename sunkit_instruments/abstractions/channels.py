@@ -114,7 +114,7 @@ class AbstractChannel(abc.ABC):
         """
         # TODO: refactor all of this to take advantage of xarray interpolation
         # and summation
-        wave_response = self.wavelength_response(obstime=obstime, **kwargs)
+        wave_response = self.wavelength_response(obstime=obstime)
         f_response = interp1d(
             self.wavelength.to_value("AA"),
             wave_response.to_value(),
