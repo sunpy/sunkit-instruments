@@ -1,7 +1,6 @@
+import astropy.units as u
 import numpy as np
 import pytest
-
-import astropy.units as u
 
 from sunkit_instruments.abstractions import AbstractChannel, SourceSpectra
 
