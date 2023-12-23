@@ -1,11 +1,10 @@
 """This module defines abstractions related to instrument channels."""
 import abc
 
+import astropy.units as u
 import numpy as np
 import xarray
 from scipy.interpolate import interp1d
-
-import astropy.units as u
 
 __all__ = ["AbstractChannel", "SourceSpectra"]
 
