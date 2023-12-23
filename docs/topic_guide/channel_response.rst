@@ -4,7 +4,7 @@
 A Vocabulary for Instrument Response
 ************************************
 
-This topic guide provides a vocabulary for response functions for narrow-band imaging instruments.
+This topic guide provides a vocabulary for response functions for imaging instruments.
 The goal of providing a single vocabulary for instrument response calculations is to provide a specification for a common interface that can be used by multiple instruments.
 This reduces the amount of effort needed to develop analysis software for new instruments and enables cross-instrument comparisons as upstream packages and users can program against a single interface for these response calculations.
 An abstract implementation of this vocabulary is provided in this package.
@@ -49,7 +49,7 @@ The wavelength response is defined as,
 
 .. math::
 
-    R(\lambda,t) = A_{\mathrm{eff}}(\lambda,t)f(\lambda)\frac{p}{gs}\quad[\mathrm{cm}^2\,\mathrm{DN}\,\mathrm{sr}\,\mathrm{photon}^{-1}\,\mathrm{pixel}^{-1}]
+    R(\lambda,t) = A_{\mathrm{eff}}(\lambda,t)f(\lambda)\frac{pg}{s}\quad[\mathrm{cm}^2\,\mathrm{DN}\,\mathrm{sr}\,\mathrm{photon}^{-1}\,\mathrm{pixel}^{-1}]
 
 It has a physical type of area DN solid angle per photon per pixel.
 
@@ -58,7 +58,7 @@ Camera Gain
 
 The camera gain, :math:`g`, describes the conversion between electrons and data number (DN).
 This is a property of the detector.
-The units of the camera gain are as :math:`\mathrm{electron}\,\mathrm{DN}^{-1}`.
+The units of the camera gain are as :math:`\mathrm{DN}\,\mathrm{electron}^{-1}`.
 
 Photon-to-Energy Conversion
 ---------------------------
@@ -71,6 +71,8 @@ The photon-to-energy conversion is given by the amount of energy carried by a ph
 
 where :math:`h` is Planck's constant and :math:`c` is the speed of light.
 It has a physical type of energy per photon.
+
+Use `~astropy.units.spectral` to provide a list of appropriate `astropy.units` equivalencies for this conversion.
 
 Energy-to-Electron Conversion
 -----------------------------
