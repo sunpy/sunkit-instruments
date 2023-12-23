@@ -20,7 +20,7 @@ The temperature response is defined as,
 
     K(T) = \int\mathrm{d}\lambda\,R(\lambda)S(\lambda,T)\quad[\mathrm{DN}\,\mathrm{pixel}^{-1}\,\mathrm{s}^{-1} \,\mathrm{cm}^5]
 
-It has a physical type of DN per pixel per unit time per unit emission measure.
+It has a physical type of data number (DN) per pixel per unit time per unit emission measure.
 Note that the temperature response is a function of *both* the instrument properties as well as the atomic physics of the emitting source.
 The temperature response is related to the observed intensity in a given pixel by,
 
@@ -81,8 +81,8 @@ The energy-to-electron conversion, :math:`s`, describes the conversion between e
 It has a physical type of energy per electron.
 For silicon detectors, a value of :math:`s=3.65\,\mathrm{eV}\,\mathrm{electron}^{-1}` is typically used as this is approximately the energy required to free an electron in silicon.
 
-Pixel Area
-----------
+Pixel Solid Angle
+-----------------
 
 The pixel area, :math:`p`, is the angular area in the plane of the sky subtended by a single detector pixel.
 It has a physical type of solid angle per pixel.
