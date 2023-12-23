@@ -11,8 +11,37 @@ __all__ = ["AbstractChannel", "SourceSpectra"]
 
 
 class SourceSpectra:
-    def __init__(self, temperature, wavelength, spectra, density=None, **kwargs):
-        # Internal xarray representation
+    """
+    Source spectra as a function of temperature and wavelength.
+
+    The source spectra describes how a plasma emits (under the optically-thin
+    assumption) as a function of both temperature and wavelength. This source
+    spectra is typically computed using a database like CHIANTI by summing the
+    emission spectra of many ions as well as the continuum emission. For more
+    information, see the `topic guide on instrument response <>`_.
+
+    Parameters
+    ----------
+    temperature: u.Quantity
+        1D array describing the variation along the temperature axis
+    wavelength: u.Quantity
+        1D array describing the variation along the wavelength axis
+    spectra: u.Quantity
+        Source spectra as a 2D array. The first axis should correspond to temperature and the second axis should correspond to wavelength.
+    density: u.Quantity, optional
+        1D array describing the variation in density along the temperature axis. It is assumed
+        that temperature and density are dependent.
+    """
+
+    @u.quantity_input
+    def __init__(
+        self,
+        temperature: u.K,
+        wavelength: u.Angstrom,
+        spectra: u.photon * u.cm**3 / (u.s * u.AA * u.sr),
+        density: u.cm ** (-3) = None,
+        **kwargs
+    ):
         coords = {
             "temperature": xarray.Variable(
                 "temperature",
@@ -35,6 +64,9 @@ class SourceSpectra:
             coords=coords,
             attrs={"unit": spectra.unit.to_string(), **kwargs},
         )
+
+    def __repr__(self):
+        return self._da.__repr__()
 
     @property
     @u.quantity_input
@@ -64,8 +96,24 @@ class AbstractChannel(abc.ABC):
 
     @u.quantity_input
     def temperature_response(
-        self, source_spectra, obstime=None, **kwargs
+        self, source_spectra, obstime=None
     ) -> u.cm**5 * u.DN / (u.pix * u.s):
+        """
+        Temperature response function for a given source spectra.
+
+        The temperature response function describes the sensitivity of an imaging
+        instrument as a function of temperature. The temperature response is
+        calculated by integrating the source spectra over the wavelength dimension,
+        weighted by the wavelength response of the instrument. For more information,
+        see the `topic guide on instrument response <>`_.
+
+        Parameters
+        ----------
+        source_spectra: `SourceSpectra`
+        obstime: any parsed by `~sunpy.time.parse_time`, optional
+        """
+        # TODO: refactor all of this to take advantage of xarray interpolation
+        # and summation
         wave_response = self.wavelength_response(obstime=obstime, **kwargs)
         f_response = interp1d(
             self.wavelength.to_value("AA"),
@@ -86,9 +134,9 @@ class AbstractChannel(abc.ABC):
 
     @u.quantity_input
     def wavelength_response(
-        self, obstime=None, **kwargs
+        self, obstime=None
     ) -> u.cm**2 * u.DN * u.steradian / (u.photon * u.pixel):
-        area_eff = self.effective_area(obstime=obstime, **kwargs)
+        area_eff = self.effective_area(obstime=obstime)
         return (
             area_eff
             * self.energy_per_photon
