@@ -86,11 +86,6 @@ class SourceSpectra:
 class AbstractChannel(abc.ABC):
     """
     An abstract base class for defining instrument channels.
-
-    .. caution::
-
-       This abstract class is still under development and may change
-       in the near future.
     """
 
     @u.quantity_input
@@ -109,7 +104,7 @@ class AbstractChannel(abc.ABC):
         Parameters
         ----------
         source_spectra: `SourceSpectra`
-        obstime: any parsed by `~sunpy.time.parse_time`, optional
+        obstime: any format parsed by `~sunpy.time.parse_time`, optional
         """
         # TODO: refactor all of this to take advantage of xarray interpolation
         # and summation
@@ -135,6 +130,20 @@ class AbstractChannel(abc.ABC):
     def wavelength_response(
         self, obstime=None
     ) -> u.cm**2 * u.DN * u.steradian / (u.photon * u.pixel):
+        """
+        Instrument response as a function of wavelength
+
+        The wavelength response is the effective area with
+        the conversion factors from photons to DN and steradians
+        to pixels. For more information, see the `topic guide on
+        instrument response <>`_.
+
+        Parameters
+        ----------
+        obstime: any format parsed by `~sunpy.time.parse_time`, optional
+            If specified, this is used to compute the time-dependent
+            instrument degradation.
+        """
         area_eff = self.effective_area(obstime=obstime)
         return (
             area_eff
@@ -146,6 +155,20 @@ class AbstractChannel(abc.ABC):
 
     @u.quantity_input
     def effective_area(self, obstime=None) -> u.cm**2:
+        """
+        Effective area as a function of wavelength.
+
+        The effective area is the geometrical collecting area
+        weighted by the mirror reflectance, filter transmittance,
+        quantum efficiency, and instrument degradation. For more
+        information, see the `topic guide on instrument response <>`_.
+
+        Parameters
+        ----------
+        obstime: any format parsed by `~sunpy.time.parse_time`, optional
+            If specified, this is used to compute the time-dependent
+            instrument degradation.
+        """
         return (
             self.geometrical_area
             * self.mirror_reflectance
