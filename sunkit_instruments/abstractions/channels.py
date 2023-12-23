@@ -37,20 +37,24 @@ class SourceSpectra:
         )
 
     @property
+    @u.quantity_input
     def temperature(self) -> u.K:
         return u.Quantity(self._da.temperature.data, self._da.temperature.attrs["unit"])
 
     @property
+    @u.quantity_input
     def wavelength(self) -> u.Angstrom:
         return u.Quantity(self._da.wavelength.data, self._da.wavelength.attrs["unit"])
 
     @property
+    @u.quantity_input
     def data(self) -> u.photon * u.cm**3 / (u.s * u.AA * u.sr):
         return u.Quantity(self._da.data, self._da.attrs["unit"])
 
 
 class AbstractChannel(abc.ABC):
-    """An abstract base class for defining instrument channels.
+    """
+    An abstract base class for defining instrument channels.
 
     .. caution::
 
@@ -58,6 +62,7 @@ class AbstractChannel(abc.ABC):
        in the near future.
     """
 
+    @u.quantity_input
     def temperature_response(
         self, source_spectra, obstime=None, **kwargs
     ) -> u.cm**5 * u.DN / (u.pix * u.s):
@@ -73,21 +78,26 @@ class AbstractChannel(abc.ABC):
             f_response(source_spectra.wavelength.to_value("AA")), wave_response.unit
         )
         temperature_response = (
-            source_spectra * wave_response_interp * np.gradient(self.wavelength)
+            source_spectra.data
+            * wave_response_interp
+            * np.gradient(source_spectra.wavelength)
         ).sum(axis=1)
-        return source_spectra.temperature, temperature_response
+        return temperature_response
 
+    @u.quantity_input
     def wavelength_response(
         self, obstime=None, **kwargs
     ) -> u.cm**2 * u.DN * u.steradian / (u.photon * u.pixel):
         area_eff = self.effective_area(obstime=obstime, **kwargs)
         return (
             area_eff
-            * self.photon_to_energy
-            * self.pixel_area
-            / (self.energy_to_electron * self.camera_gain)
+            * self.energy_per_photon
+            * self.pixel_solid_angle
+            * self.camera_gain
+            / self.energy_per_electron
         )
 
+    @u.quantity_input
     def effective_area(self, obstime=None) -> u.cm**2:
         return (
             self.geometrical_area
@@ -98,41 +108,51 @@ class AbstractChannel(abc.ABC):
         )
 
     @property
-    def photon_to_energy(self) -> u.eV / u.photon:
+    @u.quantity_input
+    def energy_per_photon(self) -> u.eV / u.photon:
         return self.wavelength.to("eV", equivalencies=u.spectral()) / u.photon
 
     @abc.abstractmethod
+    @u.quantity_input
     def degradation(self, obstime=None):
         ...
 
     @abc.abstractproperty
+    @u.quantity_input
     def geometrical_area(self) -> u.cm**2:
         ...
 
     @abc.abstractproperty
-    def mirror_reflectance(self):
+    @u.quantity_input
+    def mirror_reflectance(self) -> u.dimensionless_unscaled:
         ...
 
     @abc.abstractproperty
-    def filter_transmittance(self):
+    @u.quantity_input
+    def filter_transmittance(self) -> u.dimensionless_unscaled:
         ...
 
     @abc.abstractproperty
-    def quantum_efficiency(self):
+    @u.quantity_input
+    def quantum_efficiency(self) -> u.dimensionless_unscaled:
         ...
 
     @abc.abstractproperty
-    def camera_gain(self) -> u.electron / u.DN:
+    @u.quantity_input
+    def camera_gain(self) -> u.DN / u.electron:
         ...
 
     @abc.abstractproperty
-    def energy_to_electron(self) -> u.electron / u.eV:
+    @u.quantity_input
+    def energy_per_electron(self) -> u.eV / u.electron:
         ...
 
     @abc.abstractproperty
-    def pixel_area(self) -> u.cm**2 / u.pixel:
+    @u.quantity_input
+    def pixel_solid_angle(self) -> u.steradian / u.pixel:
         ...
 
     @abc.abstractproperty
+    @u.quantity_input
     def wavelength(self) -> u.Angstrom:
         ...
