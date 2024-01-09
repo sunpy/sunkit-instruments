@@ -42,6 +42,7 @@ Once you have that virtual environment, you will want to fork the repo and then 
 
    code_ref/index
    generated/gallery/index
+   topic_guide/index
    whatsnew/index
 
 
