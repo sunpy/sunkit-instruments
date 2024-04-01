@@ -1,6 +1,7 @@
 """
 Configuration file for the Sphinx documentation builder.
 """
+
 # -- stdlib imports ------------------------------------------------------------
 import os
 import datetime
