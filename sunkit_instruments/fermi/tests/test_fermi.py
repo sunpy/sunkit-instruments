@@ -15,7 +15,6 @@ def test_download_weekly_pointing_file():
     assert afile.endswith(".fits")
 
 
-@pytest.mark.remote_data
 @pytest.fixture
 def pointing_file():
     # set a test date
