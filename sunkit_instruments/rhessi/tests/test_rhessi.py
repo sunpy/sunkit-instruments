@@ -5,8 +5,8 @@ from unittest import mock
 
 import numpy as np
 import pytest
-import sunpy.io
 import sunpy.map
+from sunpy.io._file_tools import read_file
 from sunpy.time import is_time_equal, parse_time
 
 from sunkit_instruments import rhessi
@@ -91,7 +91,7 @@ def test_parse_observing_summary_dbase_file():
 
 
 def test_get_parse_obssum_hdulist():
-    hdulist = sunpy.io.read_file(get_test_filepath("hsi_obssumm_20110404_042.fits.gz"))
+    hdulist = read_file(get_test_filepath("hsi_obssumm_20110404_042.fits.gz"))
     header, _data = rhessi.parse_observing_summary_hdulist(hdulist)
     assert header.get("DATE_OBS") == "2011-04-04T00:00:00.000"
     assert header.get("DATE_END") == "2011-04-05T00:00:00.000"

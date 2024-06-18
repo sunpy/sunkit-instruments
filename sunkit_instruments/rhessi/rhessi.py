@@ -8,9 +8,9 @@ import re
 
 import astropy.units as u
 import numpy as np
-import sunpy.io
 from astropy.time import Time, TimeDelta
 from sunpy.coordinates import sun
+from sunpy.io._file_tools import read_file
 from sunpy.time import TimeRange, parse_time
 
 __all__ = [
@@ -253,7 +253,7 @@ def _backproject(
     # info_parameters = fits[2]
     # detector_efficiency = info_parameters.data.field('cbe_det_eff$$REL')
 
-    afits = sunpy.io.read_file(calibrated_event_list)
+    afits = read_file(calibrated_event_list)
 
     fits_detector_index = detector + 2
     detector_index = detector - 1
@@ -324,7 +324,7 @@ def backprojection(
     pixel_size = pixel_size.to(u.arcsec)
     image_dim = np.array(image_dim.to(u.pix).value, dtype=int)
 
-    afits = sunpy.io.read_file(calibrated_event_list)
+    afits = read_file(calibrated_event_list)
     info_parameters = afits[2]
     xyoffset = info_parameters.data.field("USED_XYOFFSET")[0]
     time_range = TimeRange(
@@ -428,9 +428,10 @@ def imagecube2map(rhessi_imagecube_file):
         Each energy band has a list of maps where the index of the lists represent the time step
     """
     # import sunpy.map in here so that net and timeseries don't end up importing map
+    from sunpy.io._file_tools import read_file
     from sunpy.map import Map
 
-    f = sunpy.io.read_file(rhessi_imagecube_file)
+    f = read_file(rhessi_imagecube_file)
     header = f[0].header
 
     # make sure datacube is a RHESSI cube
