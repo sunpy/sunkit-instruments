@@ -42,10 +42,10 @@ LYTAF_TEST = np.append(
     np.array(
         [
             (
-                parse_time(datetime.datetime.utcfromtimestamp(1371459961)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359677220)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359677250)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359677400)),
+                parse_time(datetime.datetime.fromtimestamp(1371459961)),
+                parse_time(datetime.datetime.fromtimestamp(1359677220)),
+                parse_time(datetime.datetime.fromtimestamp(1359677250)),
+                parse_time(datetime.datetime.fromtimestamp(1359677400)),
                 "LAR",
                 "Large Angle Rotation.",
             )
@@ -58,10 +58,10 @@ LYTAF_TEST = np.append(
     np.array(
         [
             (
-                parse_time(datetime.datetime.utcfromtimestamp(1371460063)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359681764)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359682450)),
-                parse_time(datetime.datetime.utcfromtimestamp(1359683136)),
+                parse_time(datetime.datetime.fromtimestamp(1371460063)),
+                parse_time(datetime.datetime.fromtimestamp(1359681764)),
+                parse_time(datetime.datetime.fromtimestamp(1359682450)),
+                parse_time(datetime.datetime.fromtimestamp(1359683136)),
                 "UV occ.",
                 "Occultation in the UV spectrum.",
             )
@@ -368,44 +368,44 @@ def test_get_lytaf_events(local_cache):
     )
     # Form expected result of extract_combined_lytaf
     insertion_time = [
-        datetime.datetime.utcfromtimestamp(1371459961),
-        datetime.datetime.utcfromtimestamp(1371460063),
-        datetime.datetime.utcfromtimestamp(1371460411),
-        datetime.datetime.utcfromtimestamp(1371460493),
-        datetime.datetime.utcfromtimestamp(1371460403),
-        datetime.datetime.utcfromtimestamp(1371470988),
-        datetime.datetime.utcfromtimestamp(1371211791),
-        datetime.datetime.utcfromtimestamp(1371212303),
+        datetime.datetime.fromtimestamp(1371459961),
+        datetime.datetime.fromtimestamp(1371460063),
+        datetime.datetime.fromtimestamp(1371460411),
+        datetime.datetime.fromtimestamp(1371460493),
+        datetime.datetime.fromtimestamp(1371460403),
+        datetime.datetime.fromtimestamp(1371470988),
+        datetime.datetime.fromtimestamp(1371211791),
+        datetime.datetime.fromtimestamp(1371212303),
     ]
     begin_time = [
-        datetime.datetime.utcfromtimestamp(1359677220),
-        datetime.datetime.utcfromtimestamp(1359681764),
-        datetime.datetime.utcfromtimestamp(1360748513),
-        datetime.datetime.utcfromtimestamp(1361115900),
-        datetime.datetime.utcfromtimestamp(1361980964),
-        datetime.datetime.utcfromtimestamp(1368581100),
-        datetime.datetime.utcfromtimestamp(1371032084),
-        datetime.datetime.utcfromtimestamp(1371158167),
+        datetime.datetime.fromtimestamp(1359677220),
+        datetime.datetime.fromtimestamp(1359681764),
+        datetime.datetime.fromtimestamp(1360748513),
+        datetime.datetime.fromtimestamp(1361115900),
+        datetime.datetime.fromtimestamp(1361980964),
+        datetime.datetime.fromtimestamp(1368581100),
+        datetime.datetime.fromtimestamp(1371032084),
+        datetime.datetime.fromtimestamp(1371158167),
     ]
     reference_time = [
-        datetime.datetime.utcfromtimestamp(1359677250),
-        datetime.datetime.utcfromtimestamp(1359682450),
-        datetime.datetime.utcfromtimestamp(1360751528),
-        datetime.datetime.utcfromtimestamp(1361116200),
-        datetime.datetime.utcfromtimestamp(1361983979),
-        datetime.datetime.utcfromtimestamp(1368582480),
-        datetime.datetime.utcfromtimestamp(1371045475),
-        datetime.datetime.utcfromtimestamp(1371162600),
+        datetime.datetime.fromtimestamp(1359677250),
+        datetime.datetime.fromtimestamp(1359682450),
+        datetime.datetime.fromtimestamp(1360751528),
+        datetime.datetime.fromtimestamp(1361116200),
+        datetime.datetime.fromtimestamp(1361983979),
+        datetime.datetime.fromtimestamp(1368582480),
+        datetime.datetime.fromtimestamp(1371045475),
+        datetime.datetime.fromtimestamp(1371162600),
     ]
     end_time = [
-        datetime.datetime.utcfromtimestamp(1359677400),
-        datetime.datetime.utcfromtimestamp(1359683136),
-        datetime.datetime.utcfromtimestamp(1360754543),
-        datetime.datetime.utcfromtimestamp(1361116320),
-        datetime.datetime.utcfromtimestamp(1361986994),
-        datetime.datetime.utcfromtimestamp(1368583080),
-        datetime.datetime.utcfromtimestamp(1371050025),
-        datetime.datetime.utcfromtimestamp(1371167100),
+        datetime.datetime.fromtimestamp(1359677400),
+        datetime.datetime.fromtimestamp(1359683136),
+        datetime.datetime.fromtimestamp(1360754543),
+        datetime.datetime.fromtimestamp(1361116320),
+        datetime.datetime.fromtimestamp(1361986994),
+        datetime.datetime.fromtimestamp(1368583080),
+        datetime.datetime.fromtimestamp(1371050025),
+        datetime.datetime.fromtimestamp(1371167100),
     ]
     event_type = [
         "LAR",

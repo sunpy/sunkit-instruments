@@ -452,19 +452,19 @@ def get_lytaf_events(
                 np.array(
                     (
                         Time(
-                            datetime.datetime.utcfromtimestamp(event_row[0]),
+                            datetime.datetime.fromtimestamp(event_row[0]),
                             format="datetime",
                         ),
                         Time(
-                            datetime.datetime.utcfromtimestamp(event_row[1]),
+                            datetime.datetime.fromtimestamp(event_row[1]),
                             format="datetime",
                         ),
                         Time(
-                            datetime.datetime.utcfromtimestamp(event_row[2]),
+                            datetime.datetime.fromtimestamp(event_row[2]),
                             format="datetime",
                         ),
                         Time(
-                            datetime.datetime.utcfromtimestamp(event_row[3]),
+                            datetime.datetime.fromtimestamp(event_row[3]),
                             format="datetime",
                         ),
                         eventType_type[id_index],
