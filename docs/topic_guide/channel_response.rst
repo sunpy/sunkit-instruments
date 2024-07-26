@@ -88,7 +88,7 @@ The pixel area, :math:`p`, is the angular area in the plane of the sky subtended
 It has a physical type of solid angle per pixel.
 The units of the pixel area are typically expressed as :math:`\mathrm{sr}\,\mathrm{pixel}^{-1}`.
 Typically, this quantity can be determined as the product the spatial plate scale in each direction.
-In the FITS standard, these keys are denoted by `CDELTi`, with `i` typically taking on values of 1 or 2.
+In the FITS standard, these keys are denoted by "CDELTi", with "i" typically taking on values of 1 or 2.
 Note that the pixel area is sometimes confusingly referred to as the plate scale.
 However, here we explicitly define the plate scale to be the angular *distance* subtended by one side of a pixel.
 
