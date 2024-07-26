@@ -8,6 +8,7 @@ A SunPy-affiliated package for solar instrument-specific tools.
 * Documentation: https://docs.sunpy.org/projects/sunkit-instruments/en/latest/
 * Source code: https://github.com/sunpy/sunkit-instruments
 """
+
 import sys
 
 from .version import version as __version__  # NOQA
