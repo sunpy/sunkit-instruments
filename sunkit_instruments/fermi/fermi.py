@@ -19,6 +19,7 @@ from sunpy.coordinates import sun
 from sunpy.time import TimeRange, parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
 from sunpy.util.decorators import add_common_docstring
+from sunpy.util.exceptions import warn_user
 
 __all__ = [
     "download_weekly_pointing_file",
@@ -116,6 +117,18 @@ def get_detector_sun_angles_for_time(time, file):
 
     time = parse_time(time)
     scx, scz, tt = get_scx_scz_at_time(time, file)
+
+    # Fermi LAT spacecraft files have gaps due to SAA. If the requested time falls
+    # in one of these gaps, the time and angles returned will be the next available
+    # time in the file. This may be several minutes different from the request.   
+    # If the returned time is > 60s different from the time requested, raise a warning.
+    if np.abs((tt - time).sec) > 60.:
+        warn_user("The time requested is missing from the Fermi spacecraft file. "
+                      "The requested time probably occurs during the South Atlantic Anomaly. "
+                      f"Returning detector angles for the next available time: {tt}"
+                      )
+        
+    
     # retrieve the detector angle information in spacecraft coordinates
     detectors = nai_detector_angles()
 
