@@ -1,0 +1,5 @@
+In the ``fermi``, the function ``get_detector_sun_angles_for_time`` returns the angle with respect to the Sun of each Fermi/GBM detector.
+However, these files contain gaps due to the South Atlantic Anomaly.
+If the time requested falls in one of these gaps, the code will return the detector angles for the next available time.
+This can be several minutes different from the time requested.
+Now, a warning to the user will be raised if the time returned by the code is more than 1 minute different from the time requested (1 minute is the nominal cadence of the spacecraft weekly file), and explains that this is likely due to a South Atlantic Anomaly encounter.
