@@ -1,0 +1,1 @@
+The function ``plot_detector_sun_angles`` was broken, due to the formatting of the time axis.
