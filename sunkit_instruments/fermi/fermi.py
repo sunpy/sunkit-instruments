@@ -225,13 +225,16 @@ def plot_detector_sun_angles(angles):
         function of time. Obtained from the
         `~sunkit_instruments.fermi.get_detector_separation_angles` function.
     """
-
-    # make a plot showing the angles vs time
-    figure = plt.figure(1)
+    # Reformat the time array so we can plot it
+    angle_times = []
+    for t in angles["time"]:
+        angle_times.append(t.datetime)
+    # Make a plot showing the angles vs time
+    figure = plt.figure(1, figsize=(12, 6), layout="constrained")
     for n in angles.keys():
         if not n == "time":
             plt.plot(
-                angles["time"],
+                angle_times,
                 angles[n].value,
                 label="{lab} ({val})".format(
                     lab=n, val=str(np.mean(angles[n].value))[0:5]
@@ -239,9 +242,9 @@ def plot_detector_sun_angles(angles):
             )
     plt.ylim(180, 0)
     plt.ylabel("angle (degrees)")
-    plt.xlabel("Start time: " + angles["time"][0].isoformat())
+    plt.xlabel("Start time: " + angle_times[0].isoformat())
     plt.title("Detector pointing angle from Sun")
-    plt.legend(fontsize=10)
+    figure.legend(fontsize=10, loc="outside center right")
     figure.autofmt_xdate()
     plt.show()
 
