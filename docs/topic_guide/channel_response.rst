@@ -28,7 +28,7 @@ The temperature response is related to the observed intensity in a given pixel b
 
     I = \int\mathrm{d}T\,K(T)\mathrm{DEM}(T)\quad[\mathrm{DN}\,\mathrm{pixel}^{-1}\,\mathrm{s}^{-1}],
 
-where :math:`\mathrm{DEM}(T)=n^2\frac{dh}{dT}` is the line-of-sight *differential* emission measure distribution in a given pixel and is typically express in units of :math:`\mathrm{cm}^{-5}\,\mathrm{K}^{-1}`.
+where :math:`\mathrm{DEM}(T)=n^2\frac{dh}{dT}` is the line-of-sight *differential* emission measure distribution in a given pixel and is typically expressed in units of :math:`\mathrm{cm}^{-5}\,\mathrm{K}^{-1}`.
 
 Source Spectra
 --------------
