@@ -31,9 +31,9 @@ The temperature response is related to the observed intensity in a given pixel b
 where,
 
 .. math::
-    
+
     \mathrm{DEM}(T)=n^2\frac{dh}{dT}
-    
+
 is the line-of-sight *differential* emission measure distribution in a given pixel.
 It is typically expressed in units of :math:`\mathrm{cm}^{-5}\,\mathrm{K}^{-1}`.
 
