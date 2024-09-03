@@ -5,7 +5,7 @@ A Vocabulary for Instrument Response
 ************************************
 
 This topic guide provides a vocabulary for response functions for imaging instruments.
-The goal of providing a single vocabulary for instrument response calculations is to provide a specification for a common interface that can be used by multiple instruments.
+The reason to provide a single vocabulary for instrument response calculations is to define a specification for a common interface that can be used by multiple instruments.
 This reduces the amount of effort needed to develop analysis software for new instruments and enables cross-instrument comparisons as upstream packages and users can program against a single interface for these response calculations.
 An abstract implementation of this vocabulary is provided in this package.
 
@@ -28,7 +28,14 @@ The temperature response is related to the observed intensity in a given pixel b
 
     I = \int\mathrm{d}T\,K(T)\mathrm{DEM}(T)\quad[\mathrm{DN}\,\mathrm{pixel}^{-1}\,\mathrm{s}^{-1}],
 
-where :math:`\mathrm{DEM}(T)=n^2\frac{dh}{dT}` is the line-of-sight *differential* emission measure distribution in a given pixel and is typically expressed in units of :math:`\mathrm{cm}^{-5}\,\mathrm{K}^{-1}`.
+where,
+
+.. math::
+    
+    \mathrm{DEM}(T)=n^2\frac{dh}{dT}
+    
+is the line-of-sight *differential* emission measure distribution in a given pixel.
+It is typically expressed in units of :math:`\mathrm{cm}^{-5}\,\mathrm{K}^{-1}`.
 
 Source Spectra
 --------------
@@ -38,8 +45,10 @@ It is denoted by :math:`S(\lambda, T)`.
 The source spectra has a physical type of photon per unit time per unit wavelength per solid angle per unit density.
 The units are commonly expressed as
 :math:`\mathrm{photon}\,\mathrm{s}^{-1}\,\mathring{\mathrm{A}}^{-1}\,\mathrm{sr}^{-1}\,\mathrm{cm}^3`.
+As such, it may also be referred to as the *spectral radiance per unit emission measure*.
 The source spectra is specified by the user and can be computed from atomic databases (e.g. CHIANTI).
 This quantity is independent of any instrument properties.
+
 
 Wavelength Response
 -------------------
@@ -49,16 +58,16 @@ The wavelength response is defined as,
 
 .. math::
 
-    R(\lambda,t) = A_{\mathrm{eff}}(\lambda,t)f(\lambda)\frac{pg}{s}\quad[\mathrm{cm}^2\,\mathrm{DN}\,\mathrm{sr}\,\mathrm{photon}^{-1}\,\mathrm{pixel}^{-1}]
+    R(\lambda,t) = A_{\mathrm{eff}}(\lambda,t)f(\lambda)\frac{pg}{s}\quad[\mathrm{cm}^2\,\mathrm{DN}\,\mathrm{photon}^{-1}\,\mathrm{sr}\,\mathrm{pixel}^{-1}]
 
-It has a physical type of area DN solid angle per photon per pixel.
+It has a physical type of area DN per photon solid angle per pixel.
 
 Camera Gain
 -----------
 
 The camera gain, :math:`g`, describes the conversion between electrons and data number (DN).
 This is a property of the detector.
-The units of the camera gain are as :math:`\mathrm{DN}\,\mathrm{electron}^{-1}`.
+The units of the camera gain are :math:`\mathrm{DN}\,\mathrm{electron}^{-1}`.
 
 Photon-to-Energy Conversion
 ---------------------------
@@ -72,12 +81,15 @@ The photon-to-energy conversion is given by the amount of energy carried by a ph
 where :math:`h` is Planck's constant and :math:`c` is the speed of light.
 It has a physical type of energy per photon.
 
-Use `~astropy.units.spectral` to provide a list of appropriate `astropy.units` equivalencies for this conversion.
+.. note::
+
+    Use `~astropy.units.spectral` to provide a list of appropriate `astropy.units` equivalencies for this conversion.
 
 Energy-to-Electron Conversion
 -----------------------------
 
 The energy-to-electron conversion, :math:`s`, describes the conversion between electrons released in the detector and the energy of an incoming photon.
+This is commonly referred to as the *electron-hole-pair-creation energy*.
 It has a physical type of energy per electron.
 For silicon detectors, a value of :math:`s=3.65\,\mathrm{eV}\,\mathrm{electron}^{-1}` is typically used as this is approximately the energy required to free an electron in silicon.
 
@@ -130,11 +142,13 @@ In the case of a multilayer coating, the transmittance is the product of the tra
 Similarly, if an instrument contains multiple filters (e.g. an entrance and focal-plane filter), this quantity is the product of the transmittance of each mirror.
 :math:`F(\lambda)` should always be between 0 and 1.
 
-Quantum Efficiency
-******************
+Effective Quantum Efficiency
+****************************
 
-The quantum efficiency, :math:`Q(\lambda)`, is a dimensionless quantity describing the efficiency of the detector.
+The effective quantum efficiency, :math:`Q(\lambda)`, is a dimensionless quantity describing the efficiency of the detector.
 :math:`Q(\lambda)` should always be between 0 and 1.
+This quantity may also be referred to as the `external quantum efficiency <https://en.wikipedia.org/wiki/Quantum_efficiency#Types>`__.
+Note that the *quantum efficiency* is usually defined as the number of electron-hole pairs measured per photon.
 
 Degradation
 ***********
