@@ -36,7 +36,7 @@ class TestChannel(AbstractChannel):
 
     @property
     @u.quantity_input
-    def quantum_efficiency(self) -> u.dimensionless_unscaled:
+    def effective_quantum_efficiency(self) -> u.dimensionless_unscaled:
         return np.ones(self.wavelength.shape)
 
     @property

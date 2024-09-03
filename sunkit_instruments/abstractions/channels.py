@@ -1,4 +1,5 @@
 """This module defines abstractions related to instrument channels."""
+
 import abc
 
 import astropy.units as u
@@ -21,13 +22,13 @@ class SourceSpectra:
 
     Parameters
     ----------
-    temperature: u.Quantity
+    temperature: `~astropy.units.Quantity`
         1D array describing the variation along the temperature axis
-    wavelength: u.Quantity
+    wavelength: `~astropy.units.Quantity`
         1D array describing the variation along the wavelength axis
-    spectra: u.Quantity
+    spectra: `~astropy.units.Quantity`
         Source spectra as a 2D array. The first axis should correspond to temperature and the second axis should correspond to wavelength.
-    density: u.Quantity, optional
+    density: `~astropy.units.Quantity`, optional
         1D array describing the variation in density along the temperature axis. It is assumed
         that temperature and density are dependent.
     """
@@ -86,6 +87,9 @@ class SourceSpectra:
 class AbstractChannel(abc.ABC):
     """
     An abstract base class for defining instrument channels.
+
+    For all methods and properties defined here, see the
+    `topic guide on instrument response <>`_ for more information.
     """
 
     @u.quantity_input
@@ -98,8 +102,7 @@ class AbstractChannel(abc.ABC):
         The temperature response function describes the sensitivity of an imaging
         instrument as a function of temperature. The temperature response is
         calculated by integrating the source spectra over the wavelength dimension,
-        weighted by the wavelength response of the instrument. For more information,
-        see the `topic guide on instrument response <>`_.
+        weighted by the wavelength response of the instrument.
 
         Parameters
         ----------
@@ -135,8 +138,7 @@ class AbstractChannel(abc.ABC):
 
         The wavelength response is the effective area with
         the conversion factors from photons to DN and steradians
-        to pixels. For more information, see the `topic guide on
-        instrument response <>`_.
+        to pixels.
 
         Parameters
         ----------
@@ -160,8 +162,7 @@ class AbstractChannel(abc.ABC):
 
         The effective area is the geometrical collecting area
         weighted by the mirror reflectance, filter transmittance,
-        quantum efficiency, and instrument degradation. For more
-        information, see the `topic guide on instrument response <>`_.
+        quantum efficiency, and instrument degradation.
 
         Parameters
         ----------
@@ -173,7 +174,7 @@ class AbstractChannel(abc.ABC):
             self.geometrical_area
             * self.mirror_reflectance
             * self.filter_transmittance
-            * self.quantum_efficiency
+            * self.effective_quantum_efficiency
             * self.degradation(obstime=obstime)
         )
 
@@ -184,45 +185,44 @@ class AbstractChannel(abc.ABC):
 
     @abc.abstractmethod
     @u.quantity_input
-    def degradation(self, obstime=None):
-        ...
+    def degradation(self, obstime=None): ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def geometrical_area(self) -> u.cm**2:
-        ...
+    def geometrical_area(self) -> u.cm**2: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def mirror_reflectance(self) -> u.dimensionless_unscaled:
-        ...
+    def mirror_reflectance(self) -> u.dimensionless_unscaled: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def filter_transmittance(self) -> u.dimensionless_unscaled:
-        ...
+    def filter_transmittance(self) -> u.dimensionless_unscaled: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def quantum_efficiency(self) -> u.dimensionless_unscaled:
-        ...
+    def effective_quantum_efficiency(self) -> u.dimensionless_unscaled: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def camera_gain(self) -> u.DN / u.electron:
-        ...
+    def camera_gain(self) -> u.DN / u.electron: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def energy_per_electron(self) -> u.eV / u.electron:
-        ...
+    def energy_per_electron(self) -> u.eV / u.electron: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def pixel_solid_angle(self) -> u.steradian / u.pixel:
-        ...
+    def pixel_solid_angle(self) -> u.steradian / u.pixel: ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     @u.quantity_input
-    def wavelength(self) -> u.Angstrom:
-        ...
+    def wavelength(self) -> u.Angstrom: ...
