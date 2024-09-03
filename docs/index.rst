@@ -43,7 +43,6 @@ Once you have that virtual environment, you will want to fork the repo and then 
    code_ref/index
    generated/gallery/index
    whatsnew/index
-   glossary
 
 
 Note that the code in this package is **not** maintained by or necessarily contributed to by instrument teams.

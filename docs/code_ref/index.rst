@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 2
 
    sunkit_instruments
+   abstractions
    fermi
    goes_xrs
    iris
