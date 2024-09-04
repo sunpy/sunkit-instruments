@@ -1,6 +1,9 @@
-"""
-Configuration file for the Sphinx documentation builder.
-"""
+# Configuration file for the Sphinx documentation builder.
+#
+# This file does only contain a selection of the most common options. For a
+# full list see the documentation:
+# http://www.sphinx-doc.org/en/master/config
+
 # -- stdlib imports ------------------------------------------------------------
 import os
 import datetime
@@ -15,11 +18,13 @@ if on_rtd:
     os.environ["LC_ALL"] = "C"
     os.environ["PARFIVE_HIDE_PROGRESS"] = "True"
 
-# -- Non stdlib imports --------------------------------------------------------
-from sunkit_instruments import __version__  # NOQA
+# -- Project information -----------------------------------------------------
 
-# -- Project information -------------------------------------------------------
-project = "sunkit_instruments"
+# The full version, including alpha/beta/rc tags
+from sunkit_instruments import __version__  # NOQA
+release = __version__
+
+project = "sunkit-instruments"
 author = "The SunPy Community"
 copyright = f"{datetime.datetime.now().year}, {author}"
 release = __version__
@@ -28,27 +33,47 @@ is_release = not (
     sunkit_instruments_version.is_prerelease or sunkit_instruments_version.is_devrelease
 )
 # -- General configuration -----------------------------------------------------
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named "sphinx.ext.*") or your custom
+# ones.
 suppress_warnings = [
     "app.add_directive",
 ]
 extensions = [
-    "sphinx_gallery.gen_gallery",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
     "sphinx_changelog",
+    "sphinx_gallery.gen_gallery",
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.doctest",
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "sphinx.ext.mathjax",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
 ]
+
+# Add any paths that contain templates here, relative to this directory.
+# templates_path = ["_templates"]
+
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+# This pattern also affects html_static_path and html_extra_path.
 html_extra_path = ["robots.txt"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# The suffix(es) of source filenames.
+# You can specify multiple suffix as a list of string:
+source_suffix = ".rst"
+
+# The master toctree document.
+master_doc = "index"
+
+# Treat everything in single ` as a Python reference.
+default_role = 'py:obj'
 
 # -- Options for intersphinx extension -----------------------------------------
 intersphinx_mapping = {
@@ -86,6 +111,8 @@ default_role = "obj"
 # -- Options for HTML output ---------------------------------------------------
 from sunpy_sphinx_theme.conf import *  # NOQA
 
+# -- Other options ----------------------------------------------------------
+
 # -- Graphviz Output ------------------------------------------------------------
 graphviz_output_format = "svg"
 graphviz_dot_args = [
@@ -111,4 +138,4 @@ sphinx_gallery_conf = {
     "remove_config_comments": True,
     "doc_module": ("sunpy"),
     "only_warn_on_example_error": True,
-}
+]
