@@ -1,6 +1,6 @@
 import platform
 import textwrap
-from distutils.version import LooseVersion
+from packaging.version import Version
 from unittest import mock
 
 import numpy as np
@@ -138,7 +138,7 @@ def test_parse_observing_summary_dbase_file_mock():
     summary database file mocked in ``hessi_data()``.
     """
     # We need to mock this test differently for <= 3.7.0 and below.
-    if LooseVersion(platform.python_version()) <= LooseVersion("3.7.0"):
+    if Version(platform.python_version()) <= Version("3.7.0"):
         mock_file = mock.mock_open()
         mock_file.return_value.__iter__.return_value = hessi_data().splitlines()
     else:
