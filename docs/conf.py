@@ -105,7 +105,8 @@ intersphinx_mapping = {
 default_role = "obj"
 
 # -- Options for HTML output ---------------------------------------------------
-from sunpy_sphinx_theme.conf import *  # NOQA
+html_theme = "sunpy"
+from sunpy_sphinx_theme import *
 
 # -- Other options ----------------------------------------------------------
 
@@ -128,7 +129,7 @@ sphinx_gallery_conf = {
     "gallery_dirs": os.path.join("generated", "gallery"),
     "matplotlib_animations": True,
     # Comes from the theme.
-    "default_thumb_file": png_icon,
+    "default_thumb_file": PNG_ICON,
     "abort_on_example_error": False,
     "plot_gallery": "True",
     "remove_config_comments": True,
