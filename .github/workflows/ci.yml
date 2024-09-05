@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -64,7 +63,7 @@ jobs:
     needs: [core]
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
     with:
-      default_python: '3.12'
+      default_python: '3.9'
       submodules: false
       pytest: false
       toxdeps: tox-pypi-filter
@@ -73,6 +72,21 @@ jobs:
           - graphviz
       envs: |
         - linux: build_docs
+
+  online:
+    if: "!startsWith(github.event.ref, 'refs/tags/v')"
+    needs: [test]
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
+    with:
+      default_python: '3.12'
+      submodules: false
+      coverage: codecov
+      toxdeps: tox-pypi-filter
+      posargs: -n auto --dist loadgroup
+      envs: |
+        - linux: py311-devdeps
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   cron:
     if: |

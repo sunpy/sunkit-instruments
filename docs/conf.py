@@ -1,9 +1,6 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file does only contain a selection of the most common options. For a
-# full list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
-
+"""
+Configuration file for the Sphinx documentation builder.
+"""
 # -- stdlib imports ------------------------------------------------------------
 import os
 import datetime
@@ -22,7 +19,6 @@ if on_rtd:
 
 # The full version, including alpha/beta/rc tags
 from sunkit_instruments import __version__  # NOQA
-release = __version__
 
 project = "sunkit-instruments"
 author = "The SunPy Community"
@@ -50,8 +46,8 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
 ]
@@ -138,4 +134,4 @@ sphinx_gallery_conf = {
     "remove_config_comments": True,
     "doc_module": ("sunpy"),
     "only_warn_on_example_error": True,
-]
+}

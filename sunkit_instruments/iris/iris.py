@@ -7,9 +7,10 @@ routines.
     More comprehensive IRIS tools are now being developed by the
     `IRIS instrument team. <https://gitlab.com/LMSAL_HUB/iris_hub>`__
 """
-import sunpy.io
+
 import sunpy.map
 import sunpy.time
+from sunpy.io._file_tools import read_file
 
 __all__ = ["SJI_to_sequence"]
 
@@ -41,7 +42,7 @@ def SJI_to_sequence(filename, start=0, stop=None, hdu=0):
         A map sequence of the SJI data.
     """
 
-    hdus = sunpy.io.read_file(filename)
+    hdus = read_file(filename)
     # Get the time delta
     time_range = sunpy.time.TimeRange(hdus[hdu][1]["STARTOBS"], hdus[hdu][1]["ENDOBS"])
     splits = time_range.split(hdus[hdu][0].shape[0])

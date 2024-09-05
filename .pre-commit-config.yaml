@@ -10,8 +10,7 @@ repos:
     rev: 5.13.2
     hooks:
       - id: isort
-         args: ['--sp','setup.cfg']
-        exclude: ".*(.fits|.fts|.fit|.nc|.gz|.txt|tca.*|extern.*|.rst|.md|docs/conf.py)$"
+	exclude: ".*(.fits|.fts|.fit|.header|.txt|tca.*|extern.*|sunkit_instruments/extern)$""
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

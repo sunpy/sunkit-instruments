@@ -17,7 +17,7 @@ authors = [
 ]
 dependencies = [
   "scipy",
-  "sunpy[net,timeseries]>=5.0.0"
+  "sunpy[map,net,timeseries,visualization]>=6.0.0"
 ]
 dynamic = ["version"]
 
