@@ -16,7 +16,6 @@ authors = [
   { name = "The SunPy Community", email = "sunpy@googlegroups.com" },
 ]
 dependencies = [
-  "scipy>=1.10.1",
   "sunpy[map,net,timeseries,visualization]>=6.0.0"
 ]
 dynamic = ["version"]
