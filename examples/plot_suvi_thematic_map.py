@@ -12,10 +12,11 @@ SUVI L2 Thematic Maps are recognized by pattern in the filename, i.e. they conta
 """
 
 import matplotlib.pyplot as plt
-from astropy.io import fits
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from parfive import Downloader
+
+from astropy.io import fits
 
 from sunkit_instruments.suvi._variables import SOLAR_CLASS_NAME, SOLAR_COLORS
 

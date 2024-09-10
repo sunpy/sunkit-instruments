@@ -3,16 +3,18 @@ This module provides processing routines for data captured with the LYRA (Lyman
 Alpha Radiometer) instrument on Proba-2.
 """
 
-import copy
 import csv
-import datetime
+import copy
 import sqlite3
-from urllib.parse import urljoin
+import datetime
 from warnings import warn
+from urllib.parse import urljoin
 
 import numpy as np
 import pandas
+
 from astropy.time import Time
+
 from sunpy.data import cache
 from sunpy.time import parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
@@ -429,8 +431,8 @@ def get_lytaf_events(
         cursor.execute(
             "select insertion_time, begin_time, reference_time, "
             "end_time, eventType_id from event where end_time >= "
-            "{} and begin_time <= "
-            "{}".format(start_time_uts, end_time_uts)
+            f"{start_time_uts} and begin_time <= "
+            f"{end_time_uts}"
         )
         event_rows = cursor.fetchall()
         # Select and extract the event types from eventType table

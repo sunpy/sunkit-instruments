@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
+from scipy import interpolate
+
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
-from scipy import interpolate
+
 from sunpy import timeseries as ts
 from sunpy.data import manager
 from sunpy.time import parse_time
@@ -113,7 +115,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
             output = _chianti_temp_emiss(goes_ts, satellite_number, abundance=abundance)
 
     # Check if the older files are passed, and if so then the scaling factor needs to be removed.
-    # The newer netcdf files now return "true" fluxes so this SWPC factor doesnt need to be removed.
+    # The newer netcdf files now return "true" fluxes so this SWPC factor doesn't need to be removed.
     else:
         if ("Origin" in goes_ts.meta.metas[0]) and (
             goes_ts.meta.metas[0].get("Origin") == "SDAC/GSFC"

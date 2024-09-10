@@ -3,12 +3,14 @@ This module provides processing routines programs to process and analyze RHESSI
 data.
 """
 
-import csv
 import re
+import csv
+
+import numpy as np
 
 import astropy.units as u
-import numpy as np
 from astropy.time import Time, TimeDelta
+
 from sunpy.coordinates import sun
 from sunpy.io._file_tools import read_file
 from sunpy.time import TimeRange, parse_time
@@ -194,7 +196,7 @@ def uncompress_countrate(compressed_countrate):
     # Ensure uncompressed counts are between 0 and 255
     if (compressed_countrate.min() < 0) or (compressed_countrate.max() > 255):
         raise ValueError(
-            f"Exepected uncompressed counts {compressed_countrate} to in range 0-255"
+            f"Expected uncompressed counts {compressed_countrate} to in range 0-255"
         )
 
     # TODO Must be a better way than creating entire lookup table on each call
@@ -401,8 +403,8 @@ def _build_energy_bands(label, bands):
 
     if matched is None:
         raise ValueError(
-            "Unable to find energy unit in '{}' "
-            "using REGEX '{}'".format(label, unit_pattern.pattern)
+            f"Unable to find energy unit in '{label}' "
+            f"using REGEX '{unit_pattern.pattern}'"
         )
 
     unit = matched.group("UNIT").strip()

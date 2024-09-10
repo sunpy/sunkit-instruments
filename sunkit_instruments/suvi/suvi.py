@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import numpy as np
-import sunpy.map
-from astropy import units as u
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter
+
+from astropy import units as u
+
+import sunpy.map
 
 from sunkit_instruments.suvi._variables import (
     FILTER_SETUP,

@@ -24,11 +24,12 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
-
+sunkit_instruments/_version.py
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -42,12 +43,14 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 .hypothesis/
 .pytest_cache/
 junit/
@@ -218,7 +221,6 @@ examples/**/*.csv
 figure_test_images*
 tags
 sunkit_instruments/_version.py
-docs/sg_execution_times.rst
 
 ### Pycharm(?)
 .idea
@@ -230,6 +232,7 @@ docs/sg_execution_times.rst
 .history
 *.orig
 .tmp
+requirements-min.txt
 
 # Example files
 dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits

@@ -1,15 +1,17 @@
+import os
 import gzip
 import logging
-import os
 import tempfile
 from pathlib import Path
 
 import h5py
 import numpy
-import sunpy.map
+
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
+
+import sunpy.map
 from sunpy.util.exceptions import warn_user
 
 from sunkit_instruments.suvi._variables import (
@@ -262,7 +264,7 @@ def _make_cdf_header(header_info):
         if keyword in TAG_COMMENT_MAPPING:
             header.set(keyword, header[keyword], TAG_COMMENT_MAPPING[keyword])
     # Add EXTEND, EXTVER, EXTNAME, and LONGSTR
-    header.append(("EXTEND", True, "FITS dataet may contain extensions"))
+    header.append(("EXTEND", True, "FITS dataset may contain extensions"))
     header.append(("EXTVER", 1, ""))
     header.append(("EXTNAME", "DATA", ""))
     header.append(

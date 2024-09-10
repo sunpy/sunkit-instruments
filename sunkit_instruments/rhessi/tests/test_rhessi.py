@@ -1,10 +1,9 @@
-import platform
 import textwrap
-from distutils.version import LooseVersion
 from unittest import mock
 
 import numpy as np
 import pytest
+
 import sunpy.map
 from sunpy.io._file_tools import read_file
 from sunpy.time import is_time_equal, parse_time
@@ -137,12 +136,7 @@ def test_parse_observing_summary_dbase_file_mock():
     Ensure that all required data are extracted from the RHESSI observing
     summary database file mocked in ``hessi_data()``.
     """
-    # We need to mock this test differently for <= 3.7.0 and below.
-    if LooseVersion(platform.python_version()) <= LooseVersion("3.7.0"):
-        mock_file = mock.mock_open()
-        mock_file.return_value.__iter__.return_value = hessi_data().splitlines()
-    else:
-        mock_file = mock.mock_open(read_data=hessi_data())
+    mock_file = mock.mock_open(read_data=hessi_data())
 
     dbase_data = {}
     with mock.patch("sunkit_instruments.rhessi.rhessi.open", mock_file, create=True):
