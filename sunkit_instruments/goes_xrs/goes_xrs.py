@@ -1,5 +1,7 @@
 import numpy as np
+
 from astropy import units as u
+
 from sunpy.time import parse_time
 
 GOES_CONVERSION_DICT = {
@@ -110,10 +112,9 @@ def flareclass_to_flux(flareclass):
     >>> flareclass_to_flux('X2.4')
     <Quantity 0.00024 W / m2>
     """
-    if not isinstance(flareclass, type("str")):
-        raise TypeError(f"Input must be a string, not {type(goests)}")
+    if not isinstance(flareclass, str):
+        raise TypeError(f"Input must be a string, not {type(flareclass)}")
     # TODO should probably make sure the string is in the expected format.
-
     flareclass = flareclass.upper()
     # invert the conversion dictionary
     # conversion_dict = {v: k for k, v in GOES_CONVERSION_DICT.items()}

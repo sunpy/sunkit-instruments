@@ -2,10 +2,10 @@
 This package contains all of sunkit-instruments's test data.
 """
 
-import fnmatch
-import glob
 import os
 import re
+import glob
+import fnmatch
 
 from astropy.utils.data import get_pkg_data_filename
 

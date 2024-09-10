@@ -1,10 +1,12 @@
-import astropy.units as u
 import numpy as np
 import pytest
-from astropy.time import Time
-from astropy.units.quantity import Quantity
 from numpy.testing import assert_almost_equal, assert_array_equal
 from scipy.io import readsav
+
+import astropy.units as u
+from astropy.time import Time
+from astropy.units.quantity import Quantity
+
 from sunpy import timeseries
 from sunpy.time import TimeRange, is_time_equal, parse_time
 from sunpy.util.exceptions import SunpyUserWarning
@@ -37,11 +39,12 @@ def test_calculate_temperature_em(goes_files, max_temperature):
     # check that it returns a timeseries
     assert isinstance(goes_temp_em, timeseries.GenericTimeSeries)
     # check that both temperature and emission measure in the columns
-    assert "temperature" and "emission_measure" in goes_temp_em.columns
+    assert "temperature" in goes_temp_em.columns
+    assert "emission_measure" in goes_temp_em.columns
     # check units
     assert goes_temp_em.units["emission_measure"].to(u.cm**-3) == 1
     assert goes_temp_em.units["temperature"].to(u.MK) == 1
-    # check time index isnt changed
+    # check time index isn't changed
     assert np.all(goeslc.time == goes_temp_em.time)
 
     assert u.allclose(
@@ -149,18 +152,18 @@ def test_goes_event_list():
     trange = TimeRange("2011-06-07 00:00", "2011-06-08 00:00")
     # Test case where GOES class filter is applied
     result = goes.get_goes_event_list(trange, goes_class_filter="M1")
-    assert type(result) == list
-    assert type(result[0]) == dict
-    assert type(result[0]["event_date"]) == str
-    assert type(result[0]["goes_location"]) == tuple
+    assert isinstance(result, list)
+    assert isinstance(result[0], dict)
+    assert isinstance(result[0]["event_date"], str)
+    assert isinstance(result[0]["goes_location"], tuple)
     assert isinstance(result[0]["peak_time"], Time)
     assert isinstance(result[0]["start_time"], Time)
     assert isinstance(result[0]["end_time"], Time)
-    assert type(result[0]["goes_class"]) == str
-    assert type(result[0]["noaa_active_region"]) == np.int64
+    assert isinstance(result[0]["goes_class"], str)
+    assert isinstance(result[0]["noaa_active_region"], np.int64)
     assert result[0]["event_date"] == "2011-06-07"
     assert result[0]["goes_location"] == (54, -21)
-    # float errror
+    # float error
     assert is_time_equal(result[0]["start_time"], parse_time((2011, 6, 7, 6, 16)))
     assert is_time_equal(result[0]["peak_time"], parse_time((2011, 6, 7, 6, 41)))
     assert is_time_equal(result[0]["end_time"], parse_time((2011, 6, 7, 6, 59)))
@@ -168,15 +171,15 @@ def test_goes_event_list():
     assert result[0]["noaa_active_region"] == 11226
     # Test case where GOES class filter not applied
     result = goes.get_goes_event_list(trange)
-    assert type(result) == list
-    assert type(result[0]) == dict
-    assert type(result[0]["event_date"]) == str
-    assert type(result[0]["goes_location"]) == tuple
+    assert isinstance(result, list)
+    assert isinstance(result[0], dict)
+    assert isinstance(result[0]["event_date"], str)
+    assert isinstance(result[0]["goes_location"], tuple)
     assert isinstance(result[0]["peak_time"], Time)
     assert isinstance(result[0]["start_time"], Time)
     assert isinstance(result[0]["end_time"], Time)
-    assert type(result[0]["goes_class"]) == str
-    assert type(result[0]["noaa_active_region"]) == np.int64
+    assert isinstance(result[0]["goes_class"], str)
+    assert isinstance(result[0]["noaa_active_region"], np.int64)
     assert result[0]["event_date"] == "2011-06-07"
     assert result[0]["goes_location"] == (54, -21)
     assert is_time_equal(result[0]["start_time"], parse_time((2011, 6, 7, 6, 16)))

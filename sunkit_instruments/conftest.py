@@ -31,4 +31,4 @@ def sunpy_cache(mocker, tmp_path):
         mocker.patch(mocked, cache)
         return cache
 
-    yield func
+    return func

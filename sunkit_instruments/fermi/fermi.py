@@ -3,18 +3,20 @@ This module provides processing routines for Fermi Gamma-ray Space Telescope
 (FGST), formerly called the Gamma-ray Large Area Space Telescope (GLAST).
 """
 
-import copy
 import os
-import tempfile
+import copy
 import urllib
+import tempfile
 from collections import OrderedDict
 
-import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+
+import astropy.units as u
 from astropy.coordinates import Latitude, Longitude
 from astropy.io import fits
 from astropy.time import TimeDelta
+
 from sunpy.coordinates import sun
 from sunpy.time import TimeRange, parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
@@ -249,9 +251,7 @@ def plot_detector_sun_angles(angles):
             plt.plot(
                 angle_times,
                 angles[n].value,
-                label="{lab} ({val})".format(
-                    lab=n, val=str(np.mean(angles[n].value))[0:5]
-                ),
+                label=f"{n} ({str(np.mean(angles[n].value))[0:5]})",
             )
     plt.ylim(180, 0)
     plt.ylabel("angle (degrees)")
@@ -434,7 +434,7 @@ def nai_detector_radecs(detectors, scx, scz, time):
     # For each detector, do the rotation depending on the detector zenith and
     # azimuth angles.
     detector_radecs = copy.deepcopy(detectors)
-    for l, d in detectors.items():
+    for l, d in detectors.items():  # NOQA: E741
         phi = d[0].value
         theta = d[1].value
 
@@ -507,7 +507,7 @@ def get_detector_separation_angles(detector_radecs, sunpos):
         <Latitude 22.66 deg>]``
     """
     angles = copy.deepcopy(detector_radecs)
-    for l, d in detector_radecs.items():
+    for l, d in detector_radecs.items():  # NOQA: E741
         if not l == "time":
             angle = separation_angle(d, sunpos)
             angles[l] = angle

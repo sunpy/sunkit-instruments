@@ -1,11 +1,13 @@
-import datetime
 import os.path
+import datetime
 
-import astropy.units as u
 import numpy as np
 import pandas
 import pytest
+
+import astropy.units as u
 from astropy.time import TimeDelta
+
 from sunpy import timeseries
 from sunpy.time import is_time_equal, parse_time
 from sunpy.util.exceptions import SunpyUserWarning
@@ -87,7 +89,7 @@ def test_split_series_using_lytaf():
         "2010-06-13 02:00", "2010-06-13 06:00", combine_files=["ppt"]
     )
     split = lyra.split_series_using_lytaf(dummy_time, dummy_data, lytaf_tmp)
-    assert type(split) == list
+    assert isinstance(split, list)
     assert len(split) == 4
     assert is_time_equal(split[0]["subtimes"][0], parse_time((2010, 6, 13, 2, 0)))
     assert is_time_equal(split[0]["subtimes"][-1], parse_time((2010, 6, 13, 2, 7, 2)))
@@ -96,8 +98,8 @@ def test_split_series_using_lytaf():
 
     # Test case when no LYTAF events found in time series.
     split_no_lytaf = lyra.split_series_using_lytaf(dummy_time, dummy_data, LYTAF_TEST)
-    assert type(split_no_lytaf) == list
-    assert type(split_no_lytaf[0]) == dict
+    assert isinstance(split_no_lytaf, list)
+    assert isinstance(split_no_lytaf[0], dict)
     assert not set(split_no_lytaf[0].keys()).symmetric_difference(
         {"subtimes", "subdata"}
     )
