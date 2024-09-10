@@ -1,10 +1,53 @@
 [build-system]
 requires = [
-  "setuptools>=56,!=61.0.0",
+  "setuptools>=62.1",
   "setuptools_scm[toml]>=6.2",
   "wheel",
 ]
-build-backend = 'setuptools.build_meta'
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sunkit_instruments"
+description = "A SunPy-affiliated package for solar instrum"
+requires-python = ">=3.10"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = { file = "licenses/LICENSE.rst" }
+authors = [
+  { name = "The SunPy Community", email = "sunpy@googlegroups.com" },
+]
+dependencies = [
+  "sunpy[map,net,timeseries,visualization]>=6.0.0"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+tests = [
+  "pytest",
+  "pytest-astropy",
+  "pytest-doctestplus",
+  "pytest-cov",
+  "pytest-xdist",
+]
+docs = [
+  "sphinx",
+  "sphinx-automodapi",
+  "sphinx-changelog",
+  "sphinx-gallery",
+  "sunpy-sphinx-theme",
+]
+[project.urls]
+repository = "https://sunpy.org"
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["sunkit_instruments*"]
+exclude = ["sunkit_instruments._dev*"]
+
+[tool.setuptools_scm]
+write_to = "sunkit_instruments/_version.py"
 
 [ tool.gilesbot ]
   [ tool.gilesbot.circleci_artifacts ]

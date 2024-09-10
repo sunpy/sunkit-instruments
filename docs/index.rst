@@ -1,6 +1,6 @@
-==================
-sunkit-instruments
-==================
+********************************
+sunkit-instruments Documentation
+********************************
 
 A package for instrument-specific data structures and processing in the SunPy ecosystem.
 
@@ -45,7 +45,7 @@ Once you have that virtual environment, you will want to fork the repo and then 
    whatsnew/index
 
 
-Note that the code in this package is **not** maintained by or neccesarily contributed to by instrument teams.
+Note that the code in this package is **not** maintained by or necessarily contributed to by instrument teams.
 Some instruments have individual packages for analysis in Python, including:
 
 - `aiapy <https://aiapy.readthedocs.io/>`__

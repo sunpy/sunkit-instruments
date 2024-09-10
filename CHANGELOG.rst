@@ -15,7 +15,7 @@ Breaking Changes
 Backwards Incompatible Changes
 ------------------------------
 
-- This removes the older verison of `sunkit_instruments.goes_xrs.calculate_temperature_em` that no longer works for the re-processed netcdf files and new GOES-R data.
+- This removes the older version of `sunkit_instruments.goes_xrs.calculate_temperature_em` that no longer works for the re-processed netcdf files and new GOES-R data.
 
   This also removes the `sunkit_instruments.goes_xrs.calculate_radiative_loss_rate` and `sunkit_instruments.goes_xrs.calculate_xray_luminosity` functions that also no longer work in their current form.
 

@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
-import sunpy.map
+
 from astropy.io import fits
+
+import sunpy.map
 from sunpy.map.sources.suvi import SUVIMap
 from sunpy.util.exceptions import SunpyUserWarning
 

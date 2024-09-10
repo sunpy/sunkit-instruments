@@ -29,7 +29,7 @@ def SJI_to_sequence(filename, start=0, stop=None, hdu=0):
         File to read.
     start: `int`, optional
         Temporal axis index to create `~sunpy.map.MapSequence` from.
-        Defaults to 0, which will start from the begining.
+        Defaults to 0, which will start from the beginning.
     stop: `int`, optional
         Temporal index to stop `~sunpy.map.MapSequence` at.
         Defaults to `None`, which will use the entire index.
