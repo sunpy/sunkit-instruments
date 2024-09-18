@@ -85,5 +85,8 @@ def test_spectra_repr(fake_spectra):
     assert isinstance(fake_spectra.__repr__(), str)
 
 
-def test_temperature_response(fake_channel, fake_spectra):
-    assert isinstance(fake_channel.temperature_response(fake_spectra), u.Quantity)
+@pytest.mark.parametrize('obstime', [None, '2020-01-01'])
+def test_temperature_response(fake_channel, fake_spectra, obstime):
+    temp_response = fake_spectra.temperature_response(fake_channel, obstime=obstime)
+    assert isinstance(temp_response, u.Quantity)
+    assert temp_response.shape == fake_spectra.temperature.shape

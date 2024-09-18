@@ -1,9 +1,6 @@
 """This module defines abstractions for computing instrument response."""
 import abc
 
-import numpy as np
-from scipy.interpolate import interp1d
-
 import astropy.units as u
 
 __all__ = ["AbstractChannel"]
@@ -16,43 +13,6 @@ class AbstractChannel(abc.ABC):
     For all methods and properties defined here, see the
     `topic guide on instrument response <>`_ for more information.
     """
-
-    @u.quantity_input
-    def temperature_response(
-        self, source_spectra, obstime=None
-    ) -> u.cm**5 * u.DN / (u.pix * u.s):
-        """
-        Temperature response function for a given source spectra.
-
-        The temperature response function describes the sensitivity of an imaging
-        instrument as a function of temperature. The temperature response is
-        calculated by integrating the source spectra over the wavelength dimension,
-        weighted by the wavelength response of the instrument.
-
-        Parameters
-        ----------
-        source_spectra: `SourceSpectra`
-        obstime: any format parsed by `~sunpy.time.parse_time`, optional
-        """
-        # TODO: refactor all of this to take advantage of xarray interpolation
-        # and summation
-        wave_response = self.wavelength_response(obstime=obstime)
-        f_response = interp1d(
-            self.wavelength.to_value("AA"),
-            wave_response.to_value(),
-            axis=0,
-            bounds_error=False,
-            fill_value=0.0,
-        )
-        wave_response_interp = u.Quantity(
-            f_response(source_spectra.wavelength.to_value("AA")), wave_response.unit
-        )
-        temperature_response = (
-            source_spectra.data
-            * wave_response_interp
-            * np.gradient(source_spectra.wavelength)
-        ).sum(axis=1)
-        return temperature_response
 
     @u.quantity_input
     def wavelength_response(
@@ -91,7 +51,7 @@ class AbstractChannel(abc.ABC):
 
         Parameters
         ----------
-        obstime: any format parsed by `~sunpy.time.parse_time`, optional
+        obstime: any format parsed by `sunpy.time.parse_time`, optional
             If specified, this is used to compute the time-dependent
             instrument degradation.
         """

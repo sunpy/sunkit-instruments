@@ -5,7 +5,21 @@ import xarray
 
 import astropy.units as u
 
-__all__ = ["SourceSpectra", "TemperatureResponse"]
+__all__ = ["SourceSpectra", "get_temperature_response"]
+
+
+def get_temperature_response(channel, spectra, obstime=None):
+    """
+    Calculate the temperature response function for a given instrument channel
+    and input spectra
+
+    Parameters
+    ----------
+    channel: `~sunkit_instruments.`
+    spectra: `~sunkit_instruments.response.SourceSpectra`
+    obstime: any format parsed by `sunpy.time.parse_time`, optional
+    """
+    return spectra.temperature, spectra.temperature_response(channel, obstime=obstime)
 
 
 class SourceSpectra:
@@ -25,10 +39,13 @@ class SourceSpectra:
     wavelength: `~astropy.units.Quantity`
         1D array describing the variation along the wavelength axis
     spectra: `~astropy.units.Quantity`
-        Source spectra as a 2D array. The first axis should correspond to temperature and the second axis should correspond to wavelength.
+        Source spectra as a 2D array. The first axis should correspond to temperature and the
+        second axis should correspond to wavelength.
     density: `~astropy.units.Quantity`, optional
         1D array describing the variation in density along the temperature axis. It is assumed
         that temperature and density are dependent.
+    meta: `dict`, optional
+        Any optional metadata to attach to the spectra, e.g. abundance model, CHIANTI version
     """
 
     @u.quantity_input
@@ -36,10 +53,11 @@ class SourceSpectra:
         self,
         temperature: u.K,
         wavelength: u.Angstrom,
-        spectra: u.photon * u.cm**3 / (u.s * u.AA * u.sr),
+        spectra: u.photon * u.cm**3 / (u.s * u.Angstrom * u.steradian),
         density: u.cm ** (-3) = None,
-        **kwargs
+        meta=None,
     ):
+        self.meta = meta
         coords = {
             "temperature": xarray.Variable(
                 "temperature",
@@ -60,11 +78,30 @@ class SourceSpectra:
             spectra.data,
             dims=["temperature", "wavelength"],
             coords=coords,
-            attrs={"unit": spectra.unit.to_string(), **kwargs},
+            attrs={"unit": spectra.unit.to_string(), **self.meta},
         )
 
     def __repr__(self):
         return self._da.__repr__()
+
+    def __str__(self):
+        return self._da.__str__()
+
+    def _repr_html_(self):
+        return self._da._repr_html_()
+
+    @property
+    def meta(self):
+        return self._meta
+
+    @meta.setter
+    def meta(self, x):
+        if x is None:
+            self._meta = {}
+        elif isinstance(x, dict):
+            self._mata = x
+        else:
+            raise TypeError(f'Unsupported metadata type {type(x)}')
 
     @property
     @u.quantity_input
@@ -78,9 +115,38 @@ class SourceSpectra:
 
     @property
     @u.quantity_input
-    def data(self) -> u.photon * u.cm**3 / (u.s * u.AA * u.sr):
+    def data(self) -> u.photon * u.cm**3 / (u.s * u.Angstrom * u.steradian):
         return u.Quantity(self._da.data, self._da.attrs["unit"])
 
+    @u.quantity_input
+    def temperature_response(
+        self, channel, obstime=None
+    ) -> u.cm**5 * u.DN / (u.pixel * u.s):
+        """
+        Temperature response function for a given instrument channel.
 
-class TemperatureResponse:
-    ...
+        The temperature response function describes the sensitivity of an imaging
+        instrument as a function of temperature. The temperature response is
+        calculated by integrating the source spectra over the wavelength dimension,
+        weighted by the wavelength response of the instrument.
+
+        Parameters
+        ----------
+        channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
+            The relevant instrument channel object used to compute the wavelength
+            response function.
+        obstime: any format parsed by `sunpy.time.parse_time`, optional
+            A time of a particular observation. This is used to calculated any
+            time-dependent instrument degradation.
+        """
+        spec_interp = self._da.interp(
+            wavelength=channel.wavelength.to_value(self.wavelength.unit),
+            kwargs={'bounds_error':False, 'fill_value':0.0},
+        )
+        wave_response = channel.wavelength_response(obstime=obstime)
+        spec_interp_weighted = spec_interp * wave_response.to_value()
+        temp_response = spec_interp_weighted.integrate(coord='wavelength')
+        final_unit = (u.Unit(spec_interp.unit)
+                      * u.Unit(wave_response.unit)
+                      * u.Unit(spec_interp_weighted.wavelength.unit))
+        return u.Quantity(temp_response.data, final_unit)
