@@ -30,7 +30,7 @@ class SourceSpectra:
     assumption) as a function of both temperature and wavelength. This source
     spectra is typically computed using a database like CHIANTI by summing the
     emission spectra of many ions as well as the continuum emission. For more
-    information, see the `topic guide on instrument response <>`_.
+    information, see the topic guide on instrument response.
 
     Parameters
     ----------
@@ -139,14 +139,22 @@ class SourceSpectra:
             A time of a particular observation. This is used to calculated any
             time-dependent instrument degradation.
         """
+        wave_response = channel.wavelength_response(obstime=obstime)
+        da_response = xarray.DataArray(
+            wave_response.to_value(wave_response.unit),
+            dims=['wavelength'],
+            coords=[xarray.Variable('wavelength',
+                                   channel.wavelength.to_value('Angstrom'),
+                                   attrs={'unit': 'Angstrom'}),],
+            attrs={'unit': wave_response.unit.to_string()}
+        )
         spec_interp = self._da.interp(
-            wavelength=channel.wavelength.to_value(self.wavelength.unit),
+            wavelength=da_response.wavelength,
             kwargs={'bounds_error':False, 'fill_value':0.0},
         )
-        wave_response = channel.wavelength_response(obstime=obstime)
-        spec_interp_weighted = spec_interp * wave_response.to_value()
+        spec_interp_weighted = spec_interp * da_response
         temp_response = spec_interp_weighted.integrate(coord='wavelength')
         final_unit = (u.Unit(spec_interp.unit)
-                      * u.Unit(wave_response.unit)
+                      * u.Unit(da_response.attrs['unit'])
                       * u.Unit(spec_interp_weighted.wavelength.unit))
         return u.Quantity(temp_response.data, final_unit)
