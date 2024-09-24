@@ -11,7 +11,7 @@ class AbstractChannel(abc.ABC):
     An abstract base class for defining instrument channels.
 
     For all methods and properties defined here, see the
-    `topic guide on instrument response <>`_ for more information.
+    topic guide on instrument response for more information.
     """
 
     @u.quantity_input
