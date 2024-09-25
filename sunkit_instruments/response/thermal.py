@@ -37,7 +37,7 @@ class SourceSpectra:
     temperature: `~astropy.units.Quantity`
         1D array describing the variation along the temperature axis.
     wavelength: `~astropy.units.Quantity`
-        1D array describing the variation along the wavelength axis
+        1D array describing the variation along the wavelength axis.
     spectra: `~astropy.units.Quantity`
         Source spectra as a 2D array. The first axis should correspond to temperature and the
         second axis should correspond to wavelength.
