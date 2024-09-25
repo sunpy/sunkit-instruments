@@ -150,7 +150,7 @@ class SourceSpectra:
         )
         spec_interp = self._da.interp(
             wavelength=da_response.wavelength,
-            kwargs={'bounds_error':False, 'fill_value':0.0},
+            kwargs={'bounds_error': False, 'fill_value': 0.0},
         )
         spec_interp_weighted = spec_interp * da_response
         temp_response = spec_interp_weighted.integrate(coord='wavelength')
