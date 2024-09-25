@@ -35,7 +35,7 @@ class SourceSpectra:
     Parameters
     ----------
     temperature: `~astropy.units.Quantity`
-        1D array describing the variation along the temperature axis
+        1D array describing the variation along the temperature axis.
     wavelength: `~astropy.units.Quantity`
         1D array describing the variation along the wavelength axis
     spectra: `~astropy.units.Quantity`
