@@ -45,7 +45,7 @@ class SourceSpectra:
         1D array describing the variation in density along the temperature axis. It is assumed
         that temperature and density are dependent.
     meta: `dict`, optional
-        Any optional metadata to attach to the spectra, e.g. abundance model, CHIANTI version
+        Any optional metadata to attach to the spectra, e.g. abundance model, CHIANTI version.
     """
 
     @u.quantity_input
