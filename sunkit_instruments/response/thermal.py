@@ -11,7 +11,7 @@ __all__ = ["SourceSpectra", "get_temperature_response"]
 def get_temperature_response(channel, spectra, obstime=None):
     """
     Calculate the temperature response function for a given instrument channel
-    and input spectra
+    and input spectra.
 
     Parameters
     ----------
