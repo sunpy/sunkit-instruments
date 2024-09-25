@@ -70,7 +70,7 @@ class AbstractChannel(abc.ABC):
 
     @abc.abstractmethod
     @u.quantity_input
-    def degradation(self, obstime=None): ...
+    def degradation(self, obstime=None) -> u.dimensionless_unscaled: ...
 
     @property
     @abc.abstractmethod
