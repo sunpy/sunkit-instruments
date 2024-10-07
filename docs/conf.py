@@ -29,8 +29,9 @@ if _version.is_postrelease:
     version = release = _version.base_version
 # Avoid long githashes in rendered Sphinx docs
 elif _version.is_devrelease:
-    version = release = f'{_version.base_version}.dev{_version.dev}'
+    version = release = f"{_version.base_version}.dev{_version.dev}"
 is_development = _version.is_devrelease
+is_release = not(_version.is_prerelease or _version.is_devrelease)
 
 project = "sunkit-instruments"
 author = "The SunPy Community"
