@@ -42,9 +42,6 @@ copyright = f"{datetime.datetime.now().year}, {author}"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
-suppress_warnings = [
-    "app.add_directive",
-]
 extensions = [
     "matplotlib.sphinxext.plot_directive",
     "sphinx_automodapi.automodapi",
@@ -146,19 +143,9 @@ graphviz_dot_args = [
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
 autoclass_content = "both"
 
-# -- Graphviz Output ------------------------------------------------------------
+# -- Other options ----------------------------------------------------------
 
-graphviz_output_format = "svg"
-graphviz_dot_args = [
-    "-Nfontsize=10",
-    "-Nfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Efontsize=10",
-    "-Efontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Gfontsize=10",
-    "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-]
-
-# -- Sphinx Gallery ------------------------------------------------------------
+# -- Sphinx Gallery ---------------------------------------------------------
 
 sphinx_gallery_conf = {
     "backreferences_dir": os.path.join("generated", "modules"),
@@ -173,5 +160,3 @@ sphinx_gallery_conf = {
     "doc_module": ("sunpy"),
     "only_warn_on_example_error": True,
 }
-
-# -- Other options ----------------------------------------------------------
