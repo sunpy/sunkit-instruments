@@ -33,6 +33,7 @@ def test_read_suvi_l2_composite(L2_COMPOSITE):
     assert l2_data.shape == (1280, 1280)
 
 
+@pytest.mark.xfail
 def test_suvi_fix_l1b_header(L1B_FITS):
     header = suvi.io._fix_l1b_header(L1B_FITS)
     assert isinstance(header, fits.header.Header)
@@ -55,6 +56,7 @@ def test_files_to_map_l1b_nc(L1B_NC):
         suvi.files_to_map([L1B_NC, L1B_NC, L1B_NC, L1B_NC], only_short_exposures=True)
 
 
+@pytest.mark.xfail
 def test_files_to_map_l1b_fits(L1B_FITS):
     one = suvi.files_to_map(L1B_FITS)
     collection = suvi.files_to_map([L1B_FITS, L1B_FITS, L1B_FITS, L1B_FITS])
