@@ -146,18 +146,6 @@ graphviz_dot_args = [
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
 autoclass_content = "both"
 
-# -- Graphviz Output ------------------------------------------------------------
-
-graphviz_output_format = "svg"
-graphviz_dot_args = [
-    "-Nfontsize=10",
-    "-Nfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Efontsize=10",
-    "-Efontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Gfontsize=10",
-    "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-]
-
 # -- Sphinx Gallery ------------------------------------------------------------
 
 sphinx_gallery_conf = {
