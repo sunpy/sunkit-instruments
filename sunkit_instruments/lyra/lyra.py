@@ -116,7 +116,7 @@ def remove_lytaf_events_from_timeseries(
     data = pandas.DataFrame(
         index=time, data={col: channels[i] for i, col in enumerate(data_columns)}
     )
-    ts_new = TimeSeries(data, ts.meta)
+    ts_new = TimeSeries(data, ts.meta, ts.units)
     if return_artifacts:
         return ts_new, artifact_status
     else:
