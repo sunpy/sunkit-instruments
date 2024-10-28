@@ -83,7 +83,7 @@ It has a physical type of energy per photon.
 
 .. note::
 
-    Use `~astropy.units.spectral` to provide a list of appropriate `astropy.units` equivalencies for this conversion.
+    Use the `~astropy.units.spectral` unit equivalency to provide a list of appropriate `astropy.units` equivalencies for this conversion.
 
 Energy-to-Electron Conversion
 -----------------------------
