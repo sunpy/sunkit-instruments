@@ -138,7 +138,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     [
         "https://sohoftp.nascom.nasa.gov/solarsoft/gen/idl/synoptic/goes/goes_chianti_response_latest.fits"
     ],
-    "4ca9730fb039e8a04407ae0aa4d5e3e2566b93dfe549157aa7c8fc3aa1e3e04d",
+    "cb00c05850e3dc3bbd856eb07c1a372758d689d0845ee591d6e2531afeab0382",
 )
 def _chianti_temp_emiss(
     goes_ts, satellite_number, secondary=0, abundance="coronal", remove_scaling=False

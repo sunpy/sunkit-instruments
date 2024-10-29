@@ -1,0 +1,2 @@
+Update the hash of the CHIANTI data file retrieved by the data manager used in `sunkit_instruments.goes_xrs.calculate_temperature_em`
+so that the latest version of the file is used.

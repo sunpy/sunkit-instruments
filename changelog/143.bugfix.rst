@@ -1,0 +1,2 @@
+Fixed a bug in `~sunkit-instruments.lyra.remove_lytaf_events_from_timeseries` where units were not being correctly passed
+to new timeseries.
