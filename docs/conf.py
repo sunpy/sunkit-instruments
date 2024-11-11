@@ -116,11 +116,6 @@ intersphinx_mapping = {
 
 # -- Options for HTML output ---------------------------------------------------
 
-from sunpy_sphinx_theme import PNG_ICON
-
-<<<<<<<
-html_theme = "sunpy"
-=======
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = "sunpy"
@@ -136,7 +131,6 @@ graphviz_dot_args = [
     "-Gfontsize=10",
     "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
 ]
->>>>>>>
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -152,19 +146,9 @@ graphviz_dot_args = [
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
 autoclass_content = "both"
 
-# -- Graphviz Output ------------------------------------------------------------
-
-graphviz_output_format = "svg"
-graphviz_dot_args = [
-    "-Nfontsize=10",
-    "-Nfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Efontsize=10",
-    "-Efontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-    "-Gfontsize=10",
-    "-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif",
-]
-
 # -- Sphinx Gallery ------------------------------------------------------------
+
+from sunpy_sphinx_theme import PNG_ICON
 
 sphinx_gallery_conf = {
     "backreferences_dir": os.path.join("generated", "modules"),
