@@ -1,0 +1,2 @@
+Added `sunkit_instruments.response.abstractions.AbstractChannel` to standardize an interface
+for computing wavelength and temperature response functions.

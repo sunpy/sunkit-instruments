@@ -1,0 +1,3 @@
+Added `sunkit_instruments.response.SourceSpectra` to provide a container for
+spectra as a function of temperature and wavelength needed for computing temperature
+response functions.
