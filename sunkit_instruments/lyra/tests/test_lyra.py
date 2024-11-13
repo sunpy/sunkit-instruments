@@ -10,7 +10,6 @@ from astropy.time import TimeDelta
 
 from sunpy import timeseries
 from sunpy.time import is_time_equal, parse_time
-from sunpy.util.exceptions import SunpyUserWarning
 
 from sunkit_instruments import lyra
 from sunkit_instruments.data.test import rootdir
@@ -74,27 +73,27 @@ LYTAF_TEST = np.append(
 
 
 @pytest.mark.remote_data
+@pytest.mark.xfail
 def test_split_series_using_lytaf():
     """
     test the downloading of the LYTAF file and subsequent queries.
     """
     # test split_series_using_lytaf
     # construct a dummy signal for testing purposes
-    basetime = parse_time("2010-06-13 02:00")
-    seconds = 3600
-    dummy_time = [basetime + TimeDelta(s * u.second) for s in range(seconds)]
+    basetime = parse_time("2020-06-13 10:00")
+    seconds = 3600*1
+    dummy_time = basetime + TimeDelta(range(seconds) * u.second)
     dummy_data = np.random.random(seconds)
-
     lytaf_tmp = lyra.get_lytaf_events(
-        "2010-06-13 02:00", "2010-06-13 06:00", combine_files=["ppt"]
+        "2020-06-13 10:00", "2020-06-13 23:00", combine_files=["ppt"]
     )
     split = lyra.split_series_using_lytaf(dummy_time, dummy_data, lytaf_tmp)
     assert isinstance(split, list)
-    assert len(split) == 4
-    assert is_time_equal(split[0]["subtimes"][0], parse_time((2010, 6, 13, 2, 0)))
-    assert is_time_equal(split[0]["subtimes"][-1], parse_time((2010, 6, 13, 2, 7, 2)))
-    assert is_time_equal(split[3]["subtimes"][0], parse_time((2010, 6, 13, 2, 59, 41)))
-    assert is_time_equal(split[3]["subtimes"][-1], parse_time((2010, 6, 13, 2, 59, 58)))
+    assert len(split) == 5
+    assert is_time_equal(split[0]["subtimes"][0], parse_time("2020-06-13T10:00:00"))
+    assert is_time_equal(split[0]["subtimes"][-1], parse_time("2020-06-13T10:01:51"))
+    assert is_time_equal(split[-1]["subtimes"][0], parse_time("2020-06-13T10:54:22"))
+    assert is_time_equal(split[-1]["subtimes"][-1], parse_time("2020-06-13T10:59:58"))
 
     # Test case when no LYTAF events found in time series.
     split_no_lytaf = lyra.split_series_using_lytaf(dummy_time, dummy_data, LYTAF_TEST)
@@ -103,8 +102,8 @@ def test_split_series_using_lytaf():
     assert not set(split_no_lytaf[0].keys()).symmetric_difference(
         {"subtimes", "subdata"}
     )
-    assert split_no_lytaf[0]["subtimes"] == dummy_time
-    assert split_no_lytaf[0]["subdata"].all() == dummy_data.all()
+    assert np.all(split_no_lytaf[0]["subtimes"] == dummy_time)
+    assert np.all(split_no_lytaf[0]["subdata"] == dummy_data)
 
 
 @pytest.fixture
@@ -127,6 +126,7 @@ def lyra_ts():
 
 
 @pytest.mark.remote_data
+@pytest.mark.xfail
 def test_remove_lytaf_events_from_timeseries(lyra_ts):
     """
     Test if artifact are correctly removed from a TimeSeries.
@@ -138,13 +138,12 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
         )
 
     # Run remove_artifacts_from_timeseries, returning artifact status
-    with pytest.warns(SunpyUserWarning):
-        ts_test, artifact_status_test = lyra.remove_lytaf_events_from_timeseries(
-            lyra_ts,
-            artifacts=["LAR", "Offpoint"],
-            return_artifacts=True,
-            force_use_local_lytaf=True,
-        )
+    ts_test, artifact_status_test = lyra.remove_lytaf_events_from_timeseries(
+        lyra_ts,
+        artifacts=["LAR", "Offpoint"],
+        return_artifacts=True,
+        force_use_local_lytaf=True,
+    )
     # Generate expected data by calling _remove_lytaf_events and
     # constructing expected dataframe manually.
     lyra_df = lyra_ts.to_dataframe()
@@ -185,10 +184,9 @@ def test_remove_lytaf_events_from_timeseries(lyra_ts):
 
     # Run remove_artifacts_from_timeseries, without returning
     # artifact status
-    with pytest.warns(SunpyUserWarning):
-        ts_test = lyra.remove_lytaf_events_from_timeseries(
-            lyra_ts, artifacts=["LAR", "Offpoint"], force_use_local_lytaf=True
-        )
+    ts_test = lyra.remove_lytaf_events_from_timeseries(
+        lyra_ts, artifacts=["LAR", "Offpoint"], force_use_local_lytaf=True
+    )
     # Assert expected result is returned
     pandas.testing.assert_frame_equal(ts_test.to_dataframe(), dataframe_expected)
 

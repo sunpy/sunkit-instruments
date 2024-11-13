@@ -15,6 +15,7 @@ import pandas
 
 from astropy.time import Time
 
+from sunpy import log
 from sunpy.data import cache
 from sunpy.time import parse_time
 from sunpy.time.time import _variables_for_parse_time_docstring
@@ -116,7 +117,7 @@ def remove_lytaf_events_from_timeseries(
     data = pandas.DataFrame(
         index=time, data={col: channels[i] for i, col in enumerate(data_columns)}
     )
-    ts_new = TimeSeries(data, ts.meta)
+    ts_new = TimeSeries(data, ts.meta, ts.units)
     if return_artifacts:
         return ts_new, artifact_status
     else:
@@ -229,7 +230,7 @@ def _remove_lytaf_events(
     all_lytaf_event_types = get_lytaf_event_types(print_event_types=False)
     for artifact in artifacts:
         if artifact not in all_lytaf_event_types:
-            print(all_lytaf_event_types)
+            log.info(all_lytaf_event_types)
             raise ValueError(f"{artifact} is not a valid artifact type. See above.")
     # Define outputs
     clean_time = parse_time(time)
@@ -520,7 +521,7 @@ def get_lytaf_event_types(print_event_types=True):
     all_event_types = []
     # For each database file extract the event types and print them.
     if print_event_types:
-        print("\nLYTAF Event Types\n-----------------\n")
+        log.info("\nLYTAF Event Types\n-----------------\n")
     for suffix in suffixes:
         dbname = f"annotation_{suffix}.db"
         # Check database file exists, else download it.
@@ -533,10 +534,10 @@ def get_lytaf_event_types(print_event_types=True):
         event_types = cursor.fetchall()
         all_event_types.append(event_types)
         if print_event_types:
-            print(f"----------------\n{suffix} database\n----------------")
+            log.info(f"----------------\n{suffix} database\n----------------")
             for event_type in event_types:
-                print(str(event_type[0]))
-            print(" ")
+                log.info(str(event_type[0]))
+            log.info(" ")
     # Unpack event types in all_event_types into single list
     all_event_types = [
         event_type[0] for event_types in all_event_types for event_type in event_types
@@ -591,8 +592,8 @@ def split_series_using_lytaf(timearray, data, lytaf):
     disc = tmp_discontinuity[0]
 
     if len(disc) == 0:
-        print(
-            "No events found within time series interval. " "Returning original series."
+        log.info(
+            "No events found within time series interval. Returning original series."
         )
         return [{"subtimes": time_array, "subdata": data}]
 
@@ -622,7 +623,6 @@ def split_series_using_lytaf(timearray, data, lytaf):
             subdata = data[disc[h] : disc[h + 1]]
             subseries = {"subtimes": subtimes, "subdata": subdata}
             split_series.append(subseries)
-
     return split_series
 
 
