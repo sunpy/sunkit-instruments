@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sunkit_instruments"
-description = "A SunPy-affiliated package for solar instrum"
+description = "A SunPy-affiliated package for solar instruments"
 requires-python = ">=3.10"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "licenses/LICENSE.rst" }
@@ -18,6 +18,13 @@ authors = [
 dependencies = [
   "sunpy[map,net,timeseries,visualization]>=6.0.0",
   "xarray>=2023.12.0",
+  "astropy",
+  "packaging",
+  "scipy",
+  "numpy",
+  "h5py",
+  "matplotlib",
+  "pandas",
 ]
 dynamic = ["version"]
 
@@ -37,6 +44,7 @@ docs = [
   "sphinx-changelog",
   "sphinx-gallery",
 ]
+
 [project.urls]
 repository = "https://sunpy.org"
 
@@ -51,14 +59,14 @@ exclude = ["sunkit_instruments._dev*"]
 [tool.setuptools_scm]
 write_to = "sunkit_instruments/_version.py"
 
-[ tool.gilesbot ]
-  [ tool.gilesbot.circleci_artifacts ]
+[tool.gilesbot]
+  [tool.gilesbot.circleci_artifacts]
     enabled = true
 
-  [ tool.gilesbot.pull_requests ]
+  [tool.gilesbot.pull_requests]
     enabled = true
 
-  [ tool.gilesbot.towncrier_changelog ]
+  [tool.gilesbot.towncrier_changelog]
     enabled = true
     verify_pr_number = true
     changelog_skip_label = "No Changelog Entry Needed"
@@ -66,7 +74,7 @@ write_to = "sunkit_instruments/_version.py"
 
     changelog_missing_long = "There isn't a changelog file in this pull request. Please add a changelog file to the `changelog/` directory following the instructions in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)."
 
-    type_incorrect_long = "The changelog file you added is not one of the allowed types. Please use one of the types described in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)"
+    type_incorrect_long = "The changelog file you added is not one of the allowed types. Please use one of the types described in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)."
 
     number_incorrect_long = "The number in the changelog file you added does not match the number of this pull request. Please rename the file."
 
@@ -88,26 +96,26 @@ write_to = "sunkit_instruments/_version.py"
         showcontent = true
 
     [[tool.towncrier.type]]
-      directory = "removal"
-      name = "Deprecations and Removals"
-      showcontent = true
+        directory = "removal"
+        name = "Deprecations and Removals"
+        showcontent = true
 
     [[tool.towncrier.type]]
-      directory = "feature"
-      name = "Features"
-      showcontent = true
+        directory = "feature"
+        name = "Features"
+        showcontent = true
 
     [[tool.towncrier.type]]
-      directory = "bugfix"
-      name = "Bug Fixes"
-      showcontent = true
+        directory = "bugfix"
+        name = "Bug Fixes"
+        showcontent = true
 
     [[tool.towncrier.type]]
-      directory = "doc"
-      name = "Improved Documentation"
-      showcontent = true
+        directory = "doc"
+        name = "Improved Documentation"
+        showcontent = true
 
     [[tool.towncrier.type]]
-      directory = "trivial"
-      name = "Trivial/Internal Changes"
-      showcontent = true
+        directory = "trivial"
+        name = "Trivial/Internal Changes"
+        showcontent = true
