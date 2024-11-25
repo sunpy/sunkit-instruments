@@ -18,13 +18,13 @@ authors = [
 dependencies = [
   "sunpy[map,net,timeseries,visualization]>=6.0.0",
   "xarray>=2023.12.0",
-  "astropy",
-  "packaging",
-  "scipy",
-  "numpy",
-  "h5py",
-  "matplotlib",
-  "pandas",
+  "astropy>=5.3.0",
+  "packaging>=23.0",
+  "scipy>=1.11.0",
+  "numpy>=1.24.0",
+  "h5py>=3.9.0",
+  "matplotlib>=3.7.0",
+  "pandas>=2.0.0",
 ]
 dynamic = ["version"]
 
@@ -74,7 +74,7 @@ write_to = "sunkit_instruments/_version.py"
 
     changelog_missing_long = "There isn't a changelog file in this pull request. Please add a changelog file to the `changelog/` directory following the instructions in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)."
 
-    type_incorrect_long = "The changelog file you added is not one of the allowed types. Please use one of the types described in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)."
+    type_incorrect_long = "The changelog file you added is not one of the allowed types. Please use one of the types described in the changelog [README](https://github.com/sunpy/sunkit-instruments/blob/main/changelog/README.rst)"
 
     number_incorrect_long = "The number in the changelog file you added does not match the number of this pull request. Please rename the file."
 
