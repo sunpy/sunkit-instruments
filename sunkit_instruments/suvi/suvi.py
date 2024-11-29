@@ -101,53 +101,45 @@ def despike_l1b_array(data, dqf, filter_width=7):
     return _despike(data, dqf, filter_width)
 
 
-def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="long"):
+def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
     """
-    Get the SUVI instrument response for a specific wavelength channel,
-    spacecraft, CCD temperature, and exposure type.
+    Get the SUVI instrument response for a specific wavelength channel, spacecraft, CCD temperature, and exposure type.
 
-    ``request`` can either be an L1b filename (FITS or netCDF), in which case all of those
-    parameters are read automatically from the metadata, or the parameters
-    can be passed manually, with ``request`` specifying the desired wavelength
-    channel.
+    ``request`` can either be an L1b filename (FITS or netCDF), in which case all of those parameters are read automatically from the metadata, or the parameters can be passed manually, with ``request`` specifying the desired wavelength channel.
 
     Parameters
     ----------
-    request: `str` or {94 | 131 | 171 | 195 | 284 | 304}.
-        Either an L1b filename (FITS or netCDF), or an integer
-        specifying the wavelength channel.
-    spacecraft: `int`, optional.
+    request : str or int ({94, 131, 171, 195, 284, 304})
+        Either an L1b filename (FITS or netCDF), or an integer specifying the wavelength channel.
+    spacecraft : int, optional
         Which GOES spacecraft, default is 16.
-    ccd_temperature: `float`, optional.
-        The CCD temperature, in degrees Celsius, default is -60.
+    ccd_temperature : astropy.units.Quantity, optional
+        The CCD temperature, in degrees Celsius, default is -60.0 * u.deg_C.
         Needed for getting the correct gain number.
-    exposure_type: {"long" | "short" | "short_flare"}, optional.
+    exposure_type : {"long", "short", "short_flare"}, optional
         The exposure type of the SUVI image.
-        The exposure type is needed for the correct focal plane
-        filter selection.
-
+        The exposure type is needed for the correct focal plane filter selection.
         Can be:
-        * "long", "short", "short_flare" for 94 and 131
-        * "long", "short_flare" for 171, 195, 284, and 304.
+        - "long", "short", "short_flare" for 94 and 131
+        - "long", "short_flare" for 171, 195, 284, and 304.
 
     Returns
     -------
-    `dict`
+    dict
         The instrument response information.
         Keys:
-
-        * "wavelength"
-        * "effective_area"
-        * "response"
-        * "wavelength_channel"
-        * "spacecraft"
-        * "ccd_temperature"
-        * "exposure_type"
-        * "flight_model"
-        * "gain"
-        * "solid_angle"
-        * "geometric_area"
-        * "filter_setup"
+        - "wavelength"
+        - "effective_area"
+        - "response"
+        - "wavelength_channel"
+        - "spacecraft"
+        - "ccd_temperature"
+        - "exposure_type"
+        - "flight_model"
+        - "gain"
+        - "solid_angle"
+        - "geometric_area"
+        - "filter_setup"
     """
     # Avoid circular import
     from sunkit_instruments.suvi.io import read_suvi
@@ -156,7 +148,8 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         header, _, _ = read_suvi(request)
         wavelength_channel = int(header["WAVELNTH"])
         spacecraft = int(header["TELESCOP"].replace(" ", "").replace("G", ""))
-        ccd_temperature = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0
+        ccd_temp_header = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0
+        ccd_temperature = ccd_temp_header * u.deg_C
         exposure_type = "_".join(
             header["SCI_OBJ"].replace(" ", "").split(sep="_")[3:]
         ).replace("_exposure", "")
@@ -178,6 +171,12 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
             f"Valid spacecraft are: {VALID_SPACECRAFT}"
         )
 
+    # Ensure ccd_temperature is a Quantity in degrees Celsius
+    if not isinstance(ccd_temperature, u.Quantity):
+        ccd_temperature = ccd_temperature * u.deg_C
+    else:
+        ccd_temperature = ccd_temperature.to(u.deg_C)
+
     eff_area_file = (
         PATH_TO_FILES
         / f"SUVI_{FLIGHT_MODEL[spacecraft]}_{wavelength_channel}A_eff_area.txt"
@@ -192,10 +191,10 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         effective_area = eff_area[:, 2] * u.cm * u.cm
 
     gain_table = np.loadtxt(gain_file, skiprows=7)
-    temp_x = gain_table[:, 0]
+    temp_x = gain_table[:, 0]  # Assuming temp_x is in degrees Celsius
     gain_y = gain_table[:, 1]
     gain_vs_temp = interpolate.interp1d(temp_x, gain_y)
-    gain = gain_vs_temp(ccd_temperature)
+    gain = gain_vs_temp(ccd_temperature.value)
 
     geometric_area = 19.362316 * u.cm * u.cm
     solid_angle = ((2.5 / 3600.0 * (np.pi / 180.0)) ** 2.0) * u.sr
@@ -210,7 +209,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         "response": response,
         "wavelength_channel": wavelength_channel,
         "spacecraft": "GOES-" + str(spacecraft),
-        "ccd_temperature": ccd_temperature * u.deg_C,
+        "ccd_temperature": ccd_temperature,
         "exposure_type": exposure_type,
         "flight_model": FLIGHT_MODEL[spacecraft],
         "gain": float(gain),
