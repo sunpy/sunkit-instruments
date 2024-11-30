@@ -103,7 +103,8 @@ def despike_l1b_array(data, dqf, filter_width=7):
 
 def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
     """
-    Get the SUVI instrument response for a specific wavelength channel, spacecraft, CCD temperature, and exposure type.
+    Get the SUVI instrument response for a specific wavelength channel, spacecraft,
+    CCD temperature, and exposure type.
 
     ``request`` can either be an L1b filename (FITS or netCDF), in which case all of those parameters are read automatically from the metadata, or the parameters can be passed manually, with ``request`` specifying the desired wavelength channel.
 
