@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from sunkit_instruments import suvi
+from astropy import units as u
 
 # Test files are all remote data.
 pytestmark = pytest.mark.remote_data
@@ -24,15 +25,15 @@ def test_suvi_despiking_nc(L1B_NC):
 
 
 def test_get_response_nc(L1B_NC):
-    l1b_nc_response = suvi.get_response(L1B_NC)
+    l1b_nc_response = suvi.get_response(L1B_NC, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long")
     assert l1b_nc_response["wavelength_channel"] == 171
 
 
 def test_get_response_fits(L1B_FITS):
-    l1b_fits_response = suvi.get_response(L1B_FITS)
+    l1b_fits_response = suvi.get_response(L1B_FITS, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long")
     assert l1b_fits_response["wavelength_channel"] == 171
 
 
 def test_get_response_wavelength():
-    response_195 = suvi.get_response(195)
+    response_195 = suvi.get_response(195, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long")
     assert response_195["wavelength_channel"] == 195
