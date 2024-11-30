@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from sunkit_instruments import suvi
 from astropy import units as u
+
+from sunkit_instruments import suvi
 
 # Test files are all remote data.
 pytestmark = pytest.mark.remote_data
