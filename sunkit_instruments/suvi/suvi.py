@@ -116,7 +116,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
     spacecraft : int, optional
         Which GOES spacecraft, default is 16.
     ccd_temperature : astropy.units.Quantity, optional
-        The CCD temperature, in degrees Celsius, default is -60.0 * u.deg_C.
+        The CCD temperature, in degrees Celsius, default is ``-60.0 * u.deg_C``.
         Needed for getting the correct gain number.
     exposure_type : {"long", "short", "short_flare"}, optional
         The exposure type of the SUVI image.
