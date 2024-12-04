@@ -102,7 +102,6 @@ def despike_l1b_array(data, dqf, filter_width=7):
     return _despike(data, dqf, filter_width)
 
 
-@quantity_input(ccd_temperature=u.deg_C)
 def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
     """
     Get the SUVI instrument response for a specific wavelength channel, spacecraft, CCD temperature, and exposure type.
@@ -172,6 +171,12 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
             f"Invalid spacecraft: {spacecraft}"
             f"Valid spacecraft are: {VALID_SPACECRAFT}"
         )
+
+    # Ensure ccd_temperature is a Quantity in degrees Celsius
+    if not isinstance(ccd_temperature, u.Quantity):
+        ccd_temperature = ccd_temperature * u.deg_C
+    else:
+        ccd_temperature = ccd_temperature.to(u.deg_C)
 
     eff_area_file = (
         PATH_TO_FILES
