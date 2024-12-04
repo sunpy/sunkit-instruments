@@ -5,7 +5,7 @@ from scipy import interpolate
 from scipy.ndimage import gaussian_filter
 
 from astropy import units as u
-from astropy.utils.decorators import quantity_input
+from astropy.units import quantity_input
 
 import sunpy.map
 
