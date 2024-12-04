@@ -1,4 +1,1 @@
-### Added
-- Support for `ccd_temperature` as an Astropy Quantity in the `get_response` function.
-### Changed
-- Updated `get_response` to enforce `ccd_temperature` as an Astropy Quantity with `@u.quantity_input` decorator.
+Updated `~.get_response` to enforce ``ccd_temperature`` as an `astropy.units.Quantity`
