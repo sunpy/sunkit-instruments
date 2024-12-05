@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 import astropy.units as u
 
 from sunkit_instruments import suvi
