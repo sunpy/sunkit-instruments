@@ -4,12 +4,6 @@ sunkit-instruments Documentation
 
 <<<<<<<
 A package for instrument-specific data structures and processing in the SunPy ecosystem.
-=======
-   whatsnew/index
-
-Indices and tables
-==================
->>>>>>>
 
 Installation
 ============
