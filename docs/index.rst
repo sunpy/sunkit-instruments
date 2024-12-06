@@ -2,7 +2,6 @@
 sunkit-instruments Documentation
 ********************************
 
-<<<<<<<
 A package for instrument-specific data structures and processing in the SunPy ecosystem.
 
 Installation
