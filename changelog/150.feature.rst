@@ -1,0 +1,1 @@
+Updated `~.get_response` to enforce ``ccd_temperature`` as an `astropy.units.Quantity`
