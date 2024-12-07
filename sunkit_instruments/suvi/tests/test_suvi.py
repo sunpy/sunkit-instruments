@@ -4,6 +4,7 @@ import pytest
 import astropy.units as u
 
 from sunkit_instruments import suvi
+
 pytestmark = pytest.mark.remote_data
 
 
