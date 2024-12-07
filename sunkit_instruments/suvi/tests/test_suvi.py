@@ -4,9 +4,9 @@ import pytest
 import astropy.units as u
 
 from sunkit_instruments import suvi
-
-# Test files are all remote data.
 pytestmark = pytest.mark.remote_data
+
+
 def test_suvi_despiking_fits(L1B_FITS):
     _, l1b_fits_data, _ = suvi.read_suvi(
         L1B_FITS,
