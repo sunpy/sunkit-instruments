@@ -23,6 +23,7 @@ __all__ = [
 
 PATH_TO_FILES = Path(__file__).parent / "data"
 
+
 def _despike(image, dqf_mask, filter_width):
     """
     Helper function to do the actual despiking.
@@ -44,6 +45,7 @@ def _despike(image, dqf_mask, filter_width):
     despiked_image = np.copy(image_with_nans)
     despiked_image[indices] = image_gaussian_filtered[indices]
     return despiked_image
+
 
 def despike_l1b_file(filename, filter_width=7):
     """
@@ -76,6 +78,7 @@ def despike_l1b_file(filename, filter_width=7):
     despiked_image = _despike(image, dqf_mask, filter_width)
     return sunpy.map.Map(despiked_image, header)
 
+
 def despike_l1b_array(data, dqf, filter_width=7):
     """
     Despike SUVI L1b data and return a despiked `numpy.ndarray`.
@@ -96,6 +99,7 @@ def despike_l1b_array(data, dqf, filter_width=7):
         The despiked L1b image as a numpy array.
     """
     return _despike(data, dqf, filter_width)
+
 
 @u.quantity_input(ccd_temperature=u.deg_C)
 def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
@@ -130,6 +134,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
     `dict`
         The instrument response information.
         Keys:
+        
         * "wavelength"
         * "effective_area"
         * "response"
