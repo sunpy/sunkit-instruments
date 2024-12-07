@@ -219,4 +219,3 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
         "filter_setup": FILTER_SETUP[wavelength_channel][exposure_type],
     }
     return response_info
-
