@@ -121,9 +121,10 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
     ccd_temperature: `astropy.units.Quantity`
         The CCD temperature, in degrees Celsius, default is -60.0 * u.deg_C.
         Needed for getting the correct gain number.
-    exposure_type: {"long" | "short" | "short_flare"}, optional
+    exposure_type: {"long" | "short" | "short_flare"}, optional.
         The exposure type of the SUVI image.
-        The exposure type is needed for the correct focal plane filter selection.
+        The exposure type is needed for the correct focal plane
+        filter selection.
 
         Can be:
         * "long", "short", "short_flare" for 94 and 131
@@ -134,6 +135,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
     `dict`
         The instrument response information.
         Keys:
+
         * "wavelength"
         * "effective_area"
         * "response"
@@ -154,8 +156,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
         header, _, _ = read_suvi(request)
         wavelength_channel = int(header["WAVELNTH"])
         spacecraft = int(header["TELESCOP"].replace(" ", "").replace("G", ""))
-        ccd_temp_avg = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0
-        ccd_temperature = ccd_temp_avg * u.deg_C
+        ccd_temperature = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0
         exposure_type = "_".join(
             header["SCI_OBJ"].replace(" ", "").split(sep="_")[3:]
         ).replace("_exposure", "")
@@ -194,7 +195,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
     temp_x = gain_table[:, 0]
     gain_y = gain_table[:, 1]
     gain_vs_temp = interpolate.interp1d(temp_x, gain_y)
-    gain = gain_vs_temp(ccd_temperature.to(u.deg_C).value)
+    gain = gain_vs_temp(ccd_temperature)
 
     geometric_area = 19.362316 * u.cm * u.cm
     solid_angle = ((2.5 / 3600.0 * (np.pi / 180.0)) ** 2.0) * u.sr
@@ -209,7 +210,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
         "response": response,
         "wavelength_channel": wavelength_channel,
         "spacecraft": "GOES-" + str(spacecraft),
-        "ccd_temperature": ccd_temperature,
+        "ccd_temperature": ccd_temperature * u.deg_C,
         "exposure_type": exposure_type,
         "flight_model": FLIGHT_MODEL[spacecraft],
         "gain": float(gain),
