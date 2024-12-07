@@ -100,7 +100,6 @@ def despike_l1b_array(data, dqf, filter_width=7):
     """
     return _despike(data, dqf, filter_width)
 
-
 @u.quantity_input(ccd_temperature=u.deg_C)
 def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
     """
@@ -114,12 +113,13 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
 
     Parameters
     ----------
-    request: `str` or {94 | 131 | 171 | 195 | 284 | 304}
-        Either an L1b filename (FITS or netCDF), or an integer specifying the wavelength channel.
-    spacecraft: `int`, optional
+    request: `str` or {94 | 131 | 171 | 195 | 284 | 304}.
+        Either an L1b filename (FITS or netCDF), or an integer4
+        specifying the wavelength channel.
+    spacecraft: `int`, optional.
         Which GOES spacecraft, default is 16.
-    ccd_temperature: `astropy.units.Quantity`
-        The CCD temperature, in degrees Celsius, default is ``-60.0 * u.deg_C``.
+    ccd_temperature: `float`, optional.
+        The CCD temperature, in degrees Celsius, default is -60.0.
         Needed for getting the correct gain number.
     exposure_type: {"long" | "short" | "short_flare"}, optional.
         The exposure type of the SUVI image.
@@ -219,3 +219,4 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
         "filter_setup": FILTER_SETUP[wavelength_channel][exposure_type],
     }
     return response_info
+
