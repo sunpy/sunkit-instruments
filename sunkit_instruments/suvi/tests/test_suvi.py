@@ -28,7 +28,7 @@ def test_get_response_nc(L1B_NC):
     ccd_temp_avg = (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0 * u.deg_C
     l1b_nc_response = suvi.get_response(L1B_NC)
     assert l1b_nc_response["wavelength_channel"] == 171
-    assert l1b_nc_response["ccd_temperature"] == ccd_temp_avg
+    assert l1b_nc_response["ccd_temperature"] == (header["CCD_TMP1"] + header["CCD_TMP2"]) / 2.0 * u.deg_C
 
 
 def test_get_response_fits(L1B_FITS):
