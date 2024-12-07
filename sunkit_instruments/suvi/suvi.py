@@ -114,9 +114,9 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposu
 
     Parameters
     ----------
-    request: `str` or {94, 131, 171, 195, 284, 304}
+    request: `str` or {94, 131, 171, 195, 284, 304}.
         Either an L1b filename (FITS or netCDF), or an integer specifying the wavelength channel.
-    spacecraft: `int`, optional
+    spacecraft: `int`, optional.
         Which GOES spacecraft, default is 16.
     ccd_temperature: `astropy.units.Quantity`
         The CCD temperature, in degrees Celsius, default is -60.0 * u.deg_C.
