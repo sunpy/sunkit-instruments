@@ -100,8 +100,8 @@ def despike_l1b_array(data, dqf, filter_width=7):
     """
     return _despike(data, dqf, filter_width)
 
-@u.quantity_input(ccd_temperature=u.deg_C)
-def get_response(request, spacecraft=16, ccd_temperature=-60.0 * u.deg_C, exposure_type="long"):
+
+def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="long"):
     """
     Get the SUVI instrument response for a specific wavelength channel,
     spacecraft, CCD temperature, and exposure type.

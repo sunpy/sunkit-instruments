@@ -7,16 +7,18 @@ from sunkit_instruments import suvi
 
 # Test files are all remote data.
 pytestmark = pytest.mark.remote_data
-
-
 def test_suvi_despiking_fits(L1B_FITS):
-    _, l1b_fits_data, _ = suvi.read_suvi(L1B_FITS)
+    _, l1b_fits_data, _ = suvi.read_suvi(
+        L1B_FITS,
+    )
+    despiked_l1b_fits_data = l1b_fits_data
     despiked_l1b_fits_data = suvi.despike_l1b_file(L1B_FITS)
     assert not np.array_equal(l1b_fits_data, despiked_l1b_fits_data)
 
 
 def test_suvi_despiking_nc(L1B_NC):
     _, l1b_nc_data, _ = suvi.read_suvi(L1B_NC)
+    despiked_l1b_nc_data = l1b_nc_data
     despiked_l1b_nc_data = suvi.despike_l1b_file(L1B_NC)
     assert not np.array_equal(l1b_nc_data, despiked_l1b_nc_data)
 
