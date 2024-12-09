@@ -48,7 +48,11 @@ docs = [
 
 [project.urls]
 Homepage = "https://sunpy.org"
+"Source Code" = "https://github.com/sunpy/sunkit-instruments"
 Download = "https://pypi.org/project/sunkit-instruments"
+Documentation = "https://docs.sunpy.org/projects/sunkit-instruments"
+Changelog = "https://docs.sunpy.org/projects/sunkit-instruments/en/stable/whatsnew/changelog.html"
+"Issue Tracker" = "https://github.com/sunpy/sunkit-instruments/issues"
 
 [tool.setuptools]
 zip-safe = false
@@ -86,7 +90,11 @@ write_to = "sunkit_instruments/_version.py"
   package = "sunkit_instruments"
   filename = "CHANGELOG.rst"
   directory = "changelog/"
+<<<<<<<
   issue_format = "`#{issue} <https://github.com/sunpy/sunkit-instruments/pull/{issue}>`__"
+=======
+  issue_format = "`#{issue} https:github.com/sunpy/sunkit-instruments/changelog/pull/{issue}>`__"
+>>>>>>>
   title_format = "{version} ({project_date})"
 
   [[tool.towncrier.type]]
