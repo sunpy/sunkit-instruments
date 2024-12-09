@@ -48,7 +48,11 @@ docs = [
 
 [project.urls]
 Homepage = "https://sunpy.org"
+"Source Code" = "https://github.com/sunpy/sunkit-instruments"
 Download = "https://pypi.org/project/sunkit-instruments"
+Documentation = "https://docs.sunpy.org/projects/sunkit-instruments"
+Changelog = "https://docs.sunpy.org/projects/sunkit-instruments/en/stable/whatsnew/changelog.html"
+"Issue Tracker" = "https://github.com/sunpy/sunkit-instruments/issues"
 
 [tool.setuptools]
 zip-safe = false
