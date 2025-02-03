@@ -1,7 +1,7 @@
 [build-system]
 requires = [
   "setuptools>=62.1",
-  "setuptools_scm[toml]>=6.2",
+  "setuptools_scm[toml]>=8.0.0",
   "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -63,7 +63,7 @@ include = ["sunkit_instruments*"]
 exclude = ["sunkit_instruments._dev*"]
 
 [tool.setuptools_scm]
-write_to = "sunkit_instruments/_version.py"
+version_file = "sunkit_instruments/_version.py"
 
 [tool.gilesbot]
   [tool.gilesbot.circleci_artifacts]
