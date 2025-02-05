@@ -15,6 +15,13 @@ on:
   pull_request:
   # Allow manual runs through the web UI
   workflow_dispatch:
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 7 * * 1'  # Every day at 07:00 UTC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,6 +64,7 @@ jobs:
         - windows: py311
         - macos: py310
         - linux: py310-oldestdeps
+        - linux: py312-devdeps
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -86,24 +94,6 @@ jobs:
       posargs: -n auto --dist loadgroup
       envs: |
         - linux: py312-online
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  cron:
-    if: |
-      github.event_name == 'workflow_dispatch' || (
-        github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'Run cron CI')
-      )
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
-    with:
-      default_python: '3.12'
-      submodules: false
-      coverage: codecov
-      toxdeps: tox-pypi-filter
-      posargs: -n auto --dist loadgroup
-      envs: |
-        - linux: py311-devdeps
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
