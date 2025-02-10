@@ -24,7 +24,7 @@ We encourage and support instrument teams in choosing this route and hope they w
 We point to the recent development of `aiapy <https://gitlab.com/LMSAL_HUB/aia_hub/aiapy>`__ as a great example of this type of collaboration.
 
 Usage of Generative AI
-======================
+----------------------
 
 We expect authentic engagement in our community.
 Be wary of posting output from Large Language Models or similar generative AI as comments on GitHub or any other platform, as such comments tend to be formulaic and low quality content.
