@@ -39,6 +39,9 @@ copyright = f"{datetime.datetime.now().year}, {author}"
 
 # -- General configuration -----------------------------------------------------
 
+# Wrap large function/method signatures
+maximum_signature_line_length = 80
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
