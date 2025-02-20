@@ -21,7 +21,7 @@ on:
     #        │ │ ┌───────── day of the month (1 - 31)
     #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
     #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
-    - cron: '0 7 * * 1'  # Every day at 07:00 UTC
+    - cron: '0 7 * * 3'  # Every Wed at 07:00 UTC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -64,7 +64,8 @@ jobs:
         - windows: py311
         - macos: py310
         - linux: py310-oldestdeps
-        - linux: py312-devdeps
+        - linux: py313-devdeps
+
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -85,7 +86,7 @@ jobs:
   online:
     if: "!startsWith(github.event.ref, 'refs/tags/v')"
     needs: [test]
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
     with:
       default_python: '3.12'
       submodules: false
