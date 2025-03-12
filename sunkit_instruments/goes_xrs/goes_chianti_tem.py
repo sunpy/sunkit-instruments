@@ -39,10 +39,11 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
 
     Parameters
     ----------
-    goes_ts : `~sunpy.timeseries.XRSTimeSeries`
+    goes_ts : `~sunpy.timeseries.sources.XRSTimeSeries`
         The GOES/XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
-    abundance: {"coronal", "photospheric"}, optional
+    abundance: str, optional
         Which abundances to use for the calculation, the default is "coronal".
+        Can be either "coronal" or "photospheric".
 
     Returns
     -------
@@ -62,7 +63,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     -----
     This function works with both the NOAA-provided netcdf files, for which the data is given in "true" fluxes
     and with the older FITS files provided by the SDAC, for which the data are scaled to be consistent with GOES-7.
-    The routine determines from the `sunpy.timeseries.XRSTimeSeries` metadata
+    The routine determines from the `sunpy.timeseries.sources.XRSTimeSeries` metadata
     whether the SWPC scaling factors need to be removed (which are present in the FITS data).
 
     See also: https://hesperia.gsfc.nasa.gov/goes/goes.html#Temperature/Emission%20Measure
@@ -154,15 +155,16 @@ def _chianti_temp_emiss(
 
     Parameters
     ----------
-    goes_ts : `~sunpy.timeseries.XRSTimeSeries`
+    goes_ts : `~sunpy.timeseries.sources.XRSTimeSeries`
         The GOES XRS timeseries containing the data of both the xrsa and xrsb channels (in units of W/m**2).
     sat : `int`
         GOES satellite number.
     secondary: `int`, optional
         Values 0, 1, 2, 3 indicate A1+B1, A2+B1, A1+B2, A2+B2 detector combos for GOES-R.
         Defaults to 0.
-    abundance: {"coronal", "photospheric"}, optional
+    abundance: str, optional
         Which abundances to use for the calculation, the default is "coronal".
+        Can be either "coronal" or "photospheric".
     remove_scaling: `bool`, optional
         Checks whether to remove the SWPC scaling factors.
         This is only an issue for the older FITS files for GOES 8-15 XRS.

@@ -84,6 +84,17 @@ master_doc = "index"
 # Treat everything in single ` as a Python reference.
 default_role = "py:obj"
 
+# Enable nitpicky mode, which forces links to be non-broken
+nitpicky = True
+# This is not used. See docs/nitpick-exceptions file for the actual listing.
+nitpick_ignore = []
+for line in open('nitpick-exceptions'):
+    if line.strip() == "" or line.startswith("#"):
+        continue
+    dtype, target = line.split(None, 1)
+    target = target.strip()
+    nitpick_ignore.append((dtype, target))
+
 # -- Options for intersphinx extension -----------------------------------------
 
 intersphinx_mapping = {
@@ -100,13 +111,10 @@ intersphinx_mapping = {
         (None, "http://www.astropy.org/astropy-data/intersphinx/scipy.inv"),
     ),
     "matplotlib": (
-        "https://matplotlib.org/",
+        "https://matplotlib.org/stable/",
         (None, "http://www.astropy.org/astropy-data/intersphinx/matplotlib.inv"),
     ),
-    "sunpy": (
-        "https://sunpy.org/",
-        (None, "https://docs.sunpy.org/en/stable/"),
-    ),
+    "sunpy": ("https://docs.sunpy.org/en/stable/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/latest/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),

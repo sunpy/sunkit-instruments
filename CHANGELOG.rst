@@ -31,7 +31,7 @@ Bug Fixes
   This can be several minutes different from the time requested.
   Now, a warning to the user will be raised if the time returned by the code is more than 1 minute different from the time requested (1 minute is the nominal cadence of the spacecraft weekly file), and explains that this is likely due to a South Atlantic Anomaly encounter. (`#128 <https://github.com/sunpy/sunkit-instruments/pull/128>`__)
 - The function ``plot_detector_sun_angles`` was broken, due to the formatting of the time axis. (`#130 <https://github.com/sunpy/sunkit-instruments/pull/130>`__)
-- Fixed a bug in `~sunkit-instruments.lyra.remove_lytaf_events_from_timeseries` where units were not being correctly passed
+- Fixed a bug in `~sunkit_instruments.lyra.remove_lytaf_events_from_timeseries` where units were not being correctly passed
   to new timeseries. (`#143 <https://github.com/sunpy/sunkit-instruments/pull/143>`__)
 
 
@@ -66,7 +66,7 @@ Backwards Incompatible Changes
 
 - This removes the older version of `sunkit_instruments.goes_xrs.calculate_temperature_em` that no longer works for the re-processed netcdf files and new GOES-R data.
 
-  This also removes the `sunkit_instruments.goes_xrs.calculate_radiative_loss_rate` and `sunkit_instruments.goes_xrs.calculate_xray_luminosity` functions that also no longer work in their current form.
+  This also removes the ``sunkit_instruments.goes_xrs.calculate_radiative_loss_rate`` and ``sunkit_instruments.goes_xrs.calculate_xray_luminosity`` functions that also no longer work in their current form.
 
   The new `sunkit_instruments.goes_xrs.calculate_temperature_em` function now returns a new sunpy.timeseries.GenericTimeSeries with the temperature and emission measure rather than appending columns to the passed XRSTimeSeries. (`#81 <https://github.com/sunpy/sunkit-instruments/pull/81>`__)
 

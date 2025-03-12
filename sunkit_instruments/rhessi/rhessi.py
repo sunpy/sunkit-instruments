@@ -185,7 +185,7 @@ def uncompress_countrate(compressed_countrate):
 
     Parameters
     ----------
-    compressed_countrate : `byte` array
+    compressed_countrate : `bytes` array
         A compressed count rate returned from an observing summary file.
 
     References
@@ -317,7 +317,7 @@ def backprojection(
 
     Returns
     -------
-    `sunpy.map.sources.RHESSImap`
+    `sunpy.map.sources.RHESSIMap`
         A backprojection map.
     """
     # import sunpy.map in here so that net and timeseries don't end up importing map
@@ -417,7 +417,7 @@ def imagecube2map(rhessi_imagecube_file):
     Extracts single map images from a RHESSI flare image datacube. Currently
     assumes input to be 4D.
 
-    This function is analogous to the `hsi_fits2map.pro` functionality available in SSW.
+    This function is analogous to the ``hsi_fits2map.pro`` functionality available in SSW.
 
     Parameters
     ----------

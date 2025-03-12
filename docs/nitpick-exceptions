@@ -1,0 +1,8 @@
+# Prevents sphinx nitpicky mode picking up on optional
+# (see https://github.com/sphinx-doc/sphinx/issues/6861)
+# Even if it was "fixed", still broken
+py:class optional
+# See https://github.com/numpy/numpy/issues/10039
+py:obj numpy.datetime64
+
+py:class Unit

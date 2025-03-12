@@ -144,7 +144,7 @@ def flux_to_flareclass(goesflux: u.watt / u.m**2):
 
     References
     ----------
-    `Solar Flare Classification <https://en.wikipedia.org/wiki/Solar_flare#Classification>`_
+    `Solar Flare Classification <https://en.wikipedia.org/wiki/Solar_flare#Classification>`__
 
     Examples
     --------

@@ -221,6 +221,7 @@ examples/**/*.csv
 figure_test_images*
 tags
 sunkit_instruments/_version.py
+docs/sg_execution_times.rst
 
 ### Pycharm(?)
 .idea

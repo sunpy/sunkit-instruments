@@ -44,7 +44,7 @@ def remove_lytaf_events_from_timeseries(
 
     Parameters
     ----------
-    ts : `sunpy.timeseries.TimeSeries`
+    ts : `sunpy.timeseries.GenericTimeSeries`
     artifacts : `list`
         Sets the artifact types to be removed.  For a list of artifact types
         see reference [1].  For example, if a user wants to remove only large
@@ -62,7 +62,7 @@ def remove_lytaf_events_from_timeseries(
 
     Returns
     -------
-    ts_new : `sunpy.timeseries.TimeSeries`
+    ts_new : `sunpy.timeseries.GenericTimeSeries`
         copy of input TimeSeries with periods corresponding to artifacts
         removed.
     artifact_status : `dict`
