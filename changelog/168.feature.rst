@@ -1,1 +1,1 @@
-Added support for SUVI Flight Models FM3 and FM4.
+Added support for SUVI Flight Models FM3 (18) and FM4 (19).

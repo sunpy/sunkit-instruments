@@ -36,3 +36,9 @@ def test_get_response_fits(L1B_FITS):
 def test_get_response_wavelength():
     response_195 = suvi.get_response(195)
     assert response_195["wavelength_channel"] == 195
+
+
+@pytest.mark.parametrize("spacecraft", [16, 17, 18, 19])
+def test_get_response_spacecraft_number(spacecraft):
+    response_195 = suvi.get_response(195, spacecraft=spacecraft)
+    assert response_195["wavelength_channel"] == 195
