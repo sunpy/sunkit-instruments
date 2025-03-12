@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -42,3 +44,8 @@ def test_get_response_wavelength():
 def test_get_response_spacecraft_number(spacecraft):
     response_195 = suvi.get_response(195, spacecraft=spacecraft)
     assert response_195["wavelength_channel"] == 195
+
+
+def test_get_response_bad_spacecraft_number():
+    with pytest.raises(ValueError, match=re.escape("Invalid spacecraft: 0 Valid spacecraft are: [16, 17, 18, 19]")):
+        suvi.get_response(195, spacecraft=0)

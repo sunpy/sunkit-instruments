@@ -174,7 +174,7 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
         )
     if spacecraft not in VALID_SPACECRAFT:
         raise ValueError(
-            f"Invalid spacecraft: {spacecraft}"
+            f"Invalid spacecraft: {spacecraft} "
             f"Valid spacecraft are: {VALID_SPACECRAFT}"
         )
 
