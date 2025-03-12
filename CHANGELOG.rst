@@ -8,6 +8,7 @@ Breaking Changes
 - Increased the minimum version of ``sunpy`` to 6.0.0. (`#126 <https://github.com/sunpy/sunkit-instruments/pull/126>`__)
 - Update the hash of the CHIANTI data file retrieved by the data manager used in `sunkit_instruments.goes_xrs.calculate_temperature_em`
   so that the latest version of the file is used. (`#143 <https://github.com/sunpy/sunkit-instruments/pull/143>`__)
+- Updated SUVI Flight Model files for FM1 (16) and FM2 (17). (`#168 <https://github.com/sunpy/sunkit-instruments/pull/168>`__)
 
 
 New Features
@@ -18,6 +19,7 @@ New Features
   response functions. (`#98 <https://github.com/sunpy/sunkit-instruments/pull/98>`__)
 - Added `sunkit_instruments.response.abstractions.AbstractChannel` to standardize an interface
   for computing wavelength and temperature response functions. (`#98 <https://github.com/sunpy/sunkit-instruments/pull/98>`__)
+- Added support for SUVI Flight Models FM3 (18) and FM4 (19). (`#168 <https://github.com/sunpy/sunkit-instruments/pull/168>`__)
 
 
 Bug Fixes
