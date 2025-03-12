@@ -29,8 +29,8 @@ L1B_MATCHES = [
     "-L1b-He303",
 ]
 VALID_WAVELENGTH_CHANNELS = [94, 131, 171, 195, 284, 304]
-VALID_SPACECRAFT = [16, 17]
-FLIGHT_MODEL = {16: "FM1", 17: "FM2"}
+VALID_SPACECRAFT = [16, 17, 18, 19]
+FLIGHT_MODEL = {16: "FM1", 17: "FM2", 18: "FM3", 19: "FM4"}
 # The setup for filter wheel 1 and 2 for the different exposure types
 FILTER_SETUP = {
     94: {
