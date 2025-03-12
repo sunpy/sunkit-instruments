@@ -280,11 +280,11 @@ def test_remove_lytaf_events_1(local_cache):
     assert artifacts_status_test["not_found"] == artifacts_status_expected["not_found"]
 
 
+@pytest.mark.filterwarnings("ignore:unclosed database")
 def test_remove_lytaf_events_2(local_cache):
     """
     Test _remove_lytaf_events() with no user artifacts found.
     """
-    # Run _remove_lytaf_events
     with pytest.warns(UserWarning, match="None of user supplied artifacts were found."):
         time_test, channels_test, artifacts_status_test = lyra._remove_lytaf_events(
             TIME,
@@ -293,7 +293,6 @@ def test_remove_lytaf_events_2(local_cache):
             return_artifacts=True,
             force_use_local_lytaf=True,
         )
-    # Generated expected result
     time_expected = TIME
     channels_expected = CHANNELS
     artifacts_status_expected = {
@@ -302,7 +301,6 @@ def test_remove_lytaf_events_2(local_cache):
         "not_removed": LYTAF_TEST,
         "not_found": ["Offpoint"],
     }
-    # Assert test values are same as expected
     np.testing.assert_array_equal(time_test, time_expected)
     assert (channels_test[0]).all() == (channels_expected[0]).all()
     assert (channels_test[1]).all() == (channels_expected[1]).all()
