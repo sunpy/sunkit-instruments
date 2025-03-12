@@ -1,3 +1,52 @@
+0.6.0 (2025-03-12)
+==================
+
+Breaking Changes
+----------------
+
+- Increased minimum Python version to 3.10 (`#125 <https://github.com/sunpy/sunkit-instruments/pull/125>`__)
+- Increased the minimum version of ``sunpy`` to 6.0.0. (`#126 <https://github.com/sunpy/sunkit-instruments/pull/126>`__)
+- Update the hash of the CHIANTI data file retrieved by the data manager used in `sunkit_instruments.goes_xrs.calculate_temperature_em`
+  so that the latest version of the file is used. (`#143 <https://github.com/sunpy/sunkit-instruments/pull/143>`__)
+- Updated SUVI Flight Model files for FM1 (16) and FM2 (17). (`#168 <https://github.com/sunpy/sunkit-instruments/pull/168>`__)
+
+
+New Features
+------------
+
+- Added `sunkit_instruments.response.SourceSpectra` to provide a container for
+  spectra as a function of temperature and wavelength needed for computing temperature
+  response functions. (`#98 <https://github.com/sunpy/sunkit-instruments/pull/98>`__)
+- Added `sunkit_instruments.response.abstractions.AbstractChannel` to standardize an interface
+  for computing wavelength and temperature response functions. (`#98 <https://github.com/sunpy/sunkit-instruments/pull/98>`__)
+- Added support for SUVI Flight Models FM3 (18) and FM4 (19). (`#168 <https://github.com/sunpy/sunkit-instruments/pull/168>`__)
+
+
+Bug Fixes
+---------
+
+- In the ``fermi``, the function ``get_detector_sun_angles_for_time`` returns the angle with respect to the Sun of each Fermi/GBM detector.
+  However, these files contain gaps due to the South Atlantic Anomaly.
+  If the time requested falls in one of these gaps, the code will return the detector angles for the next available time.
+  This can be several minutes different from the time requested.
+  Now, a warning to the user will be raised if the time returned by the code is more than 1 minute different from the time requested (1 minute is the nominal cadence of the spacecraft weekly file), and explains that this is likely due to a South Atlantic Anomaly encounter. (`#128 <https://github.com/sunpy/sunkit-instruments/pull/128>`__)
+- The function ``plot_detector_sun_angles`` was broken, due to the formatting of the time axis. (`#130 <https://github.com/sunpy/sunkit-instruments/pull/130>`__)
+- Fixed a bug in `~sunkit_instruments.lyra.remove_lytaf_events_from_timeseries` where units were not being correctly passed
+  to new timeseries. (`#143 <https://github.com/sunpy/sunkit-instruments/pull/143>`__)
+
+
+Documentation
+-------------
+
+- Add a topic guide on a vocabulary for instrument response functions. (`#111 <https://github.com/sunpy/sunkit-instruments/pull/111>`__)
+
+
+Internal Changes
+----------------
+
+- Re-templated the entire library to use the new sunpy template. (`#133 <https://github.com/sunpy/sunkit-instruments/pull/133>`__)
+
+
 0.5.0 (2023-11-17)
 ==================
 
@@ -17,7 +66,7 @@ Backwards Incompatible Changes
 
 - This removes the older version of `sunkit_instruments.goes_xrs.calculate_temperature_em` that no longer works for the re-processed netcdf files and new GOES-R data.
 
-  This also removes the `sunkit_instruments.goes_xrs.calculate_radiative_loss_rate` and `sunkit_instruments.goes_xrs.calculate_xray_luminosity` functions that also no longer work in their current form.
+  This also removes the ``sunkit_instruments.goes_xrs.calculate_radiative_loss_rate`` and ``sunkit_instruments.goes_xrs.calculate_xray_luminosity`` functions that also no longer work in their current form.
 
   The new `sunkit_instruments.goes_xrs.calculate_temperature_em` function now returns a new sunpy.timeseries.GenericTimeSeries with the temperature and emission measure rather than appending columns to the passed XRSTimeSeries. (`#81 <https://github.com/sunpy/sunkit-instruments/pull/81>`__)
 

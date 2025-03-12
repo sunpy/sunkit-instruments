@@ -238,7 +238,7 @@ def plot_detector_sun_angles(angles):
     angles : `dict`
         A dictionary containing the Fermi/GBM detector angle information as a
         function of time. Obtained from the
-        `~sunkit_instruments.fermi.get_detector_separation_angles` function.
+        `~sunkit_instruments.fermi.get_detector_sun_angles_for_time` function.
     """
     # Reformat the time array so we can plot it
     angle_times = []
@@ -310,8 +310,8 @@ def get_scx_scz_in_timerange(timerange, file):
 
     Parameters
     ----------
-    timerange : `sunpy.time.TimeRange`
-        A SunPy `~sunpy.time.TimeRange`.
+    timerange : `~sunpy.time.TimeRange`
+        The time range to extract the pointing information for.
     file : `str`
         A filepath to a Fermi/LAT weekly pointing file (e.g. as obtained by the
         `~sunkit_instruments.fermi.download_weekly_pointing_file` function).

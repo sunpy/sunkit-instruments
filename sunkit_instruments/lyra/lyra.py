@@ -44,7 +44,7 @@ def remove_lytaf_events_from_timeseries(
 
     Parameters
     ----------
-    ts : `sunpy.timeseries.TimeSeries`
+    ts : `sunpy.timeseries.GenericTimeSeries`
     artifacts : `list`
         Sets the artifact types to be removed.  For a list of artifact types
         see reference [1].  For example, if a user wants to remove only large
@@ -62,7 +62,7 @@ def remove_lytaf_events_from_timeseries(
 
     Returns
     -------
-    ts_new : `sunpy.timeseries.TimeSeries`
+    ts_new : `sunpy.timeseries.GenericTimeSeries`
         copy of input TimeSeries with periods corresponding to artifacts
         removed.
     artifact_status : `dict`
@@ -129,7 +129,6 @@ def _remove_lytaf_events(
     channels=None,
     artifacts=None,
     return_artifacts=False,
-    filecolumns=None,
     force_use_local_lytaf=False,
 ):
     """
@@ -162,12 +161,6 @@ def _remove_lytaf_events(
         Set to True to return a numpy recarray containing the start time, end
         time and type of all artifacts removed.
         Default=False
-    filecolumns : `list` of strings
-        Gives names of columns of any output files produced.  Although
-        initially set to None above, the default is in fact
-        ["time", "channel0", "channel1",..."channelN"]
-        where N is the number of irradiance arrays in the channels input
-        (assuming 0-indexed counting).
     force_use_local_lytaf : `bool`
         Ensures current local version of lytaf files are not replaced by
         up-to-date online versions even if current local lytaf files do not

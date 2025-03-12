@@ -32,8 +32,8 @@ goes_flare = goes_ts.truncate("2011-06-07 06:15", "2011-06-07 09:00")
 ##############################################################################
 # Now let's calculate the temperature and emission measure estimates from
 # these channel fluxes. We can do this by using the function
-# `sunkit_instruments.goes_xrs.calculate_temperature_emiss()` which
-# takes a sunpy.timeseries.XRSTimeSeries and returns a new GenericTimeSeries
+# `sunkit_instruments.goes_xrs.calculate_temperature_em` which
+# takes a `sunpy.timeseries.sources.XRSTimeSeries` and returns a new timeseries
 # which contains both the respective temperature and emission measure values.
 
 goes_temp_em = goes_xrs.calculate_temperature_em(goes_flare)

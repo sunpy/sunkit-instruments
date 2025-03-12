@@ -113,15 +113,16 @@ def get_response(request, spacecraft=16, ccd_temperature=-60.0, exposure_type="l
 
     Parameters
     ----------
-    request: `str` or {94 | 131 | 171 | 195 | 284 | 304}.
+    request: `str` or `int`.
         Either an L1b filename (FITS or netCDF), or an integer
         specifying the wavelength channel.
-    spacecraft: `int`, optional.
+        Those are the valid wavelength channels: 94, 131, 171, 195, 284, 304
+    spacecraft: `int`, optional
         Which GOES spacecraft, default is 16.
-    ccd_temperature: `float`, optional.
+    ccd_temperature: `float`, optional
         The CCD temperature, in degrees Celsius, default is -60.
         Needed for getting the correct gain number.
-    exposure_type: {"long" | "short" | "short_flare"}, optional.
+    exposure_type: `str`, optional
         The exposure type of the SUVI image.
         The exposure type is needed for the correct focal plane
         filter selection.

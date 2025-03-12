@@ -221,6 +221,7 @@ examples/**/*.csv
 figure_test_images*
 tags
 sunkit_instruments/_version.py
+docs/sg_execution_times.rst
 
 ### Pycharm(?)
 .idea
@@ -233,6 +234,7 @@ sunkit_instruments/_version.py
 *.orig
 .tmp
 requirements-min.txt
+.ruff_cache
 
 # Example files
 dr_suvi-l2-thmap_g16_s20220101T000000Z_e20220101T000400Z_v1-0-2.fits

@@ -35,20 +35,18 @@ Once you have that virtual environment, you will want to fork the repo and then 
 .. _contributing guide: https://docs.sunpy.org/en/latest/dev_guide/contents/newcomers.html
 
 
-``sunkit-instruments`` is organised into sub-modules for each instrument:
-
-.. toctree::
-   :maxdepth: 2
-
-   code_ref/index
-   generated/gallery/index
-   topic_guide/index
-   whatsnew/index
-
-
 Note that the code in this package is **not** maintained by or necessarily contributed to by instrument teams.
 Some instruments have individual packages for analysis in Python, including:
 
 - `aiapy <https://aiapy.readthedocs.io/>`__
 - `eispac <https://eispac.readthedocs.io/>`__
 - `xrtpy <https://xrtpy.readthedocs.io/>`__
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+
+    code_ref/index
+    generated/gallery/index
+    topic_guide/index
+    whatsnew/index

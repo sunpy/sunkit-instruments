@@ -17,7 +17,7 @@ def get_temperature_response(channel, spectra, obstime=None):
     ----------
     channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
     spectra: `~sunkit_instruments.response.SourceSpectra`
-    obstime: any format parsed by `sunpy.time.parse_time`, optional
+    obstime: any format parsed by `sunpy.time.parse_time` , optional
 
     Returns
     -------
