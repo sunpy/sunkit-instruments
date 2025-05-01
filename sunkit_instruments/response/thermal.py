@@ -108,7 +108,7 @@ class SourceSpectra:
         if x is None:
             self._meta = {}
         elif isinstance(x, dict):
-            self._mata = x
+            self._meta = x
         else:
             raise TypeError(f'Unsupported metadata type {type(x)}')
 
@@ -121,6 +121,14 @@ class SourceSpectra:
     @u.quantity_input
     def wavelength(self) -> u.Angstrom:
         return u.Quantity(self._da.wavelength.data, self._da.wavelength.attrs["unit"])
+
+    @property
+    @u.quantity_input
+    def density(self) -> u.cm**(-3):
+        if "density" in self._da.coords:
+            return u.Quantity(self._da.density.data, self._da.density.attrs["unit"])
+        else:
+            raise ValueError("No density data available.")
 
     @property
     @u.quantity_input
