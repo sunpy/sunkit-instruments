@@ -13,7 +13,7 @@ from sunpy.util.exceptions import warn_user
 
 __all__ = ["calculate_temperature_em"]
 
-MAX_SUPPORTED_SATELLITE = 17
+MAX_SUPPORTED_SATELLITE = 19
 
 
 def calculate_temperature_em(goes_ts, abundance="coronal"):
