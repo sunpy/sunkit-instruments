@@ -148,21 +148,26 @@ def test_comparison_with_IDL_version(goes_files, idl_files):
 # Test the other GOES-XRS functionality
 @pytest.mark.remote_data
 def test_goes_event_list():
+    from astropy.coordinates import SkyCoord
+
+    from sunpy import __version__ as sunpy_version
+
     # Set a time range to search
     trange = TimeRange("2011-06-07 00:00", "2011-06-08 00:00")
     # Test case where GOES class filter is applied
     result = goes.get_goes_event_list(trange, goes_class_filter="M1")
+    base_type = tuple if sunpy_version < "7.0.0" else SkyCoord
     assert isinstance(result, list)
     assert isinstance(result[0], dict)
     assert isinstance(result[0]["event_date"], str)
-    assert isinstance(result[0]["goes_location"], tuple)
+    assert isinstance(result[0]["goes_location"], base_type)
     assert isinstance(result[0]["peak_time"], Time)
     assert isinstance(result[0]["start_time"], Time)
     assert isinstance(result[0]["end_time"], Time)
     assert isinstance(result[0]["goes_class"], str)
     assert isinstance(result[0]["noaa_active_region"], np.int64)
     assert result[0]["event_date"] == "2011-06-07"
-    assert result[0]["goes_location"] == (54, -21)
+    assert result[0]["goes_location"] in [(54, -21), SkyCoord(54 * u.deg, -21 * u.deg, frame="heliographic_stonyhurst", obstime=result[0]["start_time"])]
     # float error
     assert is_time_equal(result[0]["start_time"], parse_time((2011, 6, 7, 6, 16)))
     assert is_time_equal(result[0]["peak_time"], parse_time((2011, 6, 7, 6, 41)))
@@ -174,14 +179,14 @@ def test_goes_event_list():
     assert isinstance(result, list)
     assert isinstance(result[0], dict)
     assert isinstance(result[0]["event_date"], str)
-    assert isinstance(result[0]["goes_location"], tuple)
+    assert isinstance(result[0]["goes_location"], base_type)
     assert isinstance(result[0]["peak_time"], Time)
     assert isinstance(result[0]["start_time"], Time)
     assert isinstance(result[0]["end_time"], Time)
     assert isinstance(result[0]["goes_class"], str)
     assert isinstance(result[0]["noaa_active_region"], np.int64)
     assert result[0]["event_date"] == "2011-06-07"
-    assert result[0]["goes_location"] == (54, -21)
+    assert result[0]["goes_location"] in [(54, -21), SkyCoord(54 * u.deg, -21 * u.deg, frame="heliographic_stonyhurst", obstime=result[0]["start_time"])]
     assert is_time_equal(result[0]["start_time"], parse_time((2011, 6, 7, 6, 16)))
     assert is_time_equal(result[0]["peak_time"], parse_time((2011, 6, 7, 6, 41)))
     assert is_time_equal(result[0]["end_time"], parse_time((2011, 6, 7, 6, 59)))
