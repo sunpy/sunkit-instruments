@@ -8,6 +8,15 @@ Bug Fixes
 - Updated GOES event list to account for change in the HEK results from sunpy 7.0. (`#179 <https://github.com/sunpy/sunkit-instruments/pull/179>`__)
 
 
+0.6.1 (2025-05-01)
+==================
+
+Bug Fixes
+---------
+
+- Correct misspelling in meta setter. (`#172 <https://github.com/sunpy/sunkit-instruments/pull/172>`__)
+
+
 0.6.0 (2025-03-12)
 ==================
 
