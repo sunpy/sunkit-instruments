@@ -37,6 +37,7 @@ def get_goes_event_list(timerange, goes_class_filter=None):
         A list of all the flares found for the given time range.
     """
     # Importing hek here to avoid calling code that relies on optional dependencies.
+    from sunpy import __version__ as sunpy_version
     from sunpy.net import attrs, hek
 
     # use HEK module to search for GOES events
@@ -69,13 +70,17 @@ def get_goes_event_list(timerange, goes_class_filter=None):
     goes_event_list = []
 
     for r in result:
+        if sunpy_version < "7.0.0":
+            event_coord = (r["event_coord1"], r["event_coord2"])
+        else:
+            event_coord = (r["event_coord"])
         goes_event = {
             "event_date": parse_time(r["event_starttime"]).strftime("%Y-%m-%d"),
             "start_time": parse_time(r["event_starttime"]),
             "peak_time": parse_time(r["event_peaktime"]),
             "end_time": parse_time(r["event_endtime"]),
             "goes_class": str(r["fl_goescls"]),
-            "goes_location": (r["event_coord1"], r["event_coord2"]),
+            "goes_location": (event_coord),
             "noaa_active_region": r["ar_noaanum"],
         }
         goes_event_list.append(goes_event)
