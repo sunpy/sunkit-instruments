@@ -1,3 +1,13 @@
+0.6.2 (2025-07-09)
+==================
+
+Bug Fixes
+---------
+
+- Updating the maximum supported GOES satellite to GOES 19 for the temperature and emission measure calculation. (`#178 <https://github.com/sunpy/sunkit-instruments/pull/178>`__)
+- Updated GOES event list to account for change in the HEK results from sunpy 7.0. (`#179 <https://github.com/sunpy/sunkit-instruments/pull/179>`__)
+
+
 0.6.0 (2025-03-12)
 ==================
 
