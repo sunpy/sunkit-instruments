@@ -13,7 +13,7 @@ from sunpy.util.exceptions import warn_user
 
 __all__ = ["calculate_temperature_em"]
 
-MAX_SUPPORTED_SATELLITE = 17
+MAX_SUPPORTED_SATELLITE = 19
 
 
 def calculate_temperature_em(goes_ts, abundance="coronal"):
@@ -95,7 +95,7 @@ def calculate_temperature_em(goes_ts, abundance="coronal"):
     satellite_number = int(goes_ts.observatory.split("-")[-1])
     if (satellite_number < 1) or (satellite_number > MAX_SUPPORTED_SATELLITE):
         raise ValueError(
-            f"GOES satellite number has to be between 1 and 17, {satellite_number} was found."
+            f"GOES satellite number has to be between 1 and {MAX_SUPPORTED_SATELLITE}, {satellite_number} was found."
         )
 
     allowed_abundances = ["photospheric", "coronal"]

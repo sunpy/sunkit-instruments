@@ -22,6 +22,10 @@ goes15_filepath_nc = get_test_filepath(
 goes16_filepath_nc = get_test_filepath(
     "sci_xrsf-l2-flx1s_g16_d20170910_v2-1-0_truncated.nc"
 )  # test the GOES-R data
+goes18_filepath_nc = get_test_filepath(
+    "sci_xrsf-l2-flx1s_g18_d20250328_v2-2-0_truncated.nc"
+)  # test the GOES-18 data (following updated chianti file)
+
 
 
 @pytest.mark.parametrize(
@@ -30,6 +34,7 @@ goes16_filepath_nc = get_test_filepath(
         (goes15_fits_filepath, 11.9 * u.MK),
         (goes15_filepath_nc, 21.6 * u.MK),
         (goes16_filepath_nc, 21.9 * u.MK),
+        (goes18_filepath_nc, 14.0 * u.MK),
     ],
 )
 @pytest.mark.remote_data
@@ -88,6 +93,16 @@ def test_calculate_temperature_emiss_no_primary_detector_columns_GOESR():
 
     with pytest.warns(SunpyUserWarning):
         goes.calculate_temperature_em(goeslc_removed_col)
+
+
+@pytest.mark.remote_data
+def test_satellite_number_supported():
+    goeslc = timeseries.TimeSeries(goes16_filepath_nc)
+
+    # setting id to have a "fake" name with GOES satellite number of 21 (unsupported)
+    goeslc.meta.metas[0]["id"] = "sci_xrsf-l2-flx1s_g21_d20260101_v2-2-0.nc"
+    with pytest.raises(ValueError, match="GOES satellite number has to be between 1 and 19, 21 was found."):
+        goes.calculate_temperature_em(goeslc)
 
 
 # We also test against the IDL outputs for the GOES-15 and 16 test files
