@@ -98,7 +98,7 @@ def test_calculate_temperature_emiss_no_primary_detector_columns_GOESR():
 @pytest.mark.remote_data
 def test_satellite_number_supported():
     goeslc = timeseries.TimeSeries(goes16_filepath_nc)
-    
+
     # setting id to have a "fake" name with GOES satellite number of 21 (unsupported)
     goeslc.meta.metas[0]["id"] = "sci_xrsf-l2-flx1s_g21_d20260101_v2-2-0.nc"
     with pytest.raises(ValueError, match="GOES satellite number has to be between 1 and 19, 21 was found."):
