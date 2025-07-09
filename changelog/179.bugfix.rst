@@ -1,0 +1,1 @@
+Updated GOES event list to account for change in the HEK results from sunpy 7.0.
