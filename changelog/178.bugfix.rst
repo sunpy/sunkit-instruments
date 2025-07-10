@@ -1,1 +1,0 @@
-Updating the maximum supported GOES satellite to GOES 19 for the temperature and emission measure calculation.
