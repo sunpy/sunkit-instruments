@@ -17,13 +17,13 @@ authors = [
 ]
 dependencies = [
   "sunpy[map,net,timeseries,visualization]>=7.0.0",
-  "xarray>=2023.12.0",
+  "xarray>=2014.11.0",
   "astropy>=6.1.0",
   "scipy>=1.12.0",
   "numpy>=1.26.0",
   "h5py>=3.10.0",
   "matplotlib>=3.8.0",
-  "pandas>=2.0.0",
+  "pandas>=2.2.0",
 ]
 dynamic = ["version"]
 
