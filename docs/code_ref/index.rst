@@ -10,7 +10,6 @@ API Reference
    sunkit_instruments
    fermi
    goes_xrs
-   iris
    lyra
    rhessi
    suvi

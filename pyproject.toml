@@ -8,24 +8,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sunkit_instruments"
-description = "A SunPy-affiliated package for solar instruments"
-requires-python = ">=3.10"
+description = "A SunPy-affiliated package for solar instrum"
+requires-python = ">=3.12"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "licenses/LICENSE.rst" }
 authors = [
   { name = "The SunPy Community", email = "sunpy@googlegroups.com" },
 ]
 dependencies = [
-  "sunpy[map,net,timeseries,visualization]>=6.0.0",
-  "xarray>=2023.12.0",
-  "astropy>=5.3.0",
-  "packaging>=23.0",
-  # !=1.10.0 due to https://github.com/scipy/scipy/issues/17718
-  "scipy>=1.9.0,!=1.10.0",
-  "numpy>=1.23.5",
-  "h5py>=3.7.0",
-  "matplotlib>=3.6.0",
-  "pandas>=1.4.0",
+  "sunpy[map,net,timeseries,visualization]>=7.0.0",
+  "xarray[parallel]>=2014.11.0",
+  "astropy>=6.1.0",
+  "scipy>=1.12.0",
+  "numpy>=1.26.0",
+  "h5py>=3.10.0",
+  "matplotlib>=3.8.0",
+  "pandas>=2.2.0",
 ]
 dynamic = ["version"]
 
