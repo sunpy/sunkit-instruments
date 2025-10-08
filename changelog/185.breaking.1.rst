@@ -1,1 +1,1 @@
-Removed ``iris`` folder, please use `irispy <https://irispy.readthedocs.io/en/latest/>`__.
+Removed ``iris`` submodule, please use `irispy <https://irispy.readthedocs.io/en/latest/>`__.
