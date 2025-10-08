@@ -17,7 +17,7 @@ authors = [
 ]
 dependencies = [
   "sunpy[map,net,timeseries,visualization]>=7.0.0",
-  "xarray>=2014.11.0",
+  "xarray[parallel]>=2014.11.0",
   "astropy>=6.1.0",
   "scipy>=1.12.0",
   "numpy>=1.26.0",
