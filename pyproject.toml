@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sunkit_instruments"
-description = "A SunPy-affiliated package for solar instrum"
+description = "A SunPy-affiliated package for solar instruments"
 requires-python = ">=3.12"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license = { file = "licenses/LICENSE.rst" }
