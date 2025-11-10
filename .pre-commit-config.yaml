@@ -1,13 +1,17 @@
 repos:
     # This should be before any formatting hooks like isort
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.13.2"
+    rev: "v0.14.3"
     hooks:
       - id: ruff
         args: ["--fix"]
         exclude: ".*(.fits|.fts|.fit|.nc|.gz|.txt|tca.*|extern.*|.rst|.md|docs/conf.py)$"
   - repo: https://github.com/PyCQA/isort
+<<<<<<<
     rev: 6.1.0
+=======
+    rev: 7.0.0
+>>>>>>>
     hooks:
       - id: isort
         exclude: ".*(.fits|.fts|.fit|.header|.txt|tca.*|extern.*|sunkit_instruments/extern)$"
