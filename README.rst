@@ -18,6 +18,7 @@ Instead it is intended to perform three main roles:
 
 For instrument teams, this package can act as a forum to engage with their user base and learn how to best develop their tools within the SunPy/scientific Python ecosystem.
 It also lowers the barrier to publishing Python-based instrument tools by providing packaging and release infrastructure and support.
+<<<<<<<
 However should instrument teams want to develop at their own pace or provide a large number of tools,
 they should consider starting their own package for full control.
 We encourage and support instrument teams in choosing this route and hope they will still engage and collaborate with the SunPy and wider community during their development.
@@ -35,8 +36,33 @@ License
 
 This project is Copyright (c) The SunPy Developers and licensed under the terms of the BSD 3-Clause license.
 This package is based upon the `Openastronomy packaging guide <https://github.com/OpenAstronomy/packaging-guide>`_ which is licensed under the BSD 3-clause licence. See the licenses folder for more information.
+=======
+----------------------
+
+We expect authentic engagement in our community.
+**Do not post the output from Large Language Models or similar generative AI as code, issues or comments on GitHub or any other platform.**
+If you use generative AI tools as an aid in developing code or documentation changes, ensure that you fully understand the proposed changes and can explain why they are the correct approach and an improvement to the current state.
+For more information see our documentation on fair and appropriate `AI usage <https://docs.sunpy.org/en/latest/dev_guide/contents/ai_usage.html>`__.
+
+License
+-------
+
+This project is Copyright (c) The SunPy Community and licensed under
+the terms of the BSD 3-Clause license. This package is based upon
+the `Openastronomy packaging guide <https://github.com/OpenAstronomy/packaging-guide>`__
+which is licensed under the BSD 3-clause licence. See the licenses folder for
+more information.
+>>>>>>>
 
 Code of Conduct
 ---------------
 
+<<<<<<<
 sunkit-instruments follows the SunPy Project's `Code of Conduct <https://sunpy.org/coc>`__
+=======
+Note: This disclaimer was originally written by
+`Adrienne Lowe <https://github.com/adriennefriend>`__ for a
+`PyCon talk <https://www.youtube.com/watch?v=6Uj746j9Heo>`__, and was adapted by
+sunkit-instruments based on its use in the README file for the
+`MetPy project <https://github.com/Unidata/MetPy>`__.
+>>>>>>>
