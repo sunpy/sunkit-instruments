@@ -1,6 +1,13 @@
 ``sunkit-instruments``
 ======================
 
+<<<<<<<
+=======
+A SunPy-affiliated package for solar instruments
+
+Usage of Generative AI
+----------------------
+>>>>>>>
 A SunPy affiliated package for solar instrument-specific tools.
 
 .. image:: http://img.shields.io/badge/powered%20by-SunPy-orange.svg?style=flat
