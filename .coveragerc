@@ -4,6 +4,8 @@ omit =
   sunkit_instruments/*setup_package*
   sunkit_instruments/extern/*
   sunkit_instruments/version*
+  sunkit_instruments/_dev/*
+  */sunkit_instruments/_dev/*
   */sunkit_instruments/conftest.py
   */sunkit_instruments/*setup_package*
   */sunkit_instruments/extern/*
