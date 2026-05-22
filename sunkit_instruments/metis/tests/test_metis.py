@@ -1,11 +1,11 @@
-import pytest
 import numpy as np
+import pytest
 
 from astropy import units as u
-from sunkit_instruments import metis
-from sunpy.map import Map
-from sunpy.map.sources.solo import METISMap
 
+from sunpy.map import Map
+
+from sunkit_instruments import metis
 
 _BASE_METIS_HEADER = {
     "INSTRUME": "METIS",

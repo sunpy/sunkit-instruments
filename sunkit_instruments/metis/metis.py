@@ -1,13 +1,14 @@
 
-import numpy as np
-from astropy import units as u
-
-from sunpy.util.exceptions import warn_user
-
-from astropy.visualization import ImageNormalize
 import copy
 
+import numpy as np
+
+from astropy import units as u
+from astropy.visualization import ImageNormalize
+
 from sunpy.map.sources.solo import METISMap
+from sunpy.util.exceptions import warn_user
+
 
 def mask_occs(metis_map: METISMap, mask_val : np.ndarray = np.nan) -> METISMap:
     """
@@ -119,7 +120,7 @@ def mask_bad_pix(metis_map:METISMap, qmat:np.ndarray , mask_val=np.nan ) -> METI
     # Create mask: keep only pixels with value 1 (good quality)
     qmat_mask = qmat == 1
 
-    
+
     metis_map.data[~qmat_mask] = mask_val
     # Update plot normalization after masking
     img_vlim = metis_map._get_img_vlim()
