@@ -76,9 +76,7 @@ def mask_occs(metis_map: METISMap, mask_val : np.ndarray = np.nan) -> METISMap:
     # Apply masks
     metis_map.data[dist_inncen <= inn_fov] = mask_val
     metis_map.data[dist_outcen >= out_fov] = mask_val
-    # Update plot normalization after masking
-    img_vlim = metis_map._get_img_vlim()
-    metis_map.plot_settings["norm"] = ImageNormalize(vmin=img_vlim[0], vmax=img_vlim[1])
+    
     return metis_map
 
 def mask_bad_pix(metis_map:METISMap, qmat:np.ndarray , mask_val=np.nan ) -> METISMap:
@@ -119,10 +117,6 @@ def mask_bad_pix(metis_map:METISMap, qmat:np.ndarray , mask_val=np.nan ) -> METI
         )
     # Create mask: keep only pixels with value 1 (good quality)
     qmat_mask = qmat == 1
-
-
     metis_map.data[~qmat_mask] = mask_val
-    # Update plot normalization after masking
-    img_vlim = metis_map._get_img_vlim()
-    metis_map.plot_settings["norm"] = ImageNormalize(vmin=img_vlim[0], vmax=img_vlim[1])
+
     return metis_map
