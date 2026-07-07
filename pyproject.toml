@@ -28,6 +28,12 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+chianti = [
+  "ChiantiPy>=0.15.0",
+  "h5netcdf",
+  "numexpr",
+  "periodictable",
+]
 tests = [
   "pytest",
   "pytest-astropy",
