@@ -38,7 +38,7 @@ def chianti_line_list(
         Electron pressure array in K cm^-3. Mutually exclusive with ``density``.
     abundance : `str`, optional
         CHIANTI abundance name, e.g. ``"sun_coronal_2021_chianti"``.
-    wavelength_range : `tuple`, optional
+    wavelength_range : `tuple`
         Two-element (min, max) wavelength range in Angstroms.
     minimum_abundance : `float`, optional
         Minimum elemental abundance to keep.
@@ -67,8 +67,19 @@ def chianti_line_list(
     if not isinstance(temperature, xr.DataArray):
         msg = "temperature must be an xarray.DataArray with a logT dimension"
         raise TypeError(msg)
+    wavelength_range = _validate_wavelength_range(wavelength_range)
     if ion_list is not None and minimum_abundance is not None:
         log.warning("minimum_abundance is set, the ion_list will be ignored")
+
+    with warnings.catch_warnings():
+        # without a chiantirc file, ChiantiPy evaluates os.path.isfile(False)
+        # at import, which raises a RuntimeWarning on Python >= 3.14
+        warnings.simplefilter("ignore", RuntimeWarning)
+        try:
+            import ChiantiPy
+        except ImportError:
+            msg = "ChiantiPy is required for this function, install it with `pip install sunkit-instruments[chianti]`"
+            raise ImportError(msg) from None
 
     if "XUVTOP" not in os.environ:
         msg = (
@@ -79,17 +90,10 @@ def chianti_line_list(
         raise OSError(msg)
 
     with warnings.catch_warnings():
-        # without a chiantirc file, ChiantiPy evaluates os.path.isfile(False)
-        # at import, which raises a RuntimeWarning on Python >= 3.14
         warnings.simplefilter("ignore", RuntimeWarning)
-        try:
-            import ChiantiPy
-            import ChiantiPy.core as ch
-            import ChiantiPy.tools.data as chdata
-            import ChiantiPy.tools.io as chio
-        except ImportError:
-            msg = "ChiantiPy is required for this function, install it with `pip install ChiantiPy`"
-            raise ImportError(msg) from None
+        import ChiantiPy.core as ch
+        import ChiantiPy.tools.data as chdata
+        import ChiantiPy.tools.io as chio
 
     # never let ChiantiPy pop GUI selection dialogs (the rcfile default is
     # gui=True, which hangs headless batch jobs)
@@ -122,6 +126,128 @@ def chianti_line_list(
         elementList=element_list,
     )
 
+    return _dataset_from_chianti_bunch(
+        bunch,
+        temperature,
+        temperature_bc,
+        extra_coord_name,
+        extra_coord,
+        abundance,
+        wavelength_range,
+        ChiantiPy.__version__,
+        chio.versionRead(),
+    )
+
+
+def line_list_cache_path(
+    output_dir: pathlib.Path,
+    abundance: str,
+    wavelength_range,
+    *,
+    density_dependent: bool = False,
+) -> pathlib.Path:
+    """
+    The canonical cache file path used by `get_line_list` for one abundance.
+    """
+    wavelength_range = _validate_wavelength_range(wavelength_range)
+    prefix = "ll_wvl_eDens" if density_dependent else "ll_wvl"
+    lower, upper = (_format_wavelength_bound(bound) for bound in wavelength_range)
+    return pathlib.Path(output_dir) / f"{prefix}{lower}_{upper}_{abundance}.ncdf"
+
+
+def get_line_list(
+    *,
+    output_dir: pathlib.Path,
+    abundance: str,
+    wavelength_range,
+    temperature: xr.DataArray,
+    pressure: xr.DataArray = None,
+    density: xr.DataArray = None,
+    minimum_abundance: float = None,
+    line_list_file: pathlib.Path = None,
+    compute_if_missing: bool = True,
+) -> xr.Dataset:
+    """
+    Load the cached CHIANTI line list for one abundance, computing and
+    caching it when absent.
+
+    The cache file lives in ``output_dir`` and is named from the wavelength
+    range and abundance (``ll_wvl{lo}_{hi}_{abundance}.ncdf``, with an
+    ``_eDens`` prefix variant for density-dependent runs); the name is
+    re-derived per abundance so multiple abundances never share a cache.
+    Writes are atomic (tmp + replace) so concurrent job-array tasks racing
+    on the same missing cache cannot observe a half-written file.
+
+    Parameters
+    ----------
+    output_dir : `pathlib.Path`
+        Directory holding the cache files.
+    abundance : `str`
+        CHIANTI abundance name.
+    wavelength_range : array-like
+        Two-element (min, max) wavelength range in Angstroms.
+    temperature : `xarray.DataArray`
+        Temperature grid in K with a ``logT`` dimension.
+    pressure, density : `xarray.DataArray`, optional
+        Electron pressure grid, or density grid for density-dependent runs
+        (mutually exclusive; both forwarded to `chianti_line_list`).
+    minimum_abundance : `float`, optional
+        Minimum elemental abundance to keep.
+    line_list_file : `pathlib.Path`, optional
+        Explicit cache file to load, bypassing the derived name.
+    compute_if_missing : `bool`, optional
+        If `False`, raise instead of computing when the cache is absent
+        (useful to make job-array tasks fail fast when the preparation
+        step was skipped).
+
+    Returns
+    -------
+    `xarray.Dataset`
+        The line list.
+    """
+    if line_list_file is not None:
+        log.info(f"Loading line list from {line_list_file}")
+        return _load_dataset(line_list_file)
+
+    cache_path = line_list_cache_path(output_dir, abundance, wavelength_range, density_dependent=density is not None)
+
+    if cache_path.exists():
+        log.info(f"Loading line list from {cache_path}")
+        return _load_dataset(cache_path)
+
+    if not compute_if_missing:
+        msg = f"line-list cache {cache_path} does not exist; run the line-list preparation step first"
+        raise FileNotFoundError(msg)
+
+    log.info("Calculating line list")
+    line_list = chianti_line_list(
+        temperature=temperature,
+        pressure=pressure,
+        density=density,
+        abundance=abundance,
+        wavelength_range=wavelength_range,
+        minimum_abundance=minimum_abundance,
+    )
+
+    # write atomically so concurrent job-array tasks racing on the same
+    # missing cache cannot observe a half-written file
+    tmp_path = cache_path.with_name(f"{cache_path.name}.tmp{os.getpid()}")
+    _save_compressed_netcdf(tmp_path, line_list)
+    tmp_path.replace(cache_path)
+    return line_list
+
+
+def _dataset_from_chianti_bunch(
+    bunch,
+    temperature,
+    temperature_bc,
+    extra_coord_name,
+    extra_coord,
+    abundance,
+    wavelength_range,
+    chiantipy_version,
+    chianti_version,
+):
     observed = xr.DataArray(
         bunch.Intensity["obs"] == "Y",
         dims="trans_index",
@@ -194,106 +320,10 @@ def chianti_line_list(
     # cut down linelist to match wavelength range
     in_range = (line_list.wavelength > wavelength_range[0]) * (line_list.wavelength < wavelength_range[1])
 
-    line_list.attrs["Chiantipy"] = ChiantiPy.__version__
-    line_list.attrs["Chianti"] = chio.versionRead()
+    line_list.attrs["Chiantipy"] = chiantipy_version
+    line_list.attrs["Chianti"] = chianti_version
 
     return line_list.isel(trans_index=in_range)
-
-
-def line_list_cache_path(
-    output_dir: pathlib.Path,
-    abundance: str,
-    wavelength_range,
-    *,
-    density_dependent: bool = False,
-) -> pathlib.Path:
-    """
-    The canonical cache file path used by `get_line_list` for one abundance.
-    """
-    prefix = "ll_wvl_eDens" if density_dependent else "ll_wvl"
-    return pathlib.Path(output_dir) / f"{prefix}{int(wavelength_range[0])}_{int(wavelength_range[1])}_{abundance}.ncdf"
-
-
-def get_line_list(
-    *,
-    output_dir: pathlib.Path,
-    abundance: str,
-    wavelength_range,
-    temperature: xr.DataArray,
-    pressure: xr.DataArray = None,
-    density: xr.DataArray = None,
-    minimum_abundance: float = None,
-    line_list_file: pathlib.Path = None,
-    compute_if_missing: bool = True,
-) -> xr.Dataset:
-    """
-    Load the cached CHIANTI line list for one abundance, computing and
-    caching it when absent.
-
-    The cache file lives in ``output_dir`` and is named from the wavelength
-    range and abundance (``ll_wvl{lo}_{hi}_{abundance}.ncdf``, with an
-    ``_eDens`` prefix variant for density-dependent runs); the name is
-    re-derived per abundance so multiple abundances never share a cache.
-    Writes are atomic (tmp + replace) so concurrent job-array tasks racing
-    on the same missing cache cannot observe a half-written file.
-
-    Parameters
-    ----------
-    output_dir : `pathlib.Path`
-        Directory holding the cache files.
-    abundance : `str`
-        CHIANTI abundance name.
-    wavelength_range : array-like
-        Two-element (min, max) wavelength range in Angstroms.
-    temperature : `xarray.DataArray`
-        Temperature grid in K with a ``logT`` dimension.
-    pressure, density : `xarray.DataArray`, optional
-        Electron pressure grid, or density grid for density-dependent runs
-        (mutually exclusive; both forwarded to `chianti_line_list`).
-    minimum_abundance : `float`, optional
-        Minimum elemental abundance to keep.
-    line_list_file : `pathlib.Path`, optional
-        Explicit cache file to load, bypassing the derived name.
-    compute_if_missing : `bool`, optional
-        If `False`, raise instead of computing when the cache is absent
-        (useful to make job-array tasks fail fast when the preparation
-        step was skipped).
-
-    Returns
-    -------
-    `xarray.Dataset`
-        The line list.
-    """
-    if line_list_file is not None:
-        log.info(f"Loading line list from {line_list_file}")
-        return xr.open_dataset(line_list_file).compute()
-
-    cache_path = line_list_cache_path(output_dir, abundance, wavelength_range, density_dependent=density is not None)
-
-    if cache_path.exists():
-        log.info(f"Loading line list from {cache_path}")
-        return xr.open_dataset(cache_path).compute()
-
-    if not compute_if_missing:
-        msg = f"line-list cache {cache_path} does not exist; run the line-list preparation step first"
-        raise FileNotFoundError(msg)
-
-    log.info("Calculating line list")
-    line_list = chianti_line_list(
-        temperature=temperature,
-        pressure=pressure,
-        density=density,
-        abundance=abundance,
-        wavelength_range=wavelength_range,
-        minimum_abundance=minimum_abundance,
-    )
-
-    # write atomically so concurrent job-array tasks racing on the same
-    # missing cache cannot observe a half-written file
-    tmp_path = cache_path.with_name(f"{cache_path.name}.tmp{os.getpid()}")
-    _save_compressed_netcdf(tmp_path, line_list)
-    tmp_path.replace(cache_path)
-    return line_list
 
 
 def _save_compressed_netcdf(path: pathlib.Path, dataset: xr.Dataset) -> None:
@@ -301,3 +331,21 @@ def _save_compressed_netcdf(path: pathlib.Path, dataset: xr.Dataset) -> None:
     # h5netcdf rather than netCDF4: the netCDF4 C bindings fail writing
     # variable-length string variables under numpy >= 2.5
     dataset.to_netcdf(path, encoding=encoding, mode="w", engine="h5netcdf")
+
+
+def _load_dataset(path: pathlib.Path) -> xr.Dataset:
+    with xr.open_dataset(path) as dataset:
+        return dataset.load()
+
+
+def _validate_wavelength_range(wavelength_range):
+    try:
+        lower, upper = wavelength_range
+    except (TypeError, ValueError):
+        msg = "wavelength_range must contain exactly two values"
+        raise ValueError(msg) from None
+    return lower, upper
+
+
+def _format_wavelength_bound(bound):
+    return f"{float(np.asarray(bound).item()):g}"

@@ -35,6 +35,10 @@ chianti = [
   "periodictable",
 ]
 tests = [
+  "ChiantiPy>=0.15.0",
+  "h5netcdf",
+  "numexpr",
+  "periodictable",
   "pytest",
   "pytest-astropy",
   "pytest-doctestplus",

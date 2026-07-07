@@ -2,9 +2,6 @@
 Spectral response functions built from CHIANTI line lists.
 """
 
-import time
-import logging
-
 import numpy as np
 import xarray as xr
 
@@ -13,7 +10,7 @@ import astropy.units as u
 
 __all__ = ["create_response_function"]
 
-log = logging.getLogger(__name__)
+_GAUSSIAN_EXPRESSION = "gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width"
 
 
 def create_response_function(
@@ -28,7 +25,6 @@ def create_response_function(
     num_wavelength_bins: int = None,
     effective_area: xr.DataArray = None,
     num_lines_keep: int = 2,
-    verbose: bool = False,
     band=None,
     window_sigma: float = None,
 ) -> xr.Dataset:
@@ -65,8 +61,6 @@ def create_response_function(
     num_lines_keep : `int`, optional
         Number of lines kept individually (in line-list order); the rest
         are summed into a single "remaining lines" entry, by default 2.
-    verbose : `bool`, optional
-        Log progress, by default `False`.
     band : `str`, optional
         Bandpass label used for the summed-lines entry. If `None` it is
         taken from a ``band`` coordinate of ``line_list`` when present.
@@ -94,80 +88,40 @@ def create_response_function(
     try:
         import periodictable as pt
     except ImportError:
-        msg = "periodictable required for this function, please install it with `pip install periodictable`"
+        msg = "periodictable is required for this function, install it with `pip install sunkit-instruments[chianti]`"
         raise ImportError(msg) from None
 
     try:
         import numexpr as ne
     except ImportError:
-        msg = "numexpr required for this function, please install it with `pip install numexpr`"
+        msg = "numexpr is required for this function, install it with `pip install sunkit-instruments[chianti]`"
         raise ImportError(msg) from None
 
     CC_kms = const.c.to(u.km / u.s).value  # Light speed (km/s)
     CC_ms = const.c.to(u.m / u.s).value  # Light speed (m/s)
-    KB = const.k_B.to(u.J / u.K).value  # Boltzman constant (J/K = kg m^2/K/s^2)
+    KB = const.k_B.to(u.J / u.K).value  # Boltzmann constant (J/K = kg m^2/K/s^2)
     MP = const.m_p.to(u.kg).value  # Proton mass (kg)
-
-    if wavelength_range is None:
-        # take the shortest and longest wavelength lines with 1 Angstrom of padding on either side.
-        wavelength_range = [line_list.wavelength.min().data - 1, line_list.wavelength.max().data + 1]
-        log.info(f"Using wavelength range of {wavelength_range}")
-
-    if num_wavelength_bins:
-        if isinstance(wavelength_range[0], xr.DataArray) or isinstance(wavelength_range[1], xr.DataArray):
-            # endpoints may carry extra dims (e.g. order); broadcast them
-            # together so the wavelength grid inherits those dims.
-            # np.linspace cannot operate on xarray objects directly
-            # (https://github.com/pydata/xarray/issues/9043)
-            lo, hi = xr.broadcast(xr.DataArray(wavelength_range[0]), xr.DataArray(wavelength_range[1]))
-            wavelength_grid = xr.DataArray(
-                np.linspace(lo.values, hi.values, num=num_wavelength_bins),
-                dims=("wavelength", *lo.dims),
-                coords=lo.coords,
-            )
-        else:
-            wavelength_grid = xr.DataArray(
-                np.linspace(wavelength_range[0], wavelength_range[1], num=num_wavelength_bins), dims="wavelength"
-            )
-    else:
-        if isinstance(wavelength_range[0], xr.DataArray) and wavelength_range[0].ndim > 0:
-            msg = (
-                "wavelength_range endpoints with extra dims (e.g. order) require num_wavelength_bins; "
-                "np.arange only supports scalar endpoints"
-            )
-            raise ValueError(msg)
-        wavelength_grid = xr.DataArray(
-            np.arange(wavelength_range[0], wavelength_range[1] + wavelength_step_mA / 1e3, wavelength_step_mA / 1e3),  # [A]
-            dims="wavelength",
-        )
-
-    if vdop is not None:
-        if isinstance(vdop, u.Quantity):
-            vdop = vdop.to(u.km / u.s).value
-
-        vdop = xr.DataArray(
-            data=vdop,
-            dims="vdop",
-            coords={"vdop": vdop},
-        )
-
-        line_centers = line_list["wavelength"] * (1 + vdop / CC_kms)
-    else:
-        line_centers = line_list["wavelength"]
-
-    if nonthermal_velocity is not None:
-        if isinstance(nonthermal_velocity, u.Quantity):
-            nonthermal_velocity = nonthermal_velocity.to(u.km / u.s).value
-
-        nonthermal_velocity = xr.DataArray(
-            data=nonthermal_velocity,
-            dims="nonthermal_velocity",
-            coords={"nonthermal_velocity": nonthermal_velocity},
-        )
 
     # logic for single line response function
     if "trans_index" not in line_list.dims:
         line_list = line_list.expand_dims("trans_index")
+    _validate_line_list(line_list)
+
+    wavelength_grid = _make_wavelength_grid(line_list, wavelength_range, wavelength_step_mA, num_wavelength_bins)
+
+    if window_sigma is not None and wavelength_grid.ndim != 1:
+        msg = "window_sigma only supports one-dimensional wavelength grids"
+        raise ValueError(msg)
+
+    if vdop is not None:
+        vdop = _velocity_axis(vdop, "vdop")
+        line_centers = line_list["wavelength"] * (1 + vdop / CC_kms)
+    else:
+        line_centers = line_list["wavelength"]
+    if nonthermal_velocity is not None:
+        nonthermal_velocity = _velocity_axis(nonthermal_velocity, "nonthermal_velocity")
+
+    atomic_mass = _atomic_mass_from_atomic_number(line_list.atomic_number, pt.elements, MP)
 
     responses = []
     num_lines = line_list.sizes["trans_index"]
@@ -181,16 +135,10 @@ def create_response_function(
     contaminant_wavelength_axis = None
     contaminant_coords = None
     for i in range(num_lines):
-        start_time = time.perf_counter()
-
         line_center = line_centers.isel(trans_index=i)
 
-        atomic_numbers = line_list.atomic_number.isel(trans_index=i)
-        atomic_mass = atomic_numbers.copy()
-        mass = np.array([pt.elements[z].mass for z in atomic_numbers.data.reshape(-1)])
-        atomic_mass.data = mass.reshape(atomic_mass.data.shape) * MP
-
-        thermal_velocity = np.sqrt(KB * 10**line_list.logT / atomic_mass)
+        line_atomic_mass = atomic_mass.isel(trans_index=i)
+        thermal_velocity = np.sqrt(KB * 10**line_list.logT / line_atomic_mass)
         thermal_line_width = line_center * thermal_velocity / CC_ms  # (AA) sigma
 
         if nonthermal_velocity is not None:
@@ -204,11 +152,15 @@ def create_response_function(
 
         if i < num_lines_keep:
             # kept line, stored individually (few lines; full grid is cheap here)
-            shift = (wavelength_grid - line_center).broadcast_like(line_list.gofnt.isel(trans_index=0))
-            width, shift = xr.broadcast(doppler_width, shift)
-            gofnt_scaled = line_list.gofnt.isel(trans_index=i).broadcast_like(width) / normalization
-            gofnt_scaled, width, shift = xr.broadcast(gofnt_scaled, width, shift)
-            line_response = ne.evaluate("gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width")  # (1/AA)
+            line_response, gofnt_scaled = _evaluate_gaussian_response(
+                ne,
+                wavelength_grid,
+                line_center,
+                doppler_width,
+                line_list.gofnt.isel(trans_index=i),
+                normalization,
+                gaussian_norm,
+            )
             line_response = xr.DataArray(line_response, dims=gofnt_scaled.dims, coords=gofnt_scaled.coords)
             line_response = line_response.expand_dims("line")
 
@@ -231,13 +183,15 @@ def create_response_function(
             i0 = max(0, int(np.searchsorted(grid_values, center_values.min() - window_sigma * sigma_max)))
             i1 = min(num_wavelengths, int(np.searchsorted(grid_values, center_values.max() + window_sigma * sigma_max)))
             if i0 < i1:
-                shift = (wavelength_grid.isel(wavelength=slice(i0, i1)) - line_center).broadcast_like(
-                    line_list.gofnt.isel(trans_index=0)
+                block, gofnt_scaled = _evaluate_gaussian_response(
+                    ne,
+                    wavelength_grid.isel(wavelength=slice(i0, i1)),
+                    line_center,
+                    doppler_width,
+                    line_list.gofnt.isel(trans_index=i),
+                    normalization,
+                    gaussian_norm,
                 )
-                width, shift = xr.broadcast(doppler_width, shift)
-                gofnt_scaled = line_list.gofnt.isel(trans_index=i).broadcast_like(width) / normalization
-                gofnt_scaled, width, shift = xr.broadcast(gofnt_scaled, width, shift)
-                block = ne.evaluate("gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width")
                 if contaminant_accumulator is None:
                     contaminant_dims = gofnt_scaled.dims
                     contaminant_wavelength_axis = contaminant_dims.index("wavelength")
@@ -252,33 +206,46 @@ def create_response_function(
                 window = [slice(None)] * contaminant_accumulator.ndim
                 window[contaminant_wavelength_axis] = slice(i0, i1)
                 contaminant_accumulator[tuple(window)] += block
+            elif contaminant_accumulator is None:
+                gofnt_scaled = _response_template(
+                    wavelength_grid,
+                    line_center,
+                    doppler_width,
+                    line_list.gofnt.isel(trans_index=i),
+                    normalization,
+                )
+                contaminant_dims = gofnt_scaled.dims
+                contaminant_wavelength_axis = contaminant_dims.index("wavelength")
+                contaminant_accumulator = np.zeros(gofnt_scaled.shape)
+                contaminant_coords = {d: gofnt_scaled.coords[d] for d in gofnt_scaled.coords}
 
         else:
             # full-grid contaminant accumulation (original exact path)
-            shift = (wavelength_grid - line_center).broadcast_like(line_list.gofnt.isel(trans_index=0))
-            width, shift = xr.broadcast(doppler_width, shift)
-            gofnt_scaled = line_list.gofnt.isel(trans_index=i).broadcast_like(width) / normalization
-            gofnt_scaled, width, shift = xr.broadcast(gofnt_scaled, width, shift)
-            if not summed_lines_included:
-                summed_lines_included = True
-                contaminant_response = ne.evaluate("gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width")
-            else:
-                contaminant_response = ne.evaluate(
-                    "gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width + contaminant_response"
-                )
-
-        if verbose:
-            remainder = (num_lines - i) % 250
-            end_time = time.perf_counter()
-            time_remaining = (num_lines - i) * (end_time - start_time)
-            if remainder == 0:
-                log.info(f"{num_lines - i} lines remaining and {time_remaining:.0f} seconds")
+            contaminant_response, gofnt_scaled = _evaluate_gaussian_response(
+                ne,
+                wavelength_grid,
+                line_center,
+                doppler_width,
+                line_list.gofnt.isel(trans_index=i),
+                normalization,
+                gaussian_norm,
+                accumulator=contaminant_response if summed_lines_included else None,
+            )
+            summed_lines_included = True
 
     if summed_lines_included:
         if window_sigma is not None:
-            contaminant_response = xr.DataArray(contaminant_accumulator, dims=contaminant_dims, coords=contaminant_coords)
+            contaminant_response = xr.DataArray(
+                contaminant_accumulator,
+                dims=contaminant_dims,
+                coords=contaminant_coords,
+            )
         else:
-            contaminant_response = xr.DataArray(contaminant_response, dims=gofnt_scaled.dims, coords=gofnt_scaled.coords)
+            contaminant_response = xr.DataArray(
+                contaminant_response,
+                dims=gofnt_scaled.dims,
+                coords=gofnt_scaled.coords,
+            )
         contaminant_response = contaminant_response.expand_dims("line")
         # overwrite line coord with correct label
         if band is None:
@@ -338,3 +305,107 @@ def create_response_function(
     ds.attrs["normalization"] = normalization
 
     return ds
+
+
+def _velocity_axis(values, dim):
+    if isinstance(values, u.Quantity):
+        values = values.to(u.km / u.s).value
+    values = np.atleast_1d(values)
+    return xr.DataArray(values, dims=dim, coords={dim: values})
+
+
+def _make_wavelength_grid(line_list, wavelength_range, wavelength_step_mA, num_wavelength_bins):
+    if wavelength_range is None:
+        # shortest and longest line wavelengths, with 1 Angstrom of padding
+        wavelength_range = [line_list.wavelength.min().data - 1, line_list.wavelength.max().data + 1]
+
+    if num_wavelength_bins:
+        if isinstance(wavelength_range[0], xr.DataArray) or isinstance(wavelength_range[1], xr.DataArray):
+            # np.linspace cannot operate on xarray objects directly
+            # (https://github.com/pydata/xarray/issues/9043)
+            lower, upper = xr.broadcast(xr.DataArray(wavelength_range[0]), xr.DataArray(wavelength_range[1]))
+            return xr.DataArray(
+                np.linspace(lower.values, upper.values, num=num_wavelength_bins),
+                dims=("wavelength", *lower.dims),
+                coords=lower.coords,
+            )
+        return xr.DataArray(
+            np.linspace(wavelength_range[0], wavelength_range[1], num=num_wavelength_bins), dims="wavelength"
+        )
+
+    if isinstance(wavelength_range[0], xr.DataArray) and wavelength_range[0].ndim > 0:
+        msg = (
+            "wavelength_range endpoints with extra dims (e.g. order) require num_wavelength_bins; "
+            "np.arange only supports scalar endpoints"
+        )
+        raise ValueError(msg)
+    return xr.DataArray(
+        np.arange(wavelength_range[0], wavelength_range[1] + wavelength_step_mA / 1e3, wavelength_step_mA / 1e3),  # [A]
+        dims="wavelength",
+    )
+
+
+def _validate_line_list(line_list):
+    if not isinstance(line_list, xr.Dataset):
+        msg = "line_list must be an xarray.Dataset"
+        raise TypeError(msg)
+    missing = [name for name in ("wavelength", "atomic_number", "gofnt", "full_name") if name not in line_list]
+    if missing:
+        msg = f"line_list is missing required variables: {', '.join(missing)}"
+        raise ValueError(msg)
+    if "logT" not in line_list.coords:
+        msg = "line_list must include a logT coordinate"
+        raise ValueError(msg)
+    missing_trans_index = [
+        name
+        for name in ("wavelength", "atomic_number", "gofnt", "full_name")
+        if "trans_index" not in line_list[name].dims
+    ]
+    if missing_trans_index:
+        msg = f"line_list variables must include a trans_index dimension: {', '.join(missing_trans_index)}"
+        raise ValueError(msg)
+
+
+def _atomic_mass_from_atomic_number(atomic_number, elements, proton_mass):
+    atomic_mass = atomic_number.copy()
+    masses = np.array([elements[int(z)].mass for z in atomic_mass.data.reshape(-1)])
+    atomic_mass.data = masses.reshape(atomic_mass.shape) * proton_mass
+    return atomic_mass
+
+
+def _broadcast_response_inputs(wavelength_grid, line_center, doppler_width, gofnt, normalization):
+    shift = (wavelength_grid - line_center).broadcast_like(gofnt)
+    width, shift = xr.broadcast(doppler_width, shift)
+    gofnt_scaled = gofnt.broadcast_like(width) / normalization
+    return xr.broadcast(gofnt_scaled, width, shift)
+
+
+def _response_template(wavelength_grid, line_center, doppler_width, gofnt, normalization):
+    return _broadcast_response_inputs(wavelength_grid, line_center, doppler_width, gofnt, normalization)[0]
+
+
+def _evaluate_gaussian_response(
+    numexpr,
+    wavelength_grid,
+    line_center,
+    doppler_width,
+    gofnt,
+    normalization,
+    gaussian_norm,
+    *,
+    accumulator=None,
+):
+    gofnt_scaled, width, shift = _broadcast_response_inputs(
+        wavelength_grid, line_center, doppler_width, gofnt, normalization
+    )
+    local_dict = {
+        "gofnt_scaled": gofnt_scaled.data,
+        "shift": shift.data,
+        "width": width.data,
+        "gaussian_norm": gaussian_norm,
+    }
+    expression = _GAUSSIAN_EXPRESSION
+    if accumulator is not None:
+        local_dict["accumulator"] = accumulator
+        expression = f"{expression} + accumulator"
+    return numexpr.evaluate(expression, local_dict=local_dict), gofnt_scaled

@@ -70,6 +70,25 @@ class TestCreateResponseFunctionScalar:
             expected = float(ll.wavelength[0]) * (1 + v / c_kms)
             assert abs(peak_wvl - expected) < 3e-3
 
+    def test_scalar_velocity_inputs(self):
+        ll = synthetic_line_list(1)
+        resp = create_response_function(
+            ll,
+            vdop=0.0 * u.km / u.s,
+            nonthermal_velocity=0.0,
+            instrumental_width=0.02,
+            wavelength_range=[170.0, 172.0],
+            wavelength_step_mA=2.0,
+            num_lines_keep=1,
+        )
+        assert resp.response.sizes["vdop"] == 1
+        assert resp.response.sizes["nonthermal_velocity"] == 1
+
+    def test_missing_line_list_fields_raises(self):
+        ll = synthetic_line_list(1).drop_vars("atomic_number")
+        with pytest.raises(ValueError, match="atomic_number"):
+            create_response_function(ll, wavelength_range=[170.0, 172.0], num_lines_keep=1)
+
 
 class TestCreateResponseFunctionOrderDims:
     def test_instrumental_width_order_dim(self):
@@ -111,6 +130,18 @@ class TestCreateResponseFunctionOrderDims:
         with pytest.raises(ValueError, match="num_wavelength_bins"):
             create_response_function(
                 ll, vdop=VDOP, instrumental_width=0.02, wavelength_range=wavelength_range, num_lines_keep=1
+            )
+
+    def test_window_requires_one_dimensional_wavelength_grid(self):
+        ll = synthetic_line_list(3)
+        wavelength_range = [171.0 * 2 / ORDERS - 1.0, 171.0 * 2 / ORDERS + 1.0]
+        with pytest.raises(ValueError, match="one-dimensional"):
+            create_response_function(
+                ll,
+                wavelength_range=wavelength_range,
+                num_wavelength_bins=64,
+                num_lines_keep=0,
+                window_sigma=8.0,
             )
 
     def test_contam_sum_with_order_dim(self):
@@ -182,3 +213,14 @@ class TestWindowedContaminants:
         win = create_response_function(ll, window_sigma=8.0, **kw)
         peak = float(np.abs(full["response"]).max())
         xr.testing.assert_allclose(full["response"], win["response"], atol=peak * 1e-9)
+
+    def test_window_off_grid_contaminants_are_zero(self):
+        ll = synthetic_line_list(1, wavelength=[500.0])
+        resp = create_response_function(
+            ll,
+            wavelength_range=[100.0, 101.0],
+            num_lines_keep=0,
+            window_sigma=8.0,
+        )
+        assert resp.response.dtype.kind != "O"
+        assert not resp.response.any()

@@ -31,7 +31,7 @@ def fake_linelist():
 
 def test_cache_path_naming(tmp_path):
     path = line_list_cache_path(tmp_path, "sun_coronal_2021_chianti", (100.5, 110.9))
-    assert path == tmp_path / "ll_wvl100_110_sun_coronal_2021_chianti.ncdf"
+    assert path == tmp_path / "ll_wvl100.5_110.9_sun_coronal_2021_chianti.ncdf"
     path = line_list_cache_path(tmp_path, "abund", (100, 110), density_dependent=True)
     assert path.name == "ll_wvl_eDens100_110_abund.ncdf"
 
@@ -83,6 +83,13 @@ def test_rejects_both_density_and_pressure():
         chianti_line_list(temperature, density=grid, pressure=grid)
     with pytest.raises(ValueError, match="exactly one"):
         chianti_line_list(temperature)
+
+
+def test_rejects_missing_wavelength_range():
+    temperature = xr.DataArray([1e6], dims="logT")
+    pressure = xr.DataArray([3e15], dims="pressure")
+    with pytest.raises(ValueError, match="wavelength_range"):
+        chianti_line_list(temperature, pressure=pressure)
 
 
 def test_missing_xuvtop_raises(monkeypatch):
