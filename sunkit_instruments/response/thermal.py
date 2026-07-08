@@ -5,18 +5,44 @@ import xarray
 
 import astropy.units as u
 
+from sunkit_instruments.response.abstractions import EmissionModel
+
 __all__ = ["SourceSpectra", "get_temperature_response"]
+
+
+class _ChannelAtObstime:
+    """
+    Adapter for emission models that call ``channel.wavelength_response()``
+    without an ``obstime`` argument.
+    """
+
+    def __init__(self, channel, obstime):
+        self._channel = channel
+        self._obstime = obstime
+
+    def __getattr__(self, name):
+        return getattr(self._channel, name)
+
+    def wavelength_response(self):
+        return self._channel.wavelength_response(obstime=self._obstime)
 
 
 def get_temperature_response(channel, spectra, obstime=None):
     """
     Calculate the temperature response function for a given instrument channel
-    and input spectra.
+    and input source.
 
     Parameters
     ----------
     channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
-    spectra: `~sunkit_instruments.response.SourceSpectra`
+    spectra: `~sunkit_instruments.response.SourceSpectra` or emission model
+        The source used to calculate the temperature response. In addition to
+        `~sunkit_instruments.response.SourceSpectra`, this can be any
+        emission model conforming to
+        `~sunkit_instruments.response.abstractions.EmissionModel` (a
+        ``temperature`` attribute and a
+        ``calculate_temperature_response(channel)`` method), e.g.
+        `synthesizAR.atomic.EmissionModel`.
     obstime: any format parsed by `sunpy.time.parse_time` , optional
 
     Returns
@@ -27,8 +53,17 @@ def get_temperature_response(channel, spectra, obstime=None):
     See Also
     --------
     sunkit_instruments.response.SourceSpectra.temperature_response
+    sunkit_instruments.response.abstractions.EmissionModel
     """
-    return spectra.temperature, spectra.temperature_response(channel, obstime=obstime)
+    if hasattr(spectra, "temperature_response"):
+        return spectra.temperature, spectra.temperature_response(channel, obstime=obstime)
+    if isinstance(spectra, EmissionModel):
+        response_channel = channel if obstime is None else _ChannelAtObstime(channel, obstime)
+        return spectra.temperature, spectra.calculate_temperature_response(response_channel)
+    raise TypeError(
+        "spectra must define either temperature_response(channel, obstime=...) "
+        "or calculate_temperature_response(channel)"
+    )
 
 
 class SourceSpectra:

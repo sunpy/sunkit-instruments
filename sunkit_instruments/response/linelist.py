@@ -10,7 +10,13 @@ import warnings
 import numpy as np
 import xarray as xr
 
-__all__ = ["chianti_line_list", "get_line_list", "line_list_cache_path"]
+__all__ = [
+    "LineListEmissionModel",
+    "chianti_line_list",
+    "get_line_list",
+    "line_list_cache_path",
+    "line_list_from_emission_model",
+]
 
 log = logging.getLogger(__name__)
 
@@ -322,6 +328,7 @@ def _dataset_from_chianti_bunch(
 
     line_list.attrs["Chiantipy"] = chiantipy_version
     line_list.attrs["Chianti"] = chianti_version
+    line_list.gofnt.attrs["units"] = "erg cm3 / (s sr)"
 
     return line_list.isel(trans_index=in_range)
 
@@ -333,8 +340,182 @@ def _save_compressed_netcdf(path: pathlib.Path, dataset: xr.Dataset) -> None:
     dataset.to_netcdf(path, encoding=encoding, mode="w", engine="h5netcdf")
 
 
+class LineListEmissionModel:
+    """
+    A line-list dataset as an emission model for temperature responses.
+
+    Wraps a line list (from `chianti_line_list`, `get_line_list` or
+    `line_list_from_emission_model`) so it conforms to the
+    `~sunkit_instruments.response.abstractions.EmissionModel` protocol and can
+    be passed to `~sunkit_instruments.response.get_temperature_response`.
+
+    The response evaluates the channel's wavelength response at each line
+    centre (a delta-function approximation: no thermal broadening, accurate
+    to the variation of the wavelength response across a line profile) and
+    sums ``gofnt`` x response over all transitions.
+
+    Parameters
+    ----------
+    line_list : `xarray.Dataset`
+        Line list with ``wavelength``, ``gofnt`` and a ``logT`` coordinate.
+        Grid dimensions other than ``logT`` and ``trans_index`` (pressure,
+        density, abundance) must have size one — select a single entry first.
+    gofnt_unit : `str`, optional
+        Unit of ``gofnt``; by default read from its ``units`` attribute,
+        falling back to the ChiantiPy convention ``erg cm3 / (s sr)``.
+    """
+
+    def __init__(self, line_list: xr.Dataset, gofnt_unit: str = None):
+        import astropy.units as u
+
+        for dim in set(line_list.gofnt.dims) - {"logT", "trans_index"}:
+            if line_list.sizes[dim] != 1:
+                msg = f"line_list must have a single {dim}; select one before building the model"
+                raise ValueError(msg)
+            line_list = line_list.isel({dim: 0}, drop=True)
+        self.line_list = line_list
+        self._gofnt_unit = u.Unit(
+            gofnt_unit if gofnt_unit is not None else line_list.gofnt.attrs.get("units", "erg cm3 / (s sr)")
+        )
+
+    @property
+    def temperature(self):
+        import astropy.units as u
+
+        return 10 ** self.line_list.logT.data * u.K
+
+    def calculate_temperature_response(self, channel):
+        """
+        Temperature response of ``channel`` for this line list.
+
+        ``channel`` is compatible with
+        `~sunkit_instruments.response.abstractions.AbstractChannel`.
+        """
+        import astropy.constants as const
+        import astropy.units as u
+
+        wave_response = channel.wavelength_response()
+        line_wavelength = u.Quantity(self.line_list.wavelength.data, u.AA)
+        response_at_lines = np.interp(
+            line_wavelength.to_value(channel.wavelength.unit),
+            channel.wavelength.value,
+            wave_response.value,
+            left=0.0,
+            right=0.0,
+        )
+        # gofnt is an energy emissivity; the wavelength response is per photon
+        photons_per_erg = 1 / (const.h * const.c / line_wavelength).to_value(u.erg)
+        weight = xr.DataArray(response_at_lines * photons_per_erg, dims="trans_index")
+        response = (self.line_list.gofnt * weight).sum("trans_index")
+        unit = self._gofnt_unit * wave_response.unit * u.photon / u.erg
+        return u.Quantity(response.data, unit)
+
+
+def line_list_from_emission_model(
+    model,
+    *,
+    include_ionization_fraction: bool = True,
+    abundance_label: str = "model",
+) -> xr.Dataset:
+    """
+    Build a line list from an emission model's per-transition emissivities.
+
+    Converts the line emissivities of a
+    `~sunkit_instruments.response.abstractions.LineEmissionModel` (e.g.
+    `synthesizAR.atomic.EmissionModel`, backed by fiasco) into the line-list
+    dataset consumed by
+    `~sunkit_instruments.response.create_response_function`, matching the
+    `chianti_line_list` schema and its gofnt convention
+    (``erg cm3 s-1 sr-1``, equilibrium ionization fraction and abundance
+    included).
+
+    Parameters
+    ----------
+    model : `~sunkit_instruments.response.abstractions.LineEmissionModel`
+        Emission model exposing ``temperature``, ``density``, iteration over
+        ions, and ``get_line_emissivity(ion)`` returning per-transition
+        photon emissivities that exclude the ionization fraction (the
+        synthesizAR convention).
+    include_ionization_fraction : `bool`, optional
+        Multiply each ion's equilibrium ionization fraction into the gofnt,
+        by default `True`. Set to `False` to keep the model's convention of
+        deferring it (e.g. for time-dependent ionization).
+    abundance_label : `str`, optional
+        Label for the singleton ``abundance`` coordinate.
+
+    Returns
+    -------
+    `xarray.Dataset`
+        Line list with ``wavelength``, ``gofnt``, ``atomic_number``,
+        ``ion_name``, ``spectroscopic_name`` and ``full_name`` along
+        ``trans_index``, sorted by wavelength.
+    """
+    import astropy.constants as const
+    import astropy.units as u
+
+    gofnt_unit = u.Unit("erg cm3 s-1 sr-1")
+    wavelengths = []
+    gofnts = []
+    atomic_numbers = []
+    ion_names = []
+    spectroscopic_names = []
+    for ion in model:
+        wavelength, emissivity = model.get_line_emissivity(ion)
+        if wavelength.size == 0 or not np.any(wavelength.value):
+            # placeholder entry for ions without level-population data
+            continue
+        if include_ionization_fraction:
+            emissivity = emissivity * ion.ionization_fraction[:, np.newaxis, np.newaxis]
+        # photon -> energy emissivity, per steradian (the ChiantiPy gofnt
+        # convention used throughout this subpackage)
+        photon_energy = (const.h * const.c / wavelength).to(u.erg) / u.photon
+        gofnt = (emissivity * photon_energy / (4 * np.pi * u.sr)).to_value(gofnt_unit)
+        n_transitions = wavelength.size
+        wavelengths.append(wavelength.to_value(u.AA))
+        gofnts.append(gofnt)
+        atomic_numbers.append(np.full(n_transitions, ion.atomic_number))
+        ion_names.append(np.full(n_transitions, getattr(ion, "ion_name", "")))
+        spectroscopic_names.append(np.full(n_transitions, ion.ion_name_roman))
+
+    if not gofnts:
+        msg = "emission model produced no line emissivities"
+        raise ValueError(msg)
+
+    wavelengths = np.concatenate(wavelengths)
+    # (logT, density, trans_index) -> (logT, density, abundance, trans_index)
+    gofnt = np.concatenate(gofnts, axis=-1)[..., np.newaxis, :]
+    atomic_numbers = np.concatenate(atomic_numbers)
+    ion_names = np.concatenate(ion_names)
+    spectroscopic_names = np.concatenate(spectroscopic_names)
+    order = np.argsort(wavelengths)
+
+    line_list = xr.Dataset(
+        {
+            "wavelength": ("trans_index", wavelengths[order]),
+            "gofnt": (("logT", "density", "abundance", "trans_index"), gofnt[..., order]),
+            "atomic_number": ("trans_index", atomic_numbers[order]),
+            "ion_name": ("trans_index", ion_names[order]),
+            "spectroscopic_name": ("trans_index", spectroscopic_names[order]),
+        },
+        coords={
+            "logT": np.log10(model.temperature.to_value(u.K)),
+            "density": model.density.to_value(u.cm**-3),
+            "abundance": np.array([abundance_label]),
+        },
+    )
+    full_name = [
+        f"{name} {wavelength:.3f}"
+        for name, wavelength in zip(line_list.spectroscopic_name.values, line_list.wavelength.values, strict=True)
+    ]
+    line_list["full_name"] = ("trans_index", np.array(full_name, dtype=object))
+    line_list.gofnt.attrs["units"] = str(gofnt_unit)
+    return line_list
+
+
 def _load_dataset(path: pathlib.Path) -> xr.Dataset:
-    with xr.open_dataset(path) as dataset:
+    # h5netcdf to match _save_compressed_netcdf (it also reads netCDF4-written
+    # HDF5 files); the netCDF4 C bindings misbehave under numpy >= 2.5
+    with xr.open_dataset(path, engine="h5netcdf") as dataset:
         return dataset.load()
 
 

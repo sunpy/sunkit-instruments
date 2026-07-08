@@ -8,9 +8,71 @@ import xarray as xr
 import astropy.constants as const
 import astropy.units as u
 
-__all__ = ["create_response_function"]
+__all__ = ["create_response_function", "get_spectral_response"]
 
 _GAUSSIAN_EXPRESSION = "gofnt_scaled * exp(-0.5 * (shift / width)**2) / gaussian_norm / width"
+
+
+def get_spectral_response(channel, model, *, vdop=None, wavelength_range=None, **kwargs):
+    """
+    Spectrally-resolved response function of a channel for an emission model.
+
+    The spectral counterpart of
+    `~sunkit_instruments.response.get_temperature_response`: instead of
+    integrating over wavelength, the emission is broadened by the thermal
+    (and instrumental) line width on a wavelength grid, optionally with a
+    Doppler-velocity axis — the form needed for spectrograph forward
+    modelling and inversions.
+
+    Parameters
+    ----------
+    channel : `~sunkit_instruments.response.abstractions.AbstractChannel`
+        Its ``wavelength`` and ``effective_area()`` define the instrument;
+        an ``instrumental_width`` attribute (Angstrom `~astropy.units.Quantity`)
+        is used as the instrumental line width when present.
+    model : `~sunkit_instruments.response.abstractions.LineEmissionModel` or `xarray.Dataset`
+        Emission model converted via
+        `~sunkit_instruments.response.line_list_from_emission_model`, or an
+        already-built line-list dataset (e.g. from
+        `~sunkit_instruments.response.chianti_line_list`).
+    vdop : array-like, optional
+        Doppler-velocity axis in km/s, forwarded to
+        `create_response_function`.
+    wavelength_range : array-like, optional
+        Two-element (min, max) output wavelength range in Angstroms; by
+        default the channel's wavelength extent.
+    kwargs
+        Remaining keyword arguments forwarded to
+        `create_response_function` (``num_lines_keep``, ``window_sigma``,
+        ``normalization``, ...).
+
+    Returns
+    -------
+    `xarray.Dataset`
+        Response function from `create_response_function`.
+    """
+    from sunkit_instruments.response.linelist import line_list_from_emission_model
+
+    line_list = model if isinstance(model, xr.Dataset) else line_list_from_emission_model(model)
+    effective_area = xr.DataArray(
+        channel.effective_area().to_value(u.cm**2),
+        dims="wavelength",
+        coords={"wavelength": channel.wavelength.to_value(u.AA)},
+    )
+    if wavelength_range is None:
+        wavelength_range = [
+            channel.wavelength.min().to_value(u.AA),
+            channel.wavelength.max().to_value(u.AA),
+        ]
+    instrumental_width = getattr(channel, "instrumental_width", 0 * u.AA)
+    return create_response_function(
+        line_list,
+        vdop=vdop,
+        instrumental_width=instrumental_width.to_value(u.AA),
+        effective_area=effective_area,
+        wavelength_range=wavelength_range,
+        **kwargs,
+    )
 
 
 def create_response_function(
