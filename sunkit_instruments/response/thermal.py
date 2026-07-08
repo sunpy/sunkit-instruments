@@ -10,24 +10,7 @@ from sunkit_instruments.response.abstractions import EmissionModel
 __all__ = ["SourceSpectra", "get_temperature_response"]
 
 
-class _ChannelAtObstime:
-    """
-    Adapter for emission models that call ``channel.wavelength_response()``
-    without an ``obstime`` argument.
-    """
-
-    def __init__(self, channel, obstime):
-        self._channel = channel
-        self._obstime = obstime
-
-    def __getattr__(self, name):
-        return getattr(self._channel, name)
-
-    def wavelength_response(self):
-        return self._channel.wavelength_response(obstime=self._obstime)
-
-
-def get_temperature_response(channel, spectra, obstime=None):
+def get_temperature_response(channel, spectra):
     """
     Calculate the temperature response function for a given instrument channel
     and input source.
@@ -35,6 +18,8 @@ def get_temperature_response(channel, spectra, obstime=None):
     Parameters
     ----------
     channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
+        For time-dependent instrument degradation, bind the time first:
+        ``get_temperature_response(channel.at(obstime), spectra)``.
     spectra: `~sunkit_instruments.response.SourceSpectra` or emission model
         The source used to calculate the temperature response. In addition to
         `~sunkit_instruments.response.SourceSpectra`, this can be any
@@ -43,7 +28,6 @@ def get_temperature_response(channel, spectra, obstime=None):
         ``temperature`` attribute and a
         ``calculate_temperature_response(channel)`` method), e.g.
         `synthesizAR.atomic.EmissionModel`.
-    obstime: any format parsed by `sunpy.time.parse_time` , optional
 
     Returns
     -------
@@ -56,13 +40,11 @@ def get_temperature_response(channel, spectra, obstime=None):
     sunkit_instruments.response.abstractions.EmissionModel
     """
     if hasattr(spectra, "temperature_response"):
-        return spectra.temperature, spectra.temperature_response(channel, obstime=obstime)
+        return spectra.temperature, spectra.temperature_response(channel)
     if isinstance(spectra, EmissionModel):
-        response_channel = channel if obstime is None else _ChannelAtObstime(channel, obstime)
-        return spectra.temperature, spectra.calculate_temperature_response(response_channel)
+        return spectra.temperature, spectra.calculate_temperature_response(channel)
     raise TypeError(
-        "spectra must define either temperature_response(channel, obstime=...) "
-        "or calculate_temperature_response(channel)"
+        "spectra must define either temperature_response(channel) or calculate_temperature_response(channel)"
     )
 
 
@@ -171,9 +153,7 @@ class SourceSpectra:
         return u.Quantity(self._da.data, self._da.attrs["unit"])
 
     @u.quantity_input
-    def temperature_response(
-        self, channel, obstime=None
-    ) -> u.cm**5 * u.DN / (u.pixel * u.s):
+    def temperature_response(self, channel) -> u.cm**5 * u.DN / (u.pixel * u.s):
         """
         Temperature response function for a given instrument channel.
 
@@ -186,12 +166,10 @@ class SourceSpectra:
         ----------
         channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
             The relevant instrument channel object used to compute the wavelength
-            response function.
-        obstime: any format parsed by `sunpy.time.parse_time`, optional
-            A time of a particular observation. This is used to calculated any
-            time-dependent instrument degradation.
+            response function. For time-dependent instrument degradation,
+            bind the time first with ``channel.at(obstime)``.
         """
-        wave_response = channel.wavelength_response(obstime=obstime)
+        wave_response = channel.wavelength_response()
         da_response = xarray.DataArray(
             wave_response.to_value(wave_response.unit),
             dims=['wavelength'],

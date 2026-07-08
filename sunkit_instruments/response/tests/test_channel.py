@@ -87,7 +87,8 @@ def test_spectra_repr(fake_spectra):
 
 @pytest.mark.parametrize('obstime', [None, '2020-01-01'])
 def test_temperature_response(fake_channel, fake_spectra, obstime):
-    temp_response = fake_spectra.temperature_response(fake_channel, obstime=obstime)
+    channel = fake_channel if obstime is None else fake_channel.at(obstime)
+    temp_response = fake_spectra.temperature_response(channel)
     assert isinstance(temp_response, u.Quantity)
     assert temp_response.shape == fake_spectra.temperature.shape
 
@@ -122,13 +123,49 @@ def test_get_temperature_response_with_emission_model():
 def test_get_temperature_response_with_emission_model_obstime():
     channel = TimeDependentChannel()
     model = FakeEmissionModel()
-    _, response_without_obstime = get_temperature_response(channel, model)
-    _, response_with_obstime = get_temperature_response(
-        channel, model, obstime="2020-01-01"
-    )
-    assert np.allclose(response_with_obstime.value, 2 * response_without_obstime.value)
+    _, response_unbound = get_temperature_response(channel, model)
+    _, response_bound = get_temperature_response(channel.at("2020-01-01"), model)
+    assert np.allclose(response_bound.value, 2 * response_unbound.value)
 
 
 def test_get_temperature_response_with_unsupported_source(fake_channel):
     with pytest.raises(TypeError, match="temperature_response"):
         get_temperature_response(fake_channel, object())
+
+
+def test_at_binds_obstime():
+    channel = TimeDependentChannel()
+    bound = channel.at("2020-01-01")
+    # TimeDependentChannel degrades by exactly 2x for any bound time (atol
+    # floor: the Gaussian filter tail underflows to subnormals where the
+    # factor-of-two identity no longer holds bit-exactly)
+    wave_response = channel.wavelength_response()
+    assert u.allclose(bound.wavelength_response(), 2 * wave_response, atol=1e-20 * wave_response.unit)
+    area = channel.effective_area()
+    assert u.allclose(bound.effective_area(), 2 * area, atol=1e-20 * area.unit)
+    # binding returns a copy; the original stays unbound
+    assert channel._obstime is None
+    assert u.allclose(bound.wavelength, channel.wavelength)
+
+
+def test_at_view_reusable_with_emission_model():
+    bound = TimeDependentChannel().at("2020-01-01")
+    _, first = get_temperature_response(bound, FakeEmissionModel())
+    _, second = get_temperature_response(bound, FakeEmissionModel())
+    assert u.allclose(first, second)
+
+
+class DegradationRequiresTimeChannel(TestChannel):
+    @u.quantity_input
+    def degradation(self, obstime=None) -> u.dimensionless_unscaled:
+        if obstime is None:
+            raise ValueError("obstime required")
+        return 0.5
+
+
+def test_unbound_channel_never_evaluates_degradation():
+    channel = DegradationRequiresTimeChannel()
+    # pristine instrument: degradation not called at all
+    pristine = channel.effective_area()
+    assert u.allclose(channel.at(None).effective_area(), pristine)
+    assert u.allclose(channel.at("2020-01-01").effective_area(), 0.5 * pristine)

@@ -29,7 +29,8 @@ def get_spectral_response(channel, model, *, vdop=None, wavelength_range=None, *
     channel : `~sunkit_instruments.response.abstractions.AbstractChannel`
         Its ``wavelength`` and ``effective_area()`` define the instrument;
         an ``instrumental_width`` attribute (Angstrom `~astropy.units.Quantity`)
-        is used as the instrumental line width when present.
+        is used as the instrumental line width when present. For channels
+        with time-dependent degradation, pass ``channel.at(obstime)``.
     model : `~sunkit_instruments.response.abstractions.LineEmissionModel` or `xarray.Dataset`
         Emission model converted via
         `~sunkit_instruments.response.line_list_from_emission_model`, or an
