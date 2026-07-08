@@ -269,13 +269,13 @@ def create_response_function(
                 window[contaminant_wavelength_axis] = slice(i0, i1)
                 contaminant_accumulator[tuple(window)] += block
             elif contaminant_accumulator is None:
-                gofnt_scaled = _response_template(
+                gofnt_scaled = _broadcast_response_inputs(
                     wavelength_grid,
                     line_center,
                     doppler_width,
                     line_list.gofnt.isel(trans_index=i),
                     normalization,
-                )
+                )[0]
                 contaminant_dims = gofnt_scaled.dims
                 contaminant_wavelength_axis = contaminant_dims.index("wavelength")
                 contaminant_accumulator = np.zeros(gofnt_scaled.shape)
@@ -340,11 +340,6 @@ def create_response_function(
 
     ds = xr.Dataset()
     ds["response"] = responses
-
-    if vdop is not None:
-        ds = ds.assign_coords({"vdop": vdop})
-    if nonthermal_velocity is not None:
-        ds = ds.assign_coords({"nonthermal_velocity": nonthermal_velocity})
     response_attrs = ds.response.attrs
 
     if effective_area is not None:
@@ -440,10 +435,6 @@ def _broadcast_response_inputs(wavelength_grid, line_center, doppler_width, gofn
     width, shift = xr.broadcast(doppler_width, shift)
     gofnt_scaled = gofnt.broadcast_like(width) / normalization
     return xr.broadcast(gofnt_scaled, width, shift)
-
-
-def _response_template(wavelength_grid, line_center, doppler_width, gofnt, normalization):
-    return _broadcast_response_inputs(wavelength_grid, line_center, doppler_width, gofnt, normalization)[0]
 
 
 def _evaluate_gaussian_response(

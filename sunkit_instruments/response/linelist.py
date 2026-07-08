@@ -10,6 +10,9 @@ import warnings
 import numpy as np
 import xarray as xr
 
+import astropy.constants as const
+import astropy.units as u
+
 __all__ = [
     "LineListEmissionModel",
     "chianti_line_list",
@@ -77,16 +80,6 @@ def chianti_line_list(
     if ion_list is not None and minimum_abundance is not None:
         log.warning("minimum_abundance is set, the ion_list will be ignored")
 
-    with warnings.catch_warnings():
-        # without a chiantirc file, ChiantiPy evaluates os.path.isfile(False)
-        # at import, which raises a RuntimeWarning on Python >= 3.14
-        warnings.simplefilter("ignore", RuntimeWarning)
-        try:
-            import ChiantiPy
-        except ImportError:
-            msg = "ChiantiPy is required for this function, install it with `pip install sunkit-instruments[chianti]`"
-            raise ImportError(msg) from None
-
     if "XUVTOP" not in os.environ:
         msg = (
             "The XUVTOP environment variable is not set; ChiantiPy cannot locate the CHIANTI database. "
@@ -96,10 +89,15 @@ def chianti_line_list(
         raise OSError(msg)
 
     with warnings.catch_warnings():
+        # without a chiantirc file, ChiantiPy evaluates os.path.isfile(False)
+        # at import, which raises a RuntimeWarning on Python >= 3.14
         warnings.simplefilter("ignore", RuntimeWarning)
-        import ChiantiPy.core as ch
-        import ChiantiPy.tools.data as chdata
-        import ChiantiPy.tools.io as chio
+        try:
+            import ChiantiPy.core as ch
+            import ChiantiPy.tools.data as chdata
+        except ImportError:
+            msg = "ChiantiPy is required for this function, install it with `pip install sunkit-instruments[chianti]`"
+            raise ImportError(msg) from None
 
     # never let ChiantiPy pop GUI selection dialogs (the rcfile default is
     # gui=True, which hangs headless batch jobs)
@@ -136,12 +134,9 @@ def chianti_line_list(
         bunch,
         temperature,
         temperature_bc,
-        extra_coord_name,
-        extra_coord,
+        {extra_coord_name: extra_coord},
         abundance,
         wavelength_range,
-        ChiantiPy.__version__,
-        chio.versionRead(),
     )
 
 
@@ -211,13 +206,12 @@ def get_line_list(
     `xarray.Dataset`
         The line list.
     """
-    if line_list_file is not None:
-        log.info(f"Loading line list from {line_list_file}")
-        return _load_dataset(line_list_file)
-
-    cache_path = line_list_cache_path(output_dir, abundance, wavelength_range, density_dependent=density is not None)
-
-    if cache_path.exists():
+    cache_path = (
+        pathlib.Path(line_list_file)
+        if line_list_file is not None
+        else line_list_cache_path(output_dir, abundance, wavelength_range, density_dependent=density is not None)
+    )
+    if line_list_file is not None or cache_path.exists():
         log.info(f"Loading line list from {cache_path}")
         return _load_dataset(cache_path)
 
@@ -243,93 +237,40 @@ def get_line_list(
     return line_list
 
 
-def _dataset_from_chianti_bunch(
-    bunch,
-    temperature,
-    temperature_bc,
-    extra_coord_name,
-    extra_coord,
-    abundance,
-    wavelength_range,
-    chiantipy_version,
-    chianti_version,
-):
-    observed = xr.DataArray(
-        bunch.Intensity["obs"] == "Y",
-        dims="trans_index",
-    )
+def _dataset_from_chianti_bunch(bunch, temperature, temperature_bc, extra_coords, abundance, wavelength_range):
+    import ChiantiPy
+    import ChiantiPy.tools.io as chio
 
-    gofnt_values = bunch.Intensity["intensity"]
-    gofnt_values = gofnt_values.reshape((*temperature_bc.data.shape, 1, -1))
-    gofnt = xr.DataArray(
-        data=gofnt_values,
+    per_transition = {
+        "ion_name": bunch.Intensity["ionS"],
+        "wavelength": bunch.Intensity["wvl"],
+        "lower_level_label": bunch.Intensity["pretty1"],
+        "upper_level_label": bunch.Intensity["pretty2"],
+        "lower_level_index": bunch.Intensity["lvl1"],
+        "upper_level_index": bunch.Intensity["lvl2"],
+        "spectroscopic_name": np.array([bunch.IonInstances[ion].Spectroscopic for ion in bunch.Intensity["ionS"]]),
+        "atomic_number": np.array([bunch.IonInstances[ion].Z for ion in bunch.Intensity["ionS"]]),
+        "observed": bunch.Intensity["obs"] == "Y",
+    }
+    line_list = xr.Dataset({name: ("trans_index", values) for name, values in per_transition.items()})
+
+    gofnt_values = bunch.Intensity["intensity"].reshape((*temperature_bc.data.shape, 1, -1))
+    line_list["gofnt"] = xr.DataArray(
+        gofnt_values,
         dims=(*temperature_bc.dims, "abundance", "trans_index"),
-        coords={
-            "logT": np.log10(temperature),
-            extra_coord_name: extra_coord,
-            "abundance": np.array([abundance]),
-        },
+        coords={"logT": np.log10(temperature), **extra_coords, "abundance": np.array([abundance])},
+    )
+    line_list["logT_peak"] = np.log10(temperature[{"logT": line_list.gofnt.argmax(dim="logT")}])
+    line_list["full_name"] = (
+        line_list.spectroscopic_name.astype(object) + " " + line_list.wavelength.astype(str).astype(object)
     )
 
-    ion_names = xr.DataArray(
-        data=bunch.Intensity["ionS"],
-        dims="trans_index",
-    )
-    line_wavelengths = xr.DataArray(
-        data=bunch.Intensity["wvl"],
-        dims="trans_index",
-    )
-    lower_level_label = xr.DataArray(
-        data=bunch.Intensity["pretty1"],
-        dims="trans_index",
-    )
-    upper_level_label = xr.DataArray(
-        data=bunch.Intensity["pretty2"],
-        dims="trans_index",
-    )
-    lower_level_index = xr.DataArray(
-        data=bunch.Intensity["lvl1"],
-        dims="trans_index",
-    )
-    upper_level_index = xr.DataArray(
-        data=bunch.Intensity["lvl2"],
-        dims="trans_index",
-    )
-    spectroscopic_name = xr.DataArray(
-        data=np.array([bunch.IonInstances[ion].Spectroscopic for ion in bunch.Intensity["ionS"]]),
-        dims="trans_index",
-    )
-    atomic_number = xr.DataArray(
-        data=np.array([bunch.IonInstances[ion].Z for ion in bunch.Intensity["ionS"]]),
-        dims="trans_index",
-    )
-    logT_peak = np.log10(temperature[{"logT": gofnt.argmax(dim="logT")}])
-    line_list = xr.Dataset(
-        {
-            "ion_name": ion_names,
-            "wavelength": line_wavelengths,
-            "gofnt": gofnt,
-            "lower_level_label": lower_level_label,
-            "upper_level_label": upper_level_label,
-            "lower_level_index": lower_level_index,
-            "upper_level_index": upper_level_index,
-            "logT_peak": logT_peak,
-            "spectroscopic_name": spectroscopic_name,
-            "atomic_number": atomic_number,
-            "observed": observed,
-        }
-    )
-
-    full_line_name = line_list.spectroscopic_name.astype(object) + " " + line_list.wavelength.astype(str).astype(object)
-    line_list["full_name"] = full_line_name
-
-    # cut down linelist to match wavelength range
-    in_range = (line_list.wavelength > wavelength_range[0]) * (line_list.wavelength < wavelength_range[1])
-
-    line_list.attrs["Chiantipy"] = chiantipy_version
-    line_list.attrs["Chianti"] = chianti_version
+    line_list.attrs["Chiantipy"] = ChiantiPy.__version__
+    line_list.attrs["Chianti"] = chio.versionRead()
     line_list.gofnt.attrs["units"] = "erg cm3 / (s sr)"
 
+    # cut down linelist to match wavelength range
+    in_range = (line_list.wavelength > wavelength_range[0]) & (line_list.wavelength < wavelength_range[1])
     return line_list.isel(trans_index=in_range)
 
 
@@ -366,8 +307,6 @@ class LineListEmissionModel:
     """
 
     def __init__(self, line_list: xr.Dataset, gofnt_unit: str = None):
-        import astropy.units as u
-
         for dim in set(line_list.gofnt.dims) - {"logT", "trans_index"}:
             if line_list.sizes[dim] != 1:
                 msg = f"line_list must have a single {dim}; select one before building the model"
@@ -380,8 +319,6 @@ class LineListEmissionModel:
 
     @property
     def temperature(self):
-        import astropy.units as u
-
         return 10 ** self.line_list.logT.data * u.K
 
     def calculate_temperature_response(self, channel):
@@ -391,9 +328,6 @@ class LineListEmissionModel:
         ``channel`` is compatible with
         `~sunkit_instruments.response.abstractions.AbstractChannel`.
         """
-        import astropy.constants as const
-        import astropy.units as u
-
         wave_response = channel.wavelength_response()
         line_wavelength = u.Quantity(self.line_list.wavelength.data, u.AA)
         response_at_lines = np.interp(
@@ -450,9 +384,6 @@ def line_list_from_emission_model(
         ``ion_name``, ``spectroscopic_name`` and ``full_name`` along
         ``trans_index``, sorted by wavelength.
     """
-    import astropy.constants as const
-    import astropy.units as u
-
     gofnt_unit = u.Unit("erg cm3 s-1 sr-1")
     wavelengths = []
     gofnts = []
@@ -529,4 +460,4 @@ def _validate_wavelength_range(wavelength_range):
 
 
 def _format_wavelength_bound(bound):
-    return f"{float(np.asarray(bound).item()):g}"
+    return f"{float(bound):g}"
