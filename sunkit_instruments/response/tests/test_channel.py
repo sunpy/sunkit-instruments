@@ -87,6 +87,46 @@ def test_spectra_repr(fake_spectra):
 
 @pytest.mark.parametrize('obstime', [None, '2020-01-01'])
 def test_temperature_response(fake_channel, fake_spectra, obstime):
-    temp_response = fake_spectra.temperature_response(fake_channel, obstime=obstime)
+    channel = fake_channel if obstime is None else fake_channel.at(obstime)
+    temp_response = fake_spectra.temperature_response(channel)
     assert isinstance(temp_response, u.Quantity)
     assert temp_response.shape == fake_spectra.temperature.shape
+
+
+class TimeDependentChannel(TestChannel):
+    @u.quantity_input
+    def degradation(self, obstime=None) -> u.dimensionless_unscaled:
+        return 2.0 if obstime is not None else 1.0
+
+
+def test_at_binds_obstime():
+    channel = TimeDependentChannel()
+    bound = channel.at("2020-01-01")
+    wave_response = channel.wavelength_response()
+    assert u.allclose(bound.wavelength_response(), 2 * wave_response, atol=1e-20 * wave_response.unit)
+    area = channel.effective_area()
+    assert u.allclose(bound.effective_area(), 2 * area, atol=1e-20 * area.unit)
+    # Binding returns a copy; the original stays unbound
+    assert channel._obstime is None
+    assert u.allclose(bound.wavelength, channel.wavelength)
+
+
+class DegradationRequiresTimeChannel(TestChannel):
+    @u.quantity_input
+    def degradation(self, obstime=None) -> u.dimensionless_unscaled:
+        if obstime is None:
+            raise ValueError("obstime required")
+        return 0.5
+
+
+def test_unbound_channel_never_evaluates_degradation():
+    channel = DegradationRequiresTimeChannel()
+    pristine = channel.effective_area()
+    assert u.allclose(channel.at(None).effective_area(), pristine)
+    assert u.allclose(channel.at("2020-01-01").effective_area(), 0.5 * pristine)
+
+
+def test_repr_shows_binding(fake_channel):
+    assert repr(fake_channel) == "TestChannel(Non-degraded)"
+    assert repr(fake_channel.at("2020-01-01")) == "TestChannel(Degraded at 2020-01-01T00:00:00.000)"
+    assert repr(fake_channel.at("2020-01-01").at(None)) == "TestChannel(Non-degraded)"
