@@ -229,6 +229,17 @@ def test_flux_to_classletter():
     assert goes.flux_to_flareclass(2.1e-05 * u.watt / u.m**2) == "M2.1"
 
 
+def test_flux_to_classletter_float32():
+    # regression test for float32 flux (e.g. from netCDF-sourced GOES data)
+    # feed into the `10**decade` lookup would miss
+    # `GOES_CONVERSION_DICT` keys by a tiny amount, silently returning "None"
+    # instead of the class letter
+    flux = Quantity(np.float32(2.5890481992973946e-05), "W/m**2")
+    assert goes.flux_to_flareclass(flux) == "M2.59"
+    flux = Quantity(np.float32(0.000868848932441324), "W/m**2")
+    assert goes.flux_to_flareclass(flux) == "X8.69"
+
+
 def test_class_to_flux():
     classes = ["A3.49", "A0.23", "M1", "X2.3", "M5.8", "C2.3", "B3.45", "X20"]
     results = Quantity(

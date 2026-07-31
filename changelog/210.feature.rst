@@ -1,0 +1,1 @@
+Add a generic "GOES flare detection"-like algorithm and a GOES-specific wrapper. Additionally, add an example gallery comparing results from 1 s and 1 min averaged data against each other and the HEK.

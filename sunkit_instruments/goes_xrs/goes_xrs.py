@@ -170,7 +170,11 @@ def flux_to_flareclass(goesflux: u.watt / u.m**2):
     if goesflux.value < 0:
         raise ValueError("Flux cannot be negative")
 
-    decade = np.floor(np.log10(goesflux.to("W/m**2").value))
+    # Cast to a native int so that the `10**decade` lookup below is computed
+    # in full double precision, regardless of the input flux's dtype (e.g.
+    # float32 flux, as is common in netCDF-sourced GOES data, would otherwise
+    # make `10**decade` miss the `GOES_CONVERSION_DICT` keys by a tiny amount).
+    decade = int(np.floor(np.log10(goesflux.to("W/m**2").value)))
     # invert the conversion dictionary
     conversion_dict = {v: k for k, v in GOES_CONVERSION_DICT.items()}
     if decade < -8:
