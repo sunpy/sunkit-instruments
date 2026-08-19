@@ -3,10 +3,10 @@ This module provides processing routines for Fermi Gamma-ray Space Telescope
 (FGST), formerly called the Gamma-ray Large Area Space Telescope (GLAST).
 """
 
-import os
 import copy
-import urllib
+import os
 import tempfile
+import urllib
 from collections import OrderedDict
 
 import matplotlib.pyplot as plt

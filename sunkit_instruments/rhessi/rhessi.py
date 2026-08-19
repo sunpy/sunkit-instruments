@@ -3,8 +3,8 @@ This module provides processing routines programs to process and analyze RHESSI
 data.
 """
 
-import re
 import csv
+import re
 
 import numpy as np
 

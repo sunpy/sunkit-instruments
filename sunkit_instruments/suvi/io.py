@@ -1,6 +1,6 @@
-import os
 import gzip
 import logging
+import os
 import tempfile
 from pathlib import Path
 
