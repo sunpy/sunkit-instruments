@@ -46,14 +46,7 @@ class NustarSpectrum:
             Default: None, None
     """
 
-    def __init__(
-        self,
-        pha_file,
-        arf_file=None,
-        rmf_file=None,
-    ):
-        """Construct a string to show how the class was constructed (`_construction_string`) and set the `_loaded_spec_data` dictionary attribute."""
-
+    def __init__(self, pha_file, arf_file=None, rmf_file=None):
         self._standard_units = {"channel_number":(u.dimensionless_unscaled),
                                 "energy":(u.keV),
                                 "ct_spec":(u.ct),
