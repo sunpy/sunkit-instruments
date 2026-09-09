@@ -18,9 +18,9 @@ def get_effective_area_info(arf_data):
     return arf_data["energ_lo"]<<u.keV, arf_data["energ_hi"]<<u.keV, arf_data["specresp"]<<u.cm**2
 
 
-def get_response_info(rmf_data):
+def get_response_info(rmf_cdata, rmf_pdata):
     """Extract the channel, observable, and livetime from NuSTAR RMF file."""
-    return rmf_data["energ_lo"]<<u.keV, rmf_data["energ_hi"]<<u.keV, rmf_data["n_grp"]<<u.dimensionless_unscaled, rmf_data["f_chan"]<<u.dimensionless_unscaled, rmf_data["n_chan"]<<u.dimensionless_unscaled, rmf_data["matrix"]<<(u.ct/u.ph)
+    return (rmf_cdata["channel"]<<u.dimensionless_unscaled, rmf_cdata["e_min"]<<u.keV, rmf_cdata["e_max"]<<u.keV), (rmf_pdata["energ_lo"]<<u.keV, rmf_pdata["energ_hi"]<<u.keV, rmf_pdata["n_grp"]<<u.dimensionless_unscaled, rmf_pdata["f_chan"], rmf_pdata["n_chan"], rmf_pdata["matrix"])
 
 
 def col2arr(row_data):
@@ -57,7 +57,7 @@ def col2arr(row_data):
         [[*r, *(max_len - len(r)) * [0]] for r in row_data]
     )  # make each row that length (padding with 0)
 
-    return chan_array << u.dimensionless_unscaled
+    return chan_array 
 
 
 def vrmf2arr(data=None, n_grp_list=None, f_chan_array=None, n_chan_array=None):

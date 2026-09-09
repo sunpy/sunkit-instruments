@@ -37,20 +37,29 @@ def test_read_arf(mock_open):
 
 @patch("astropy.io.fits.open")
 def test_read_rmf(mock_open):
+    chan = np.array([0, 1, 2, 3])
+    e_min = np.array([0.5, 1, 1.5, 2])
+    e_max = np.array([1, 1.5, 2, 2.5])
     e_lo = np.array([0, 1, 2]) 
     e_hi = np.array([1, 2, 3]) 
     n_grp = np.array([10, 20, 30]) 
     f_chan = np.array([4, 5, 6]) 
     n_chan = np.array([40, 50, 60]) 
     matrix = np.array([-4, 8, 92]) 
-    hdul = MagicMock()
-    hdul[2].data = {"energ_lo": np.array([0, 1, 2]), 
-                    "energ_hi": np.array([1, 2, 3]),
-                    "n_grp":np.array([10, 20, 30]),
-                    "f_chan":np.array([4, 5, 6]),
-                    "n_chan":np.array([40, 50, 60]),
-                    "matrix":np.array([-4, 8, 92])}
-    mock_open.return_value.__enter__.return_value = hdul
-    data = read_rmf("test.rmf")
+    hdul0 = MagicMock()
+    hdul1 = MagicMock()
+    hdul0.data = {"channel":np.array([0, 1, 2, 3]), 
+                  "e_min":np.array([0.5, 1, 1.5, 2]),
+                  "e_max":np.array([1, 1.5, 2, 2.5])}
+    hdul1.data = {"energ_lo":np.array([0, 1, 2]), 
+                  "energ_hi":np.array([1, 2, 3]),
+                  "n_grp":np.array([10, 20, 30]),
+                  "f_chan":np.array([4, 5, 6]),
+                  "n_chan":np.array([40, 50, 60]),
+                  "matrix":np.array([-4, 8, 92])}
+    mock_open.return_value.__enter__.return_value = (0, hdul0, hdul1)
+    cdata, pdata = read_rmf("test.rmf")
+    for t, d in zip((chan, e_min, e_max), ("channel", "e_min","e_max")):
+        assert np.all(t == cdata[d])
     for t, d in zip((e_lo, e_hi, n_grp, f_chan, n_chan, matrix), ("energ_lo", "energ_hi","n_grp", "f_chan", "n_chan", "matrix")):
-        assert np.all(t == data[d])
+        assert np.all(t == pdata[d])

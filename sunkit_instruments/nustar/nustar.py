@@ -1,5 +1,7 @@
 import os
+import warnings
 
+import astropy.units as u
 import numpy as np
 
 from sunkit_instruments.nustar.io import (
@@ -15,345 +17,219 @@ from sunkit_instruments.nustar.spectrum import (
     vrmf2arr,
     make_srm,
 )
+from sunkit_instruments.nustar.utils import (
+    rebin_rmf,
+    regroup_any_array,
+)
 
-class InstrumentBlueprint:
-    """The blueprint class for an instruemnt to be given to the `DataLoader` class in data_loader.py.
-
-    The main aim of these classes is to:
-            (1) produce a `_loaded_spec_data` attribute with the instrument spectral data in the
-                form {"photon_channel_bins":Photon Space Bins (e.g., [keV,keV],[keV,keV],...]),
-                      "photon_channel_mids":Photon Space Bin Mid-points (e.g., [keV,...]),
-                      "photon_channel_binning":Photon Space Binwidths (e.g., [keV,...]),
-                      "count_channel_bins":Count Space Bins (e.g., [keV,keV],[keV,keV],...]),
-                      "count_channel_mids":Count Space Bin Mid-points (e.g., [keV,...]),
-                      "count_channel_binning":Count Space Binwidths (e.g., [keV,...]),
-                      "counts":counts (e.g., cts),
-                      "count_error":Count Error for `counts`,
-                      "count_rate":Count Rate (e.g., cts/keV/s),
-                      "count_rate_error":Count Rate Error for `count_rate`,
-                      "effective_exposure":Effective Exposure (e.g., s),
-                      "srm":Spectral Response Matrix (e.g., cts/ph * cm^2),
-                      "extras":{"any_extra_info":or_empty_dict}
-                     };
-            (2) provide instrument specific methods such as time/spatial/spectral range selectors
-                and SRM rebinning methods that then update the `_loaded_spec_data` attribute
-                appropriately.
-
-    Instrument loader classes are expected to receive the PHA spctral file (`pha_file`) as the first
-    argument then other spectral information (`arf_file`, `rmf_file`, `srm_custom`,
-    `custom_channel_bins`). Obviously not all of these files need be used and so just pass then through
-    as **kwargs.
-
-    The `DataLoader` class in data_loader.py then creates a dictionary attribute called `loaded_spec_data`
-    (note no underscore) that is then getable by the user when spectral fitting with the `Fitter` class
-    in fitter.py where the keys are each spectum's ID (e.g, spectrum1, spectrum2, etc.).
+class NustarSpectrum:
     """
+    Loader specifically for NuSTAR spectral files.
 
-    _UNIVERSAL_DOC_ = """Parameters
-                         ----------
-                         pha_file : string
-                                 The PHA file for the spectrum to be loaded.
+    Provides a nice-to-have class for loading in NuSTAR `.pha`, `.arf`, 
+    and `.rmf` files already produced using the NuSTARDAS software. This
+    data can then be inspected using the class and other Python tools.
 
-                         arf_file, rmf_file : string
-                                 The ARF and RMF files associated with the PHA file(s). If none are given (e.g, with
-                                 NuSTAR data) it is assumed that these are in the same directory with same filename
-                                 as the PHA file(s) but with extensions '.arf' and '.rmf', respectively.
+    The method `get_spec_obj` will then be able to return a spectrum 
+    data container to be used in spectral fitting software tools like
+    Python's `sunkit_spec` [1].
 
-                         srm_file : string
-                                 The file that contains the spectral response matrix for the given spectrum.
+    [1] https://sunkit-spex.readthedocs.io/en/latest/
 
-                         srm_custom : 2d array
-                                 User defined spectral response matrix. This is accepted over the SRM created from any
-                                 ARF and RMF files given.
-
-                         custom_channel_bins, custom_photon_bins : 2d array
-                                 User defined channel bins for the columns and rows of the SRM matrix.
-                                 E.g., custom_channel_bins=[[1,1.5],[1.5,2],...]
-
-                         Attributes
-                         ----------
-                         _construction_string : string
-                                 String to show how class was constructed.
-
-                         _loaded_spec_data : dict
-                                 Loaded spectral data.
-                         """
-
-    def _rebin_rmf(
-        self, matrix, old_count_bins=None, new_count_bins=None, old_photon_bins=None, new_photon_bins=None, axis="count"
-    ):
-        """Rebins the photon and/or count channels of the redistribution matrix if needed.
-
-        This will rebin any 2d array by taking the mean across photon space (rows) and summing
-        across count space (columns).
-
-        If no effective area information from the instrument then this is passed straight
-        to `_rebin_srm`, if there is then the `_rebin_srm` should be overwritten.
-
-        Parameters
-        ----------
-        matrix : 2d array
-                Redistribution matrix.
-
-        old_count_bins, new_count_bins : 1d arrays
-                The old count channel binning and the new binning to be for the redistribution matrix columns (sum columns).
-
-        old_photon_bins, new_photon_bins : 1d arrays
-                The old photon channel binning and the new binning to be for the redistribution matrix columns (average rows).
-
-        axis : string
-                Define what \'axis\' the binning should be applied to. E.g., \'photon\', \'count\', or \'photon_and_count\'.
-
-        Returns
-        -------
-        The rebinned 2d redistribution matrix.
-        """
-        # across channel bins, we sum. across energy bins, we average
-        # appears to be >2x faster to average first then sum if needing to do both
-        if (axis == "photon") or (axis == "photon_and_count"):
-            # very slight difference to rbnrmf when binning across photon axis, <2% of entries have a ratio (my way/rbnrmf) >1 (up to 11)
-            # all come from where the original rmf has zeros originally so might be down to precision being worked in, can't expect the exact same numbers essentially
-            matrix = rebin_any_array(data=matrix, old_bins=old_photon_bins, new_bins=new_photon_bins, combine_by="mean")
-        if (axis == "count") or (axis == "photon_and_count"):
-            matrix = rebin_any_array(
-                data=matrix.T, old_bins=old_count_bins, new_bins=new_count_bins, combine_by="sum"
-            ).T  # need to go along columns so .T then .T back
-
-        return matrix
-
-    def _channel_bin_info(self, axis):
-        """Returns the old and new channel bins for the indicated axis (count axis, photon axis or both).
-
-        Parameters
-        ----------
-        axis : string
-                Set to "count", "photon", or "photon_and_count" to return the old and new count
-                channel bins, photon channel bins, or both.
-
-        Returns
-        -------
-        Arrays of old_count_bins, new_count_bins, old_photon_bins, new_photon_bins or Nones.
-        """
-        old_count_bins, new_count_bins, old_photon_bins, new_photon_bins = None, None, None, None
-        if (axis == "count") or (axis == "photon_and_count"):
-            old_count_bins = self._loaded_spec_data["extras"]["original_count_channel_bins"]
-            new_count_bins = self._loaded_spec_data["count_channel_bins"]
-        if (axis == "photon") or (axis == "photon_and_count"):
-            old_photon_bins = self._loaded_spec_data["extras"]["orignal_photon_channel_bins"]
-            new_photon_bins = self._loaded_spec_data["photon_channel_bins"]
-        return old_count_bins, new_count_bins, old_photon_bins, new_photon_bins
-
-    def _rebin_srm(self, axis="count"):
-        """Rebins the photon and/or count channels of the spectral response matrix (SRM) if needed.
-
-        Note: If the instrument has a spatial aspect and effective information is present (e.g.,
-        NuSTAR from its ARF file) then this method should be overwritten in the instrument
-        specific loader in order to rebin the redistribution matrix and effective area separately
-        before re-construction the new SRM.
-
-        Parameters
-        ----------
-        matrix : 2d array
-                Spectral response matrix.
-
-        old_count_bins, new_count_bins : 1d arrays
-                The old count channel binning and the new binning to be for the spectral response matrix columns (sum columns).
-
-        old_photon_bins, new_photon_bins : 1d arrays
-                The old photon channel binning and the new binning to be for the spectral response matrix columns (average rows).
-
-        axis : string
-                Define what \'axis\' the binning should be applied to. E.g., \'photon\', \'count\', or \'photon_and_count\'.
-
-        Returns
-        -------
-        The rebinned 2d spectral response matrix.
-        """
-        old_count_bins, new_count_bins, old_photon_bins, new_photon_bins = self._channel_bin_info(axis)
-        matrix = self._loaded_spec_data["srm"]
-        return self._rebin_rmf(
-            matrix,
-            old_count_bins=old_count_bins,
-            new_count_bins=new_count_bins,
-            old_photon_bins=old_photon_bins,
-            new_photon_bins=new_photon_bins,
-            axis="count",
-        )
-
-    def __getitem__(self, item):
-        """Index the entries in `_loaded_spec_data`"""
-        return self._loaded_spec_data[item]
-
-    def __setitem__(self, item, new_value):
-        """Allows entries in `_loaded_spec_data` to be changed."""
-        self._loaded_spec_data[item] = new_value
-
-    def __call__(self):
-        """When the class is called (n=NustarLoader()->n()) then `_loaded_spec_data` is returned."""
-        return self._loaded_spec_data
-
-    def __repr__(self):
-        """String representation of `_loaded_spec_data`."""
-        return str(self._loaded_spec_data)
-
-
-class NustarLoader(InstrumentBlueprint):
-    """
-    Loader specifically for NuSTAR spectral data.
-
-    NustarLoader Specifics
-    ----------------------
-    Changes how the spectral response matrix (SRM) is rebinned. The NuSTAR SRM is constructed from
-    the effective areas (EFs) and redistribution matrix (RM) and so the EFs and RM are rebinned
-    separately then used to construct the rebinned SRM.
-
-    Superclass Override: _rebin_srm()
-
-    Attributes
+    Parameters
     ----------
-    _construction_string : string
-            String to show how class was constructed.
+    pha_file : `str`
+            The PHA file of the spectrum to be loaded.
 
-    _loaded_spec_data : dict
-            Instrument loaded spectral data.
+    arf_file, rmf_file : `str`, `str`
+            The ARF and RMF files associated with the PHA file(s). 
+            Default: None, None
     """
-
-    __doc__ += InstrumentBlueprint._UNIVERSAL_DOC_
 
     def __init__(
         self,
         pha_file,
         arf_file=None,
         rmf_file=None,
-        srm_custom=None,
-        custom_channel_bins=None,
-        custom_photon_bins=None,
-        **kwargs,
     ):
         """Construct a string to show how the class was constructed (`_construction_string`) and set the `_loaded_spec_data` dictionary attribute."""
 
+        self._standard_units = {"channel_number":(u.dimensionless_unscaled),
+                                "energy":(u.keV),
+                                "ct_spec":(u.ct),
+                                "eff_exp/lvt":(u.s),
+                                "eff_area":(u.cm**2),
+                                "rdm":(u.ct * u.ph**-1),
+                                "srm":(u.ct * u.ph**-1 * u.cm**2)}
         self._construction_string = (
-            f"NustarLoader(pha_file={pha_file},arf_file={arf_file},rmf_file={rmf_file},srm_custom={srm_custom}"
-            f",custom_channel_bins={custom_channel_bins},custom_photon_bins={custom_photon_bins},**{kwargs})"
+            f"NustarSpectrum(pha_file={pha_file},arf_file={arf_file},rmf_file={rmf_file})"
         )
-        self._loaded_spec_data = self._load1spec(
-            pha_file,
-            f_arf=arf_file,
-            f_rmf=rmf_file,
-            srm=srm_custom,
-            channel_bins=custom_channel_bins,
-            photon_bins=custom_photon_bins,
-        )
+        # RMF contains channel->count energy information so do this first if we can
+        self.construct_rmf(f_rmf=rmf_file)
+        self.construct_spectrum(pha_file)
+        self.construct_arf(f_arf=arf_file)
+        # the SRM construction needs the RMF and ARF to be done
+        self.construct_srm()
 
-    def _load1spec(self, f_pha, f_arf=None, f_rmf=None, srm=None, channel_bins=None, photon_bins=None):
-        """Loads all the information in for a given spectrum.
+    def get_spec_obj(self):
+        """..."""
+        pass
 
-        Parameters
-        ----------
-        f_pha, f_arf, f_rmf : string
-                Filenames for the relevant spectral files. If f_arf, f_rmf are None it is assumed
-                that these are in the same directory with same filename as the PHA file but with
-                extensions '.arf' and '.rmf', respectively.
-                Default of f_arf, f_rmf: None
+    def construct_spectrum(self, f_pha):
+        self._spectrum_channel_number, self._spectrum_counts, self._effective_exposure = get_observable_info(*read_pha(f_pha))
 
-        srm : 2d array
-                User defined spectral response matrix. This is accepted over the SRM created from any
-                ARF and RMF files given.
-                Default: None
+        self.standard_unit_check("Count spectrum channel numbers", 
+                                 self._spectrum_channel_number.unit, 
+                                 "channel_number")
+        self.standard_unit_check("Count spectrum array", 
+                                 self._spectrum_counts.unit, 
+                                 "ct_spec")
+        self.standard_unit_check("Effective exposure/livetime value", 
+                                 self._effective_exposure.unit, 
+                                 "eff_exp/lvt")
 
-        photon_bins, channel_bins: 2d array
-                User defined channel bins for the rows and columns of the SRM matrix.
-                E.g., custom_channel_bins=[[1,1.5],[1.5,2],...]
-                Default: None
-
-        Returns
-        -------
-        Dictionary of the loaded in spectral information in the form {"photon_channel_bins":channel_bins,
-                                                                      "photon_channel_mids":np.mean(channel_bins, axis=1),
-                                                                      "photon_channel_binning":channel_binning,
-                                                                      "count_channel_bins":channel_bins,
-                                                                      "count_channel_mids":np.mean(channel_bins, axis=1),
-                                                                      "count_channel_binning":channel_binning,
-                                                                      "counts":counts,
-                                                                      "count_error":count_error,
-                                                                      "count_rate":count_rate,
-                                                                      "count_rate_error":count_rate_error,
-                                                                      "effective_exposure":eff_exp,
-                                                                      "srm":srm,
-                                                                      "extras":{"pha.file":f_pha,
-                                                                                "arf.file":f_arf,
-                                                                                "arf.e_lo":e_lo_arf,
-                                                                                "arf.e_hi":e_hi_arf,
-                                                                                "arf.effective_area":eff_area,
-                                                                                "rmf.file":f_rmf,
-                                                                                "rmf.e_lo":e_lo_rmf,
-                                                                                "rmf.e_hi":e_hi_rmf,
-                                                                                "rmf.ngrp":ngrp,
-                                                                                "rmf.fchan":fchan,
-                                                                                "rmf.nchan":nchan,
-                                                                                "rmf.matrix":matrix,
-                                                                                "rmf.redistribution_matrix":redist_m}
-                                                                     }.
-        """
-
-        # what files might be needed (for NuSTAR)
-        f_arf = f_pha[:-3] + "arf" if type(f_arf) == type(None) else f_arf
-        f_rmf = f_pha[:-3] + "rmf" if type(f_rmf) == type(None) else f_rmf
-
-        # need effective exposure and energy binning since likelihood works on counts, not count rates etc.
-        _, counts, eff_exp = get_observable_info(read_pha(f_pha))
-
-        # now calculate the SRM or use a custom one if given
-        if type(srm) == type(None):
-            # if there is an ARF file load it in
-            if os.path.isfile(f_arf):
-                e_lo_arf, e_hi_arf, eff_area = get_effective_area_info(read_arf(f_arf))
-
-            # if there is an RMF file load it in and convert to a redistribution matrix
-            if os.path.isfile(f_rmf):
-                e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix, redist_m = self._load_rmf(f_rmf)
-
-            srm = make_srm(rmf_matrix=redist_m, arf_array=eff_area)
+        # if an RMF exists then we can map the channel number to energy, else just assume standard for convenience
+        if self._has_rmf:
+            indices = [np.nonzero(self._redistribution_matrix_ouput_channel_number.value==chan)[0] for chan in self._spectrum_channel_number]
+            self._spectrum_axis_edges = self._redistribution_matrix_output_axis_edges[indices,:].squeeze()
+            if not np.allclose(self._spectrum_axis_edges, self._redistribution_matrix_output_axis_edges):
+                warnings.warn("Spectrum and RMF count bin edge information is different.")
         else:
-            e_lo_arf, e_hi_arf, eff_area = None, None, None
-            e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix, redist_m = None, None, None, None, None, None, None
+            warnings.warn(f"No RMF information exists so defaulting to standard NuSTAR energy binning for the spectrum.")
+            self.set_standard_spectrum_axis()
 
-        channel_bins = self._calc_channel_bins(e_lo_rmf, e_hi_rmf) if type(channel_bins) == type(None) else channel_bins
-        channel_binning = np.diff(channel_bins).flatten()
+    def set_standard_spectrum_axis(self):
+        _standard_energy_start = 1.6 << u.keV
+        _standard_num_of_channels = 4096
+        _standard_energy_binning = 0.04 << u.keV
+        _standard_max_energy = _standard_num_of_channels*_standard_energy_binning + _standard_energy_start
+        e_lo = np.arange(_standard_energy_start.value, _standard_max_energy.value, _standard_energy_binning.value) << _standard_energy_start.unit
+        e_hi = e_lo + _standard_energy_binning
+        self._spectrum_axis_edges = np.hstack((e_lo[:,None], e_hi[:,None]))
+        
+    def construct_arf(self, f_arf=None):
+        if (f_arf is None) or (not os.path.isfile(f_arf)):
+            warnings.warn(f"File `{f_arf}` is not found or has not been given.")
+            self._effective_area_axis_edges = None
+            self._effective_area = None
+            self._has_arf = False
+            return
 
-        phot_channels = channel_bins if type(photon_bins) == type(None) else photon_bins
-        phot_binning = np.diff(phot_channels).flatten()
+        e_lo_arf, e_hi_arf, self._effective_area = get_effective_area_info(read_arf(f_arf))
+        self._effective_area_axis_edges = np.hstack((e_lo_arf[:,None], e_hi_arf[:,None]))
+        self._has_arf = True
 
-        # what spectral info you want to know from this observation
-        return {
-            "photon_channel_bins": phot_channels,
-            "photon_channel_mids": np.mean(phot_channels, axis=1),
-            "photon_channel_binning": phot_binning,
-            "count_channel_bins": channel_bins,
-            "count_channel_mids": np.mean(channel_bins, axis=1),
-            "count_channel_binning": channel_binning,
-            "counts": counts,
-            "count_error": np.sqrt(counts),
-            "effective_exposure": eff_exp,
-            "srm": srm,
-            "extras": {
-                "pha.file": f_pha,
-                "arf.file": f_arf,
-                "arf.e_lo": e_lo_arf,
-                "arf.e_hi": e_hi_arf,
-                "arf.effective_area": eff_area,
-                "rmf.file": f_rmf,
-                "rmf.e_lo": e_lo_rmf,
-                "rmf.e_hi": e_hi_rmf,
-                "rmf.ngrp": ngrp,
-                "rmf.fchan": fchan,
-                "rmf.nchan": nchan,
-                "rmf.matrix": matrix,
-                "rmf.redistribution_matrix": redist_m,
-            },
-        }  # this might make it easier to add different observations together
+        self.standard_unit_check("Effective area array", 
+                                 self._effective_area.unit, 
+                                 "eff_area")
+        self.standard_unit_check("Effective area axis", 
+                                 self._effective_area_axis_edges.unit, 
+                                 "energy")
 
-    def _load_rmf(self, rmf_file):
+    def construct_rmf(self, f_rmf=None):
+        if (f_rmf is None) or (not os.path.isfile(f_rmf)):
+            warnings.warn(f"File `{f_rmf}` is not found or has not been given.")
+            self._redistribution_matrix_aux_info = None
+            self._redistribution_matrix_input_axis_edges = None
+            self._redistribution_matrix_ouput_channel_number = None
+            self._redistribution_matrix_output_axis_edges = None
+            self._redistribution_matrix = None
+            self._has_rmf = False
+            return
+        
+        (chan, e_min, e_max), (e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix, redist_m) = self.load_rmf(f_rmf)
+
+        self._redistribution_matrix_aux_info = {"e_lo_rmf":e_lo_rmf, 
+                                                "e_hi_rmf":e_hi_rmf, 
+                                                "ngrp":ngrp, 
+                                                "fchan":fchan, 
+                                                "nchan":nchan, 
+                                                "matrix":matrix}
+        self._redistribution_matrix_input_axis_edges = np.hstack((e_lo_rmf[:,None], e_hi_rmf[:,None]))
+        self._redistribution_matrix_ouput_channel_number = chan
+        self._redistribution_matrix_output_axis_edges = np.hstack((e_min[:,None],  e_max[:,None]))
+        self._redistribution_matrix = redist_m
+        self._has_rmf = True
+
+        self.standard_unit_check("RMF count channel numbers", 
+                                 self._redistribution_matrix_ouput_channel_number.unit, 
+                                 "channel_number")
+        self.standard_unit_check("Redistribution matrix", 
+                                 self._redistribution_matrix.unit, 
+                                 "rdm")
+        self.standard_unit_check("Redistribution matrix input axis", 
+                                 self._redistribution_matrix_input_axis_edges.unit, 
+                                 "energy")
+        self.standard_unit_check("Redistribution matrix output axis", 
+                                 self._redistribution_matrix_output_axis_edges.unit, 
+                                 "energy")
+
+    def construct_srm(self):
+        """..."""
+        self._has_srm = False
+        if not self._has_arf:
+            warnings.warn("Cannot construct SRM as ARF information is missing.")
+            return
+        if not self._has_rmf:
+            warnings.warn("Cannot construct SRM as RMF information is missing.")
+            return
+        if not np.allclose(self._effective_area_axis_edges, self._redistribution_matrix_input_axis_edges):
+            warnings.warn("RMF and ARF information are formatted for different axes.")
+            return
+
+        self._spectral_response_matrix = make_srm(rmf_matrix=self._redistribution_matrix, 
+                                                  arf_array=self._effective_area)
+        self._has_srm = True
+        
+        self.standard_unit_check("Spectral response matrix", 
+                                 self._spectral_response_matrix.unit, 
+                                 "srm")
+            
+    def get_srm(self):
+        """..."""
+        if not self._has_srm:
+            warnings.warn("Missing SRM information.")
+            return
+        return self._spectral_response_matrix
+
+    def get_count_energy_bins(self):
+        """..."""
+        if not self._has_rmf:
+            warnings.warn("Missing count energy bins as no RMF information is available. Returning default spectrum axes instead.")
+            return self._spectrum_axis_edges
+
+        if not np.allclose(self._spectrum_axis_edges, self._redistribution_matrix_output_axis_edges):
+            warnings.warn("Spectrum and RMF count bin edge information is different. Returning dictionary of both.")
+            return {"spec-count-bin-edges":self._spectrum_axis_edges,
+                    "rmf-count-bin-edges":self._redistribution_matrix_input_axis_edges}
+        
+        return self._redistribution_matrix_output_axis_edges
+
+    def get_photon_energy_bins(self):
+        """..."""
+        if (not self._has_arf) and (self._has_rmf):
+            warnings.warn("Missing photon energy bin information as ARF is not available. Only returning information from RMF.")
+            return self._redistribution_matrix_input_axis_edges
+        if (self._has_arf) and (not self._has_rmf):
+            warnings.warn("Missing photon energy bin information as RMF is not available. Only returning information from ARF.")
+            return self._effective_area_axis_edges
+        if (not self._has_arf) and (not self._has_rmf):
+            warnings.warn("Missing photon energy bin information as ARF and RMF is not available")
+            return 
+        
+        if not np.allclose(self._effective_area_axis_edges, self._redistribution_matrix_input_axis_edges):
+            warnings.warn("RMF and ARF photon bin edge information is different. Returning dictionary of both.")
+            return {"arf-photon-bin-edges":self._effective_area_axis_edges,
+                    "rmf-photon-bin-edges":self._redistribution_matrix_input_axis_edges}
+        
+        # if everything is fine then just return one, simple, nice array
+        return self._redistribution_matrix_input_axis_edges
+
+    def standard_unit_check(self, name, unit, key):
+        if unit!=self._standard_units[key]:
+            warnings.warn(f"{name} units are not standard {self._standard_units[key]}, but in {unit}.")
+
+    def load_rmf(self, rmf_file):
         """Extracts all information, mainly the redistribution matrix ([counts/photon]) from a given RMF file.
 
         Parameters
@@ -369,37 +245,14 @@ class NustarLoader(InstrumentBlueprint):
         columns of counts channels, and in the units of counts/photon).
         """
 
-        e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix = get_response_info(read_rmf(rmf_file))
+        (chan, e_min, e_max), (e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix) = get_response_info(*read_rmf(rmf_file))
         fchan_array = col2arr(fchan)
         nchan_array = col2arr(nchan)
         redist_m = vrmf2arr(
             data=matrix, n_grp_list=ngrp, f_chan_array=fchan_array, n_chan_array=nchan_array
-        )  # 1.5 s of the total 2.4 s (1spec) is spent here
+        )  
 
-        return e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix, redist_m
-
-    def _calc_channel_bins(self, e_low, e_hi):
-        """Calculates the count channel bins from the given rmf files. Assumes that the photon and count channel bins are the same.
-
-        Parameters
-        ----------
-        e_low : 1d array
-                Array of the lower bounds of all the channel bins.
-
-        e_hi : 1d array
-                Array of the higher bounds of all the channel bins.
-
-        Returns
-        -------
-        None if no e_low or e_hi is given or 2d array where each row is the lower and higher bound of that bin.
-        """
-        if (e_low is None) or (e_hi is None):
-            print(
-                "If no rmf/arf files are given and a custom srm is provided, please provide the custom_channel_bins.\nE.g., custom_channel_bins=[[1,2],[2,3],...]"
-            )
-            return None
-        else:
-            return np.stack((e_low, e_hi), axis=-1)
+        return (chan, e_min, e_max), (e_lo_rmf, e_hi_rmf, ngrp, fchan, nchan, matrix, redist_m)
 
     def _rebin_srm(self, axis="count"):
         """Rebins the photon and/or count channels of the spectral response matrix by rebinning the redistribution matrix and the effective area array.
@@ -419,7 +272,7 @@ class NustarLoader(InstrumentBlueprint):
         old_eff_area = self._loaded_spec_data["extras"]["arf.effective_area"]
 
         # checked with ftrbnrmf
-        new_rmf = self._rebin_rmf(
+        new_rmf = rebin_rmf(
             matrix=old_rmf,
             old_count_bins=old_count_bins,
             new_count_bins=new_count_bins,
@@ -430,46 +283,12 @@ class NustarLoader(InstrumentBlueprint):
 
         # average eff_area, checked with ftrbnarf
         new_eff_area = (
-            rebin_any_array(data=old_eff_area, old_bins=old_photon_bins, new_bins=new_photon_bins, combine_by="mean")
+            regroup_any_array(data=old_eff_area, old_bins=old_photon_bins, new_bins=new_photon_bins, combine_by="mean")
             if (axis != "count")
             else old_eff_area
         )
         return make_srm(rmf_matrix=new_rmf, arf_array=new_eff_area)
 
-
-def rebin_any_array(data, old_bins, new_bins, combine_by="sum"):
-    """Takes any array of data in old_bins space and rebins along data array axis==0 to have new_bins.
-
-    Can specify how the bins are combined.
-
-    Parameters
-    ----------
-    data, old_bins, new_bins : np.array
-            Array of the data, current bins (for data axis==0), and new bins (for data axis==0).
-            Need len(data)==len(old_bins).
-
-    combine_by : string
-            Defines how to combine multiple bins along axis 0. E.g., "sum" adds the data, "mean" averages
-            the data, and "quadrature" sums the data in quadrature.
-            Default: "sum"
-
-    Returns
-    -------
-    The new bins and the corresponding grouped counts.
-    """
-    new_binned_data = []
-    for nb in new_bins:
-        # just loop through new bins and bin data from between new_bin_lower<=old_bin_lowers and old_bin_highers<new_bin_higher
-        if combine_by == "sum":
-            new_binned_data.append(
-                np.sum(data[np.where((nb[0] <= old_bins[:, 0]) & (nb[-1] >= old_bins[:, -1]))], axis=0)
-            )
-        elif combine_by == "mean":
-            new_binned_data.append(
-                np.mean(data[np.where((nb[0] <= old_bins[:, 0]) & (nb[-1] >= old_bins[:, -1]))], axis=0)
-            )
-        elif combine_by == "quadrature":
-            new_binned_data.append(
-                np.sqrt(np.sum(data[np.where((nb[0] <= old_bins[:, 0]) & (nb[-1] >= old_bins[:, -1]))] ** 2, axis=0))
-            )
-    return np.array(new_binned_data)
+    def __repr__(self):
+        """String representation of `_loaded_spec_data`."""
+        return self._construction_string

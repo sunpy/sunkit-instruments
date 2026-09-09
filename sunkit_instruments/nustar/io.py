@@ -18,7 +18,8 @@ def read_pha(file):
 
     Returns
     -------
-    The event list and meta information for the observation.
+    The counts and channel data component and the livetime header 
+    component.
     """
     with fits.open(file) as hdul:
         data = hdul[1].data
@@ -38,7 +39,7 @@ def read_arf(file):
 
     Returns
     -------
-    The low and high boundary of energy bins, and the ancillary response [cm^2] (data['specresp']).
+    The effective area data component from the file.
     """
     with fits.open(file) as hdul:
         data = hdul[1].data
@@ -57,12 +58,12 @@ def read_rmf(file):
 
     Returns
     -------
-    The low and high boundary of energy bins (data['energ_lo'], data['energ_hi']), number of sub-set channels in the energy
-        bin (data['n_grp']), starting index of each sub-set of channels (data['f_chan']),
-        number of channels in each sub-set (data['n_chan']), redistribution matrix [counts per photon] (data['matrix']).
+    The channel bin data mapping (channel number to energy for the 
+    corresponding PHA file) and the RMF & photon channel data.
     """
 
     with fits.open(file) as hdul:
-        data = hdul[2].data
+        channel_data = hdul[1].data
+        rmf_and_photon_data = hdul[2].data
 
-    return data
+    return channel_data, rmf_and_photon_data
