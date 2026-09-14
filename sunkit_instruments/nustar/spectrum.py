@@ -91,7 +91,7 @@ def vrmf2arr(data=None, n_grp_list=None, f_chan_array=None, n_chan_array=None):
     Example
     -------
      f_rmf = 'file.rmf'
-     e_lo, e_hi, ngrp, fchan, nchan, matrix = io.read_rmf(f_rmf)
+     e_lo, e_hi, ngrp, fchan, nchan, matrix = io.read_heasarc_rmf(f_rmf)
 
      fchan_array = nu_spec.col2arr(fchan)
      nchan_array = nu_spec.col2arr(nchan)

@@ -39,20 +39,28 @@ def test_get_effective_area_info():
     assert np.all((area<<u.cm**2)==a)
 
 def test_get_response_info():
+    chan = np.array([0, 1, 2, 3])
+    e_min = np.array([0.5, 1, 1.5, 2])
+    e_max = np.array([1, 1.5, 2, 2.5])
     e_lo = np.array([0, 1, 2]) 
     e_hi = np.array([1, 2, 3]) 
     n_grp = np.array([10, 20, 30]) 
     f_chan = np.array([4, 5, 6]) 
     n_chan = np.array([40, 50, 60]) 
     matrix = np.array([-4, 8, 92]) 
-    hdul = MagicMock()
-    hdul[2].data = {"energ_lo": np.array([0, 1, 2]), 
-                    "energ_hi": np.array([1, 2, 3]),
-                    "n_grp":np.array([10, 20, 30]),
-                    "f_chan":np.array([4, 5, 6]),
-                    "n_chan":np.array([40, 50, 60]),
-                    "matrix":np.array([-4, 8, 92])}
-    el, eh, ng, fc, nc, m = get_response_info(hdul[1].data)
+    cdata = {"channel":np.array([0, 1, 2, 3]), 
+             "e_min":np.array([0.5, 1, 1.5, 2]),
+             "e_max":np.array([1, 1.5, 2, 2.5])}
+    pdata = {"energ_lo": np.array([0, 1, 2]), 
+             "energ_hi": np.array([1, 2, 3]),
+             "n_grp":np.array([10, 20, 30]),
+             "f_chan":np.array([4, 5, 6]),
+             "n_chan":np.array([40, 50, 60]),
+             "matrix":np.array([-4, 8, 92])}
+    (c, emi, ema), (el, eh, ng, fc, nc, m) = get_response_info(cdata, pdata)
+    assert np.all((chan<<u.dimensionless_unscaled)==c)
+    assert np.all((e_min<<u.keV)==emi)
+    assert np.all((e_max<<u.keV)==ema)
     assert np.all((e_lo<<u.keV)==el)
     assert np.all((e_hi<<u.keV)==eh)
     assert np.all((n_grp<<u.dimensionless_unscaled)==ng)

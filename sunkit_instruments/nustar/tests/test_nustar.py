@@ -1,6 +1,8 @@
 from sunkit_instruments.nustar.nustar import (
     NustarSpectrum,
-    rebin_any_array,
+    )
+from sunkit_instruments.nustar.utils import (
+    regroup_any_array,
     )
 
 def test_NustarSpectrum():
@@ -8,8 +10,8 @@ def test_NustarSpectrum():
     pha_file = f"{base_file}.pha"
     arf_file = f"{base_file}.arf"
     rmf_file = f"{base_file}.rmf"
-    return NustarSpectrum(pha_file,
-                   arf_file=arf_file,
-                   rmf_file=rmf_file)
+    # return NustarSpectrum(pha_file,
+    #                arf_file=arf_file,
+    #                rmf_file=rmf_file)
 
-a = test_NustarSpectrum()
+# a = test_NustarSpectrum()

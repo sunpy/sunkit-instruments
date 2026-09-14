@@ -1,5 +1,8 @@
 import numpy as np
 
+
+__all__ = ["regroup_any_array", "rebin_rmf"]
+
 def regroup_any_array(data, old_bins, new_bins, combine_by="sum"):
     """Takes any array of data in old_bins space and rebins along data array axis==0 to have new_bins.
 
