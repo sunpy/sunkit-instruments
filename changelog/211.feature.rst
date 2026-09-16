@@ -1,0 +1,4 @@
+Added a `sunpy.net.Fido` client, `sunkit_instruments.swpc.SWPCEventsClient`, and parsers,
+`sunkit_instruments.swpc.parse_swpc_events`, `sunkit_instruments.swpc.parse_swpc_event_file` and `sunkit_instruments.swpc.parse_swpc_event_archive`,
+for the NOAA SWPC Edited Solar Events List.
+An example comparing the parsed events to the equivalent flare list in the HEK has also been added.

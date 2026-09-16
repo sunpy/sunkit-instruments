@@ -1,0 +1,18 @@
+Prepared by the U.S. Dept. of Commerce, NOAA, Space Environment Center
+0502 UT 24 Jan 1997
+
+EDITED EVENTS for 1997 Jan 21
+
+Event     Begin    Max       End  Obs  Q  Type  Loc/Frq   Particulars       Reg#
+
+5060       0021   ////      0021  LEA  C   RSP  055-07    III/1
+
+5070       0124   ////      0125  LEA  C   RSP  045-07    III/1
+
+5120       0146   ////      0216  LEA  3   DSF  S12E13    03      B.0A
+
+5080       0421   ////      0421  LEA  C   RSP  030-06    III/1
+
+5090 +     0648   ////      0649  LEA  C   RSP  030-08    III/2
+
+5100       0655   ////      0655  LEA  C   RSP  037-05    III/1
