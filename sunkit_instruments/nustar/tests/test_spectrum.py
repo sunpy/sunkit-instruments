@@ -64,8 +64,8 @@ def test_get_response_info():
     assert np.all((e_lo<<u.keV)==el)
     assert np.all((e_hi<<u.keV)==eh)
     assert np.all((n_grp<<u.dimensionless_unscaled)==ng)
-    assert np.all(f_chan==fc)
-    assert np.all(n_chan==nc)
+    assert np.all((f_chan<<u.dimensionless_unscaled)==fc)
+    assert np.all((n_chan<<u.dimensionless_unscaled)==nc)
     assert np.all(matrix==m)
 
 def test_col2arr():

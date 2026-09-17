@@ -7,7 +7,7 @@ from astropy.io import fits
 __all__ = ["read_nustar_pha", "read_heasarc_arf", "read_heasarc_rmf"]
 
 
-def read_nustar_pha(file):
+def read_nustar_pha(file:str):
     """
     Read a `.pha` file and extract data ande header information.
 
@@ -28,7 +28,7 @@ def read_nustar_pha(file):
     return data, header
 
 
-def read_heasarc_arf(file):
+def read_heasarc_arf(file:str):
     """
     Read a HEASARC compliant `.arf` file and extract useful information.
 
@@ -53,7 +53,7 @@ def read_heasarc_arf(file):
     return data
 
 
-def read_heasarc_rmf(file):
+def read_heasarc_rmf(file:str):
     """
     Read a HEASARC compliant `.rmf` file and extract useful information.
 

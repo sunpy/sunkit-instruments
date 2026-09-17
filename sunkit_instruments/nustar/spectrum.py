@@ -2,28 +2,29 @@
 Module containing code to load and work with NuSTAR spectra.
 """
 
+import astropy
 import astropy.units as u
 import numpy as np
 
 __all__ = ["get_observable_info", "get_effective_area_info", "get_response_info", "col2arr", "vrmf2arr", "make_srm"]
 
 
-def get_observable_info(pha_data, pha_header):
+def get_observable_info(pha_data:astropy.io.fits.fitsrec.FITS_rec, pha_header:astropy.io.fits.fitsrec.FITS_rec):
     """Extract the channel, observable, and livetime from NuSTAR PHA file."""
     return pha_data["channel"]<<u.dimensionless_unscaled, pha_data["counts"]<<u.ct, pha_header["LIVETIME"]<<u.second
 
 
-def get_effective_area_info(arf_data):
+def get_effective_area_info(arf_data:astropy.io.fits.fitsrec.FITS_rec):
     """Extract the channel, observable, and livetime from NuSTAR ARF file."""
     return arf_data["energ_lo"]<<u.keV, arf_data["energ_hi"]<<u.keV, arf_data["specresp"]<<u.cm**2
 
 
-def get_response_info(rmf_cdata, rmf_pdata):
+def get_response_info(rmf_cdata:astropy.io.fits.fitsrec.FITS_rec, rmf_pdata:astropy.io.fits.fitsrec.FITS_rec):
     """Extract the channel, observable, and livetime from NuSTAR RMF file."""
     return (rmf_cdata["channel"]<<u.dimensionless_unscaled, rmf_cdata["e_min"]<<u.keV, rmf_cdata["e_max"]<<u.keV), (rmf_pdata["energ_lo"]<<u.keV, rmf_pdata["energ_hi"]<<u.keV, rmf_pdata["n_grp"]<<u.dimensionless_unscaled, rmf_pdata["f_chan"], rmf_pdata["n_chan"], rmf_pdata["matrix"])
 
 
-def col2arr(row_data):
+def col2arr(row_data:astropy.io.fits.column._VLF):
     """Takes a list of parameters for each energy channel from a ``.rmf`` 
     file and returns it in an array format.
 
@@ -31,7 +32,7 @@ def col2arr(row_data):
 
     Parameters
     ----------
-    row_data : array/list-like object
+    row_data : `~astropy.io.fits.column._VLF`
             One parameter's array/list from the .rmf file.
 
     Returns
@@ -60,38 +61,46 @@ def col2arr(row_data):
     return chan_array 
 
 
-def vrmf2arr(data=None, n_grp_list=None, f_chan_array=None, n_chan_array=None):
-    """Takes redistribution parameters for each energy channel from a .rmf file and returns it in the correct format.
+def vrmf2arr(data:astropy.io.fits.column._VLF=None, n_grp_list:u.Quantity=None, f_chan_array:np.ndarray=None, n_chan_array:np.ndarray=None):
+    """Takes redistribution parameters for each energy channel from a 
+    `.rmf` file and returns it in the correct format.
+
+    This has been verified for NuSTAR `.rmf` files only, but not for 
+    anything else.
 
     From: https://lost-contact.mit.edu/afs/physics.wisc.edu/home/craigm/lib/idl/spectral/vrmf2arr.pro
 
     Parameters
     ----------
-    data : array/list-like object
-            Redistribution matrix parameter array/list from the .rmf file. Units are counts per photon.
+    data : `~astropy.io.fits.column._VLF`
+            Redistribution matrix parameter array/list from the `.rmf` 
+            file. Units are counts per photon.
             Default : None
 
-    n_grp_list : int
+    n_grp_list : `~astropy.units.quantity.Quantity`
             Number of channel groups in each row..
             Default : None
 
-    f_chan_array : numpy.array
-            The index of each sub-set channel from each energy bin from the .rmf file run through col2arr().
+    f_chan_array : `~numpy.ndarray`
+            The index of each sub-set channel from each energy bin from 
+            the `.rmf` file run through col2arr().
             Default : None
 
-    n_chan_array : numpy.array
-            The number of sub-set channels in each index for each energy bin from the .rmf file run through col2arr().
+    n_chan_array : `~numpy.ndarray`
+            The number of sub-set channels in each index for each energy 
+            bin from the `.rmf` file run through col2arr().
             Default : None
 
     Returns
     -------
-    A 2D numpy array of the correctly ordered input data with dimensions of energy in the rows and channels in
+    A 2D numpy array of the correctly ordered input data with dimensions 
+    of energy in the rows and channels in
     the columns.
 
     Example
     -------
      f_rmf = 'file.rmf'
-     e_lo, e_hi, ngrp, fchan, nchan, matrix = io.read_heasarc_rmf(f_rmf)
+     e_lo, e_hi, ngrp, fchan, nchan, matrix = get_response_info(*io.read_heasarc_rmf(f_rmf))
 
      fchan_array = nu_spec.col2arr(fchan)
      nchan_array = nu_spec.col2arr(nchan)
@@ -178,17 +187,17 @@ def vrmf2arr(data=None, n_grp_list=None, f_chan_array=None, n_chan_array=None):
     return mat_array << (u.ct/u.ph)
 
 
-def make_srm(rmf_matrix, arf_array):
+def make_srm(rmf_matrix:u.Quantity, arf_array:u.Quantity):
     """Takes rmf and arf and produces the spectral response matrix for NuSTAR.
 
     From: https://github.com/ianan/nsigh_nov14/blob/master/make_ns_srm.pro
 
     Parameters
     ----------
-    rmf_matrix : numpy 2D array
+    rmf_matrix : `~astropy.units.quantity.Quantity`
             Array representing the redistribution matrix.
 
-    arf_array : numpy 1D array/list
+    arf_array : `~astropy.units.quantity.Quantity`
             List representing the ancillary response.
 
     Returns
