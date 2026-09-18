@@ -1,12 +1,14 @@
-import astropy.units as u
 import numpy as np
 
+import astropy.units as u
+
 from sunkit_instruments.nustar.utils import (
-    regroup_any_array,
-    rebin_rmf,
-    _get_val_and_unit,
     _convert_old_value_to_new_unit_values,
-    )
+    _get_val_and_unit,
+    rebin_rmf,
+    regroup_any_array,
+)
+
 
 def test_regroup_any_array_sum():
     """Tests for the regrouping function while summing."""
@@ -21,14 +23,14 @@ def test_regroup_any_array_sum():
     result0a = regroup_any_array(orig_data0, orig_bins0, new_bins0)
     # test with units
     result0b = regroup_any_array(orig_data0<<u.ct/u.s, orig_bins0<<u.keV, new_bins0<<u.keV)
-    # test with different, but convertable units
+    # test with different, but convertible units
     result0c = regroup_any_array(orig_data0<<u.ct/u.s, orig_bins0<<u.keV, (new_bins0*1e3)<<u.eV)
 
     np.testing.assert_allclose(expected0, result0)
     np.testing.assert_allclose(result0, result0a)
     np.testing.assert_allclose(result0<<u.ct/u.s, result0b)
     np.testing.assert_allclose(result0<<u.ct/u.s, result0c)
-    
+
     new_bins1 = np.array([[0, 2], [2, 3], [3, 4]])
     expected1 = np.array([30, 30, 40])
     result1 = regroup_any_array(orig_data0, orig_bins0, new_bins1, combine_by="sum")
@@ -87,64 +89,64 @@ def test_regroup_any_array_quadrature():
 def test_rebin_rmf():
     """Test the rebin rmf function."""
     # rebin over input
-    orig_rmf0 = np.array([[1, 2, 3], 
-                          [4, 5, 6], 
-                          [7, 8, 9], 
+    orig_rmf0 = np.array([[1, 2, 3],
+                          [4, 5, 6],
+                          [7, 8, 9],
                           [10, 11, 12]])
     orig_input_bins0 = np.array([[0, 1], [1, 2], [2, 3], [3, 4]])
     orig_output_bins0 = np.array([[10, 20], [20, 30], [30, 40]])
     new_input_bins0 = np.array([[0, 2], [2, 4]])
     result0 = rebin_rmf(
-        orig_rmf0, 
-        old_output_bins=orig_output_bins0, 
-        new_output_bins=None, 
-        old_input_bins=orig_input_bins0, 
+        orig_rmf0,
+        old_output_bins=orig_output_bins0,
+        new_output_bins=None,
+        old_input_bins=orig_input_bins0,
         new_input_bins=new_input_bins0
         )
-    expected0 = np.array([[2.5, 3.5, 4.5], 
+    expected0 = np.array([[2.5, 3.5, 4.5],
                           [8.5, 9.5, 10.5]])
     # rebin over output
     new_output_bins0 = np.array([[10, 30], [30, 40]])
     result1 = rebin_rmf(
-        orig_rmf0, 
-        old_output_bins=orig_output_bins0, 
-        new_output_bins=new_output_bins0, 
-        old_input_bins=orig_input_bins0, 
+        orig_rmf0,
+        old_output_bins=orig_output_bins0,
+        new_output_bins=new_output_bins0,
+        old_input_bins=orig_input_bins0,
         new_input_bins=None
         )
-    expected1 = np.array([[3, 3], 
-                          [9, 6], 
-                          [15, 9], 
+    expected1 = np.array([[3, 3],
+                          [9, 6],
+                          [15, 9],
                           [21, 12]])
     # rebin over both axes
     result2 = rebin_rmf(
-        orig_rmf0, 
-        old_output_bins=orig_output_bins0, 
-        new_output_bins=new_output_bins0, 
-        old_input_bins=orig_input_bins0, 
+        orig_rmf0,
+        old_output_bins=orig_output_bins0,
+        new_output_bins=new_output_bins0,
+        old_input_bins=orig_input_bins0,
         new_input_bins=new_input_bins0
         )
-    expected2 = np.array([[6, 4.5],  
+    expected2 = np.array([[6, 4.5],
                           [18, 10.5]])
     # rebin with units
     result3 = rebin_rmf(
-        orig_rmf0<<u.ct/u.ph, 
-        old_output_bins=orig_output_bins0<<u.keV, 
-        new_output_bins=new_output_bins0<<u.keV, 
-        old_input_bins=orig_input_bins0<<u.keV, 
+        orig_rmf0<<u.ct/u.ph,
+        old_output_bins=orig_output_bins0<<u.keV,
+        new_output_bins=new_output_bins0<<u.keV,
+        old_input_bins=orig_input_bins0<<u.keV,
         new_input_bins=new_input_bins0<<u.keV
         )
-    expected3 = np.array([[6, 4.5],  
+    expected3 = np.array([[6, 4.5],
                           [18, 10.5]])<<u.ct/u.ph
     # rebin with different units
     result4 = rebin_rmf(
-        orig_rmf0<<u.ct/u.ph, 
-        old_output_bins=orig_output_bins0<<u.keV, 
-        new_output_bins=(new_output_bins0*1000)<<u.eV, 
-        old_input_bins=orig_input_bins0<<u.keV, 
+        orig_rmf0<<u.ct/u.ph,
+        old_output_bins=orig_output_bins0<<u.keV,
+        new_output_bins=(new_output_bins0*1000)<<u.eV,
+        old_input_bins=orig_input_bins0<<u.keV,
         new_input_bins=new_input_bins0<<u.keV
         )
-    expected4 = np.array([[6, 4.5],  
+    expected4 = np.array([[6, 4.5],
                           [18, 10.5]])<<u.ct/u.ph
 
     np.testing.assert_allclose(expected0, result0)

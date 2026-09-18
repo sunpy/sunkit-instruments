@@ -18,7 +18,7 @@ def read_nustar_pha(file:str):
 
     Returns
     -------
-    The counts and channel data component and the livetime header 
+    The counts and channel data component and the livetime header
     component.
     """
     with fits.open(file) as hdul:
@@ -66,7 +66,7 @@ def read_heasarc_rmf(file:str):
 
     Returns
     -------
-    The channel bin data mapping (channel number to energy for the 
+    The channel bin data mapping (channel number to energy for the
     corresponding PHA file) and the RMF & photon channel data.
     """
     channel_data = None
@@ -77,6 +77,6 @@ def read_heasarc_rmf(file:str):
             if hdu_contents=="EBOUNDS":
                 channel_data = hdu.data
             elif hdu_contents=="RSP_MATRIX":
-                rmf_and_photon_data = hdu.data 
+                rmf_and_photon_data = hdu.data
 
     return channel_data, rmf_and_photon_data

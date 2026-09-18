@@ -2,9 +2,10 @@
 Module containing code to load and work with NuSTAR spectra.
 """
 
+import numpy as np
+
 import astropy
 import astropy.units as u
-import numpy as np
 
 __all__ = ["get_observable_info", "get_effective_area_info", "get_response_info", "col2arr", "vrmf2arr", "make_srm"]
 
@@ -25,7 +26,7 @@ def get_response_info(rmf_cdata:astropy.io.fits.fitsrec.FITS_rec, rmf_pdata:astr
 
 
 def col2arr(row_data:astropy.io.fits.column._VLF):
-    """Takes a list of parameters for each energy channel from a ``.rmf`` 
+    """Takes a list of parameters for each energy channel from a ``.rmf``
     file and returns it in an array format.
 
     From: https://lost-contact.mit.edu/afs/physics.wisc.edu/home/craigm/lib/idl/util/vcol2arr.pro
@@ -58,14 +59,14 @@ def col2arr(row_data:astropy.io.fits.column._VLF):
         [[*r, *(max_len - len(r)) * [0]] for r in row_data]
     )  # make each row that length (padding with 0)
 
-    return chan_array 
+    return chan_array
 
 
 def vrmf2arr(data:astropy.io.fits.column._VLF=None, n_grp_list:u.Quantity=None, f_chan_array:np.ndarray=None, n_chan_array:np.ndarray=None):
-    """Takes redistribution parameters for each energy channel from a 
+    """Takes redistribution parameters for each energy channel from a
     `.rmf` file and returns it in the correct format.
 
-    This has been verified for NuSTAR `.rmf` files only, but not for 
+    This has been verified for NuSTAR `.rmf` files only, but not for
     anything else.
 
     From: https://lost-contact.mit.edu/afs/physics.wisc.edu/home/craigm/lib/idl/spectral/vrmf2arr.pro
@@ -73,7 +74,7 @@ def vrmf2arr(data:astropy.io.fits.column._VLF=None, n_grp_list:u.Quantity=None, 
     Parameters
     ----------
     data : `~astropy.io.fits.column._VLF`
-            Redistribution matrix parameter array/list from the `.rmf` 
+            Redistribution matrix parameter array/list from the `.rmf`
             file. Units are counts per photon.
             Default : None
 
@@ -82,18 +83,18 @@ def vrmf2arr(data:astropy.io.fits.column._VLF=None, n_grp_list:u.Quantity=None, 
             Default : None
 
     f_chan_array : `~numpy.ndarray`
-            The index of each sub-set channel from each energy bin from 
+            The index of each sub-set channel from each energy bin from
             the `.rmf` file run through col2arr().
             Default : None
 
     n_chan_array : `~numpy.ndarray`
-            The number of sub-set channels in each index for each energy 
+            The number of sub-set channels in each index for each energy
             bin from the `.rmf` file run through col2arr().
             Default : None
 
     Returns
     -------
-    A 2D numpy array of the correctly ordered input data with dimensions 
+    A 2D numpy array of the correctly ordered input data with dimensions
     of energy in the rows and channels in
     the columns.
 
@@ -204,4 +205,4 @@ def make_srm(rmf_matrix:u.Quantity, arf_array:u.Quantity):
     -------
     An array that is the spectral response (srm).
     """
-    return (arf_array[:, None] * rmf_matrix) << (u.ct * u.ph**-1 * u.cm**2) 
+    return (arf_array[:, None] * rmf_matrix) << (u.ct * u.ph**-1 * u.cm**2)

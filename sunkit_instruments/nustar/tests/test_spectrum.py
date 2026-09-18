@@ -1,16 +1,17 @@
 from unittest.mock import MagicMock
 
-import astropy.units as u
 import numpy as np
 
+import astropy.units as u
+
 from sunkit_instruments.nustar.spectrum import (
-    get_observable_info, 
-    get_effective_area_info, 
-    col2arr, 
-    vrmf2arr, 
-    get_response_info, 
+    col2arr,
+    get_effective_area_info,
+    get_observable_info,
+    get_response_info,
     make_srm,
-    )
+    vrmf2arr,
+)
 
 
 def test_get_observable_info():
@@ -26,11 +27,11 @@ def test_get_observable_info():
     assert np.all((livetime<<u.s)==lvt)
 
 def test_get_effective_area_info():
-    e_lo = np.array([0, 1, 2]) 
-    e_hi = np.array([1, 2, 3]) 
-    area = np.array([10, 20, 30]) 
+    e_lo = np.array([0, 1, 2])
+    e_hi = np.array([1, 2, 3])
+    area = np.array([10, 20, 30])
     hdul = MagicMock()
-    hdul[1].data = {"energ_lo": np.array([0, 1, 2]), 
+    hdul[1].data = {"energ_lo": np.array([0, 1, 2]),
                     "energ_hi": np.array([1, 2, 3]),
                     "specresp":np.array([10, 20, 30])}
     el, eh, a = get_effective_area_info(hdul[1].data)
@@ -42,16 +43,16 @@ def test_get_response_info():
     chan = np.array([0, 1, 2, 3])
     e_min = np.array([0.5, 1, 1.5, 2])
     e_max = np.array([1, 1.5, 2, 2.5])
-    e_lo = np.array([0, 1, 2]) 
-    e_hi = np.array([1, 2, 3]) 
-    n_grp = np.array([10, 20, 30]) 
-    f_chan = np.array([4, 5, 6]) 
-    n_chan = np.array([40, 50, 60]) 
-    matrix = np.array([-4, 8, 92]) 
-    cdata = {"channel":np.array([0, 1, 2, 3]), 
+    e_lo = np.array([0, 1, 2])
+    e_hi = np.array([1, 2, 3])
+    n_grp = np.array([10, 20, 30])
+    f_chan = np.array([4, 5, 6])
+    n_chan = np.array([40, 50, 60])
+    matrix = np.array([-4, 8, 92])
+    cdata = {"channel":np.array([0, 1, 2, 3]),
              "e_min":np.array([0.5, 1, 1.5, 2]),
              "e_max":np.array([1, 1.5, 2, 2.5])}
-    pdata = {"energ_lo": np.array([0, 1, 2]), 
+    pdata = {"energ_lo": np.array([0, 1, 2]),
              "energ_hi": np.array([1, 2, 3]),
              "n_grp":np.array([10, 20, 30]),
              "f_chan":np.array([4, 5, 6]),

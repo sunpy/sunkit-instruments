@@ -1,11 +1,11 @@
-import astropy.units as u
 import numpy as np
 
+import astropy.units as u
 
 __all__ = ["regroup_any_array", "rebin_rmf"]
 
 def regroup_any_array(data:np.ndarray|u.Quantity, old_bins:np.ndarray|u.Quantity, new_bins:np.ndarray|u.Quantity, combine_by:str|None=None):
-    """Takes any array of data in old_bins space and rebins along data 
+    """Takes any array of data in old_bins space and rebins along data
     array axis==0 to have new_bins.
 
     Can specify how the bins are combined: [\"sum\", \"mean\", \"quadrature\"].
@@ -13,13 +13,13 @@ def regroup_any_array(data:np.ndarray|u.Quantity, old_bins:np.ndarray|u.Quantity
     Parameters
     ----------
     data, old_bins, new_bins : `~numpy.ndarray`
-            Array of the data, current bins for the data, and new bins 
-            for the data. Shape of the bin arrays should be `(N+1, 2)` 
+            Array of the data, current bins for the data, and new bins
+            for the data. Shape of the bin arrays should be `(N+1, 2)`
             where `N` is the length of `data`.
 
     combine_by : string
-            Defines how to combine multiple bins along axis 0. E.g., \"sum\" 
-            adds the data, \"mean\" averages the data, and \"quadrature\" 
+            Defines how to combine multiple bins along axis 0. E.g., \"sum\"
+            adds the data, \"mean\" averages the data, and \"quadrature\"
             sums the data in quadrature. If `None`, then \"sum\" is used.
             Default: None
 
@@ -54,11 +54,11 @@ def regroup_any_array(data:np.ndarray|u.Quantity, old_bins:np.ndarray|u.Quantity
 def rebin_rmf(
     matrix:np.ndarray|u.Quantity, old_output_bins:np.ndarray|u.Quantity=None, new_output_bins:np.ndarray|u.Quantity=None, old_input_bins:np.ndarray|u.Quantity=None, new_input_bins:np.ndarray|u.Quantity=None
 ):
-    """Rebins the photon and/or count channels of the redistribution matrix 
+    """Rebins the photon and/or count channels of the redistribution matrix
     if needed.
 
-    This will rebin any 2d array by taking the mean across the input axis 
-    (rows or photon space) and summing across the output axis (columns or 
+    This will rebin any 2d array by taking the mean across the input axis
+    (rows or photon space) and summing across the output axis (columns or
     count space).
 
     Parameters
@@ -67,11 +67,11 @@ def rebin_rmf(
             Redistribution matrix.
 
     old_output_bins, new_output_bins : 1d arrays
-            The old count channel binning and the new binning to for the 
+            The old count channel binning and the new binning to for the
             redistribution matrix columns (sum columns).
 
     old_input_bins, new_input_bins : 1d arrays
-            The old photon channel binning and the new binning to for the 
+            The old photon channel binning and the new binning to for the
             redistribution matrix columns (average rows).
 
     Returns
@@ -103,14 +103,14 @@ def rebin_rmf(
 
 def _get_val_and_unit(value:np.ndarray|u.Quantity|float|int):
     """Return the value of an object and unit if possible.
-    
+
     Returns value and `None` if no unit.
     """
     return (value.value, value.unit) if isinstance(value, u.Quantity) else (value, None)
 
 def _convert_old_value_to_new_unit_values(old_value:np.ndarray|float|int, old_unit:u.core.PrefixUnit|u.core.CompositeUnit, new_unit:u.core.PrefixUnit|u.core.CompositeUnit):
     """Convert the old value to new units, return old value if no units.
-    
+
     Returns unitless value.
     """
     if (old_unit is not None) and (new_unit is not None):

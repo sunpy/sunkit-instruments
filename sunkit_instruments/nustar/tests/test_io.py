@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from sunkit_instruments.nustar.io import read_heasarc_arf, read_nustar_pha, read_heasarc_rmf
+from sunkit_instruments.nustar.io import read_heasarc_arf, read_heasarc_rmf, read_nustar_pha
 
 
 @patch("astropy.io.fits.open")
@@ -22,12 +22,12 @@ def test_read_nustar_pha(mock_open):
 
 @patch("astropy.io.fits.open")
 def test_read_heasarc_arf(mock_open):
-    e_lo = np.array([0, 1, 2]) 
-    e_hi = np.array([1, 2, 3]) 
-    area = np.array([10, 20, 30]) 
+    e_lo = np.array([0, 1, 2])
+    e_hi = np.array([1, 2, 3])
+    area = np.array([10, 20, 30])
     hdul = MagicMock()
     hdul.header = {"HDUCLAS2":"SPECRESP"}
-    hdul.data = {"energ_lo": np.array([0, 1, 2]), 
+    hdul.data = {"energ_lo": np.array([0, 1, 2]),
                  "energ_hi": np.array([1, 2, 3]),
                  "specresp":np.array([10, 20, 30])}
     mock_open.return_value.__enter__.return_value = (hdul,)
@@ -41,20 +41,20 @@ def test_read_heasarc_rmf(mock_open):
     chan = np.array([0, 1, 2, 3])
     e_min = np.array([0.5, 1, 1.5, 2])
     e_max = np.array([1, 1.5, 2, 2.5])
-    e_lo = np.array([0, 1, 2]) 
-    e_hi = np.array([1, 2, 3]) 
-    n_grp = np.array([10, 20, 30]) 
-    f_chan = np.array([4, 5, 6]) 
-    n_chan = np.array([40, 50, 60]) 
-    matrix = np.array([-4, 8, 92]) 
+    e_lo = np.array([0, 1, 2])
+    e_hi = np.array([1, 2, 3])
+    n_grp = np.array([10, 20, 30])
+    f_chan = np.array([4, 5, 6])
+    n_chan = np.array([40, 50, 60])
+    matrix = np.array([-4, 8, 92])
     hdul0 = MagicMock()
     hdul1 = MagicMock()
     hdul0.header = {"HDUCLAS2":"EBOUNDS"}
-    hdul0.data = {"channel":np.array([0, 1, 2, 3]), 
+    hdul0.data = {"channel":np.array([0, 1, 2, 3]),
                   "e_min":np.array([0.5, 1, 1.5, 2]),
                   "e_max":np.array([1, 1.5, 2, 2.5])}
     hdul1.header = {"HDUCLAS2":"RSP_MATRIX"}
-    hdul1.data = {"energ_lo":np.array([0, 1, 2]), 
+    hdul1.data = {"energ_lo":np.array([0, 1, 2]),
                   "energ_hi":np.array([1, 2, 3]),
                   "n_grp":np.array([10, 20, 30]),
                   "f_chan":np.array([4, 5, 6]),
