@@ -23,6 +23,8 @@ dependencies = [
   "h5py>=3.10.0",
   "matplotlib>=3.8.0",
   "pandas>=2.2.0",
+  "sunkit_spex>=0.5.0",
+  "ndcube>=2.4.1",
 ]
 dynamic = ["version"]
 
