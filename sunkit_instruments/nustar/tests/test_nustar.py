@@ -118,6 +118,10 @@ def test_NustarSpectrum_get_functions():
     setup = _NustarSpectrum_inputs_setup0()
     nu_spec = _NustarSpectrum_setup0()
 
+    rmf_input_edges = np.hstack((setup["rmf_elo"][:,None], setup["rmf_ehi"][:,None]))
+    rmf_output_edges = np.hstack((setup["rmf_emin"][:,None], setup["rmf_emax"][:,None]))
+    arf_edges = np.hstack((setup["arf_elo"][:,None], setup["arf_ehi"][:,None]))
+
     # check PHA information returned is correct
     pha_dict = nu_spec.get_pha_info()
     # check ARF information returned is correct
@@ -127,6 +131,36 @@ def test_NustarSpectrum_get_functions():
     rmf_dict_aux = nu_spec.get_rmf_info(include_auxilliray_info=True)
     # check SRM information returned is correct
     srm_dict = nu_spec.get_srm_info()
+
+    # make expected dictionaries
+    expected_pha_dict = {"spectrum_counts_axis":rmf_output_edges,
+                         "spectrum_counts":setup["counts"],
+                         "effective_exposure":setup["lvt"]}
+    expected_arf_dict = {"effective_area_axis":arf_edges,
+                         "effective_area":setup["arf_resp"]}
+    expected_rmf_dict = {"rmf_input_axis":rmf_input_edges,
+                         "rmf_output_axis":rmf_output_edges,
+                         "rmf":setup["expected_rmf"]}
+    expected_rmf_dict_aux = expected_rmf_dict | {"e_lo_rmf":setup["rmf_elo"],
+                                                 "e_hi_rmf":setup["rmf_ehi"],
+                                                 "ngrp":setup["ngrp"],
+                                                 "fchan":setup["fchan"],
+                                                 "nchan":setup["nchan"],
+                                                 "matrix":setup["data"]}
+    expected_srm_dict = {"srm_input_axis":rmf_input_edges,
+                         "srm_output_axis":rmf_output_edges,
+                         "srm":(setup["arf_resp"][:, None] * setup["expected_rmf"])}
+
+    for vd, ve in zip(pha_dict.values(), expected_pha_dict.values()):
+        assert np.all(vd==ve)
+    for vd, ve in zip(arf_dict.values(), expected_arf_dict.values()):
+        assert np.all(vd==ve)
+    for vd, ve in zip(rmf_dict.values(), expected_rmf_dict.values()):
+        assert np.all(vd==ve)
+    for vd, ve in zip(rmf_dict_aux.values(), expected_rmf_dict_aux.values()):
+        assert np.all(vd==ve)
+    for vd, ve in zip(srm_dict.values(), expected_srm_dict.values()):
+        assert np.all(vd==ve)
 
 def test_NustarSpectrum_spectrum_object():
     """Test `~NustarSpectrum.spectrum_object`."""
