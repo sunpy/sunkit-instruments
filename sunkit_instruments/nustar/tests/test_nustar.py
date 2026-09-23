@@ -246,3 +246,17 @@ def test_NustarSpectrum_rebin_functions():
         assert np.all(v==e)
     for (v,e) in zip(srm_dict.values(), [new_input_axis_edges_srm, new_output_axis_edges_srm, new_srm]):
         assert np.all(v==e)
+
+def test_NustarSpectrum__define_standard_units():
+    """Test `~NustarSpectrum._define_standard_units` function."""
+    nu_spec = _NustarSpectrum_setup0()
+    standard_units = {"channel_number":(u.dimensionless_unscaled),
+                      "energy":(u.keV),
+                      "ct_spec":(u.ct),
+                      "eff_exp/lvt":(u.s),
+                      "eff_area":(u.cm**2),
+                      "rdm":(u.ct * u.ph**-1),
+                      "srm":(u.ct * u.ph**-1 * u.cm**2)}
+    for ((k,v),(ek,ev)) in zip(nu_spec.get_standard_units().items(), standard_units.items()):
+        assert k==ek
+        assert v==ev

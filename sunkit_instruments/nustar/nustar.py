@@ -61,7 +61,7 @@ class NustarSpectrum:
 
     **kwargs : 
         Used to update the `meta` attribute in the created spectrum 
-        object returned by 
+        object returned by `~NustarSpectrum.get_spec_obj()`.
     """
 
     def __init__(self, pha_file:str|None=None, arf_file:str|None=None, rmf_file:str|None=None, **kwargs):
