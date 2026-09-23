@@ -48,16 +48,20 @@ class NustarSpectrum:
     Parameters
     ----------
     pha_file : `str`
-            The PHA file of the spectrum to be loaded.
-            Default: None
+        The PHA file of the spectrum to be loaded.
+        Default: None
 
     arf_file : `str`
-            The ARF file, likely associated with the PHA file.
-            Default: None
+        The ARF file, likely associated with the PHA file.
+        Default: None
 
     rmf_file : `str`
-            The RMF file, likely associated with the PHA file.
-            Default: None
+        The RMF file, likely associated with the PHA file.
+        Default: None
+
+    **kwargs : 
+        Used to update the `meta` attribute in the created spectrum 
+        object returned by 
     """
 
     def __init__(self, pha_file:str|None=None, arf_file:str|None=None, rmf_file:str|None=None, **kwargs):
@@ -65,17 +69,17 @@ class NustarSpectrum:
         self._construction_string = (
             f"{str(self.__class__)}(pha_file={pha_file},arf_file={arf_file},rmf_file={rmf_file})"
         )
-        self.define_standard_units()
+        self._define_standard_units()
         # RMF contains channel->count energy information so do this first if we can
-        self.construct_rmf(f_rmf=rmf_file)
-        self.construct_pha(pha_file)
-        self.construct_arf(f_arf=arf_file)
+        self._construct_rmf(f_rmf=rmf_file)
+        self._construct_pha(pha_file)
+        self._construct_arf(f_arf=arf_file)
         # the SRM construction needs the RMF and ARF to be done
-        self.construct_srm()
+        self._construct_srm()
         self._spec_obj_inputs = {"distance":1.0<<u.AU} | kwargs
-        self.construct_spec_obj()
+        self._construct_spec_obj()
 
-    def define_standard_units(self):
+    def _define_standard_units(self):
         """Method to define standard units for everything stored in the class."""
         self._standard_units = {"channel_number":(u.dimensionless_unscaled),
                                 "energy":(u.keV),
@@ -85,7 +89,11 @@ class NustarSpectrum:
                                 "rdm":(u.ct * u.ph**-1),
                                 "srm":(u.ct * u.ph**-1 * u.cm**2)}
 
-    def construct_spec_obj(self, **kwargs):
+    def get_standard_units(self):
+        """Method to inspect the standard units for the stored data."""
+        return self._standard_units
+
+    def _construct_spec_obj(self, **kwargs):
         """Will construct a spectrum object for Sunkit-spex.
 
         Creates the ``spectrum_object`` attribute. The `kwargs` are
@@ -129,7 +137,7 @@ class NustarSpectrum:
         if self._has_spec_obj:
             return self.spectrum_object
 
-        self.construct_spec_obj()
+        self._construct_spec_obj()
         if hasattr(self, "spectrum_object"):
             return self.spectrum_object
 
@@ -137,7 +145,7 @@ class NustarSpectrum:
         """Separate function for easy testing."""
         return get_observable_info(*read_nustar_pha(f_pha))
 
-    def construct_pha(self, f_pha:str|None=None):
+    def _construct_pha(self, f_pha:str|None=None):
         """Read a `.pha` file and store all the spectral information."""
         if f_pha is None:
             warnings.warn(f"File `{f_pha}` has not been given.")
@@ -150,13 +158,13 @@ class NustarSpectrum:
         self._spectrum_channel_number, self._spectrum_counts, self._effective_exposure = self._get_observable_info(f_pha)
         self._has_pha = True
 
-        self.standard_unit_check("Count spectrum channel numbers",
+        self._standard_unit_check("Count spectrum channel numbers",
                                  self._spectrum_channel_number.unit,
                                  "channel_number")
-        self.standard_unit_check("Count spectrum array",
+        self._standard_unit_check("Count spectrum array",
                                  self._spectrum_counts.unit,
                                  "ct_spec")
-        self.standard_unit_check("Effective exposure/livetime value",
+        self._standard_unit_check("Effective exposure/livetime value",
                                  self._effective_exposure.unit,
                                  "eff_exp/lvt")
 
@@ -168,9 +176,9 @@ class NustarSpectrum:
                 warnings.warn("Spectrum and RMF count bin edge information is different.")
         else:
             warnings.warn("No RMF information exists so defaulting to standard NuSTAR energy binning for the spectrum.")
-            self.set_standard_spectrum_axis()
+            self._set_standard_spectrum_axis()
 
-    def set_standard_spectrum_axis(self):
+    def _set_standard_spectrum_axis(self):
         """Defines the usual, native NuSTAR energy binning."""
         _standard_energy_start = 1.6 << u.keV
         _standard_num_of_channels = 4096
@@ -184,7 +192,7 @@ class NustarSpectrum:
         """Separate function for easy testing."""
         return get_effective_area_info(read_heasarc_arf(f_arf))
 
-    def construct_arf(self, f_arf:str|None=None):
+    def _construct_arf(self, f_arf:str|None=None):
         """Read an `.arf` file and store all the response information."""
         if f_arf is None:
             warnings.warn(f"File `{f_arf}` has not been given.")
@@ -197,14 +205,14 @@ class NustarSpectrum:
         self._effective_area_axis_edges = np.hstack((e_lo_arf[:,None], e_hi_arf[:,None]))
         self._has_arf = True
 
-        self.standard_unit_check("Effective area array",
+        self._standard_unit_check("Effective area array",
                                  self._effective_area.unit,
                                  "eff_area")
-        self.standard_unit_check("Effective area axis",
+        self._standard_unit_check("Effective area axis",
                                  self._effective_area_axis_edges.unit,
                                  "energy")
 
-    def construct_rmf(self, f_rmf:str|None=None):
+    def _construct_rmf(self, f_rmf:str|None=None):
         """Read a `.rmf` file and store all the matrix information."""
         if f_rmf is None:
             warnings.warn(f"File `{f_rmf}` has not been given.")
@@ -230,20 +238,20 @@ class NustarSpectrum:
         self._redistribution_matrix = redist_m
         self._has_rmf = True
 
-        self.standard_unit_check("RMF count channel numbers",
+        self._standard_unit_check("RMF count channel numbers",
                                  self._redistribution_matrix_ouput_channel_number.unit,
                                  "channel_number")
-        self.standard_unit_check("Redistribution matrix",
+        self._standard_unit_check("Redistribution matrix",
                                  self._redistribution_matrix.unit,
                                  "rdm")
-        self.standard_unit_check("Redistribution matrix input axis",
+        self._standard_unit_check("Redistribution matrix input axis",
                                  self._redistribution_matrix_input_axis_edges.unit,
                                  "energy")
-        self.standard_unit_check("Redistribution matrix output axis",
+        self._standard_unit_check("Redistribution matrix output axis",
                                  self._redistribution_matrix_output_axis_edges.unit,
                                  "energy")
 
-    def construct_srm(self):
+    def _construct_srm(self):
         """Create a spectral response matrix from the ARF and RMF information."""
         self._has_srm = False
         if (not self._has_arf) and (not self._has_rmf):
@@ -265,7 +273,7 @@ class NustarSpectrum:
         self._spectral_response_matrix_output_axis_edges = self._redistribution_matrix_output_axis_edges
         self._has_srm = True
 
-        self.standard_unit_check("Spectral response matrix",
+        self._standard_unit_check("Spectral response matrix",
                                  self._spectral_response_matrix.unit,
                                  "srm")
 
@@ -316,7 +324,7 @@ class NustarSpectrum:
             if effective_exposure is not None:
                 self._set_pha_effective_exposure(effective_exposure)
         else:
-            self.construct_pha()
+            self._construct_pha()
 
         self._post_pha_update_checks()
 
@@ -335,7 +343,7 @@ class NustarSpectrum:
         """Sets a new spectrum array and checks units."""
         self._spectrum_counts = pha
 
-        self.standard_unit_check("Count spectrum array",
+        self._standard_unit_check("Count spectrum array",
                                  self._spectrum_counts.unit,
                                  "ct_spec")
 
@@ -349,7 +357,7 @@ class NustarSpectrum:
         """Sets a new effective exposure value and checks units."""
         self._effective_exposure = time
 
-        self.standard_unit_check("Effective exposure/livetime value",
+        self._standard_unit_check("Effective exposure/livetime value",
                                  self._effective_exposure.unit,
                                  "eff_exp/lvt")
 
@@ -391,7 +399,7 @@ class NustarSpectrum:
                 )
                 self._set_arf_axis(effective_area_axis)
         else:
-            self.construct_arf()
+            self._construct_arf()
 
         self._post_arf_update_checks()
 
@@ -410,7 +418,7 @@ class NustarSpectrum:
         """Sets a new effective area array and checks units."""
         self._effective_area = arf
 
-        self.standard_unit_check("Effective area array",
+        self._standard_unit_check("Effective area array",
                                  self._effective_area.unit,
                                  "eff_area")
 
@@ -484,7 +492,7 @@ class NustarSpectrum:
                 )
                 self._set_rmf_input_axis(input_axis_edges)
         else:
-            self.construct_rmf(f_rmf=rmf_file)
+            self._construct_rmf(f_rmf=rmf_file)
 
         self._post_rmf_update_checks()
 
@@ -505,7 +513,7 @@ class NustarSpectrum:
         """Sets a new redistribution matrix and checks units."""
         self._redistribution_matrix = rmf
 
-        self.standard_unit_check("Redistribution matrix",
+        self._standard_unit_check("Redistribution matrix",
                                  self._redistribution_matrix.unit,
                                  "rdm")
 
@@ -587,7 +595,7 @@ class NustarSpectrum:
         """Sets a new spectrum response matrix and checks units."""
         self._spectral_response_matrix = srm
 
-        self.standard_unit_check("Spectral response matrix",
+        self._standard_unit_check("Spectral response matrix",
                                  self._spectral_response_matrix.unit,
                                  "srm")
 
@@ -607,7 +615,7 @@ class NustarSpectrum:
             )
             return False
 
-        self.standard_unit_check(desc,
+        self._standard_unit_check(desc,
                                  self.__dict__[att].unit,
                                  standard_unit)
         return True
@@ -666,7 +674,7 @@ class NustarSpectrum:
         # if everything is fine then just return one, simple, nice array
         return self._redistribution_matrix_input_axis_edges
 
-    def standard_unit_check(self, name:str, unit:u.core.PrefixUnit|u.core.CompositeUnit, key:str):
+    def _standard_unit_check(self, name:str, unit:u.core.PrefixUnit|u.core.CompositeUnit, key:str):
         """Checks units against the ``_standard_units`` attribute."""
         if unit!=self._standard_units[key]:
             warnings.warn(f"{name} units are not standard {self._standard_units[key]}, but in {unit}.")
@@ -715,6 +723,9 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
+        This function only returns the rebinned results and does not 
+        change the stored class data.
+
         Parameters
         ----------
         new_input_axis_edges : `~astropy.units.Quantity`
@@ -754,6 +765,9 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
+        This function only returns the rebinned results and does not 
+        change the stored class data.
+
         Parameters
         ----------
         new_axis_edges : `~astropy.units.Quantity`
@@ -783,6 +797,9 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
+        This function only returns the rebinned results and does not 
+        change the stored class data.
+
         Parameters
         ----------
         new_axis_edges : `~astropy.units.Quantity`
@@ -811,6 +828,9 @@ class NustarSpectrum:
 
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
+
+        This function only returns the rebinned results and does not 
+        change the stored class data.
 
         Parameters
         ----------
@@ -847,6 +867,9 @@ class NustarSpectrum:
         """Function to rebin the axes of the ARF, RMF (so SRM as well),
         and PHA information.
 
+        This updates the stored data in the class. The other rebin 
+        functions return the rebinned componenets.
+
         Parameters
         ----------
         new_input_axis_edges : `~astropy.units.Quantity`
@@ -858,11 +881,6 @@ class NustarSpectrum:
             The new bin edges for the output (columns) SRM axis. This axis
             is shared with the PHA axis and output RMF axis.
             Default: None
-
-        Returns
-        -------
-        : `tuple[~astropy.units.Quantity]`
-            ...
         """
         with warnings.catch_warnings(action="ignore"):
             if new_output_axis_edges is not None:
@@ -882,6 +900,8 @@ class NustarSpectrum:
             self.set_srm_info(srm=new_srm,
                               output_axis_edges=new_output_axis_edges,
                               input_axis_edges=new_input_axis_edges)
+
+            self._construct_spec_obj()
 
     def __repr__(self):
         """String representation of the class."""

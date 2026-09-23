@@ -4,6 +4,10 @@ import numpy as np
 
 import astropy.units as u
 
+from ndcube import NDMeta
+from sunkit_spex.spectrum.spectrum import SpectralAxis, Spectrum
+from sunkit_spex.spectrum.uncertainty import PoissonUncertainty
+
 from sunkit_instruments.nustar.nustar import NustarSpectrum
 
 
@@ -170,6 +174,30 @@ def test_NustarSpectrum_spectrum_object():
     spec_obj_get = nu_spec.get_spec_obj()
     spec_obj_att = nu_spec.spectrum_object
 
+    counts = setup["counts"]
+    counts_uncertainity_pu = PoissonUncertainty(np.sqrt(counts.value)<<counts.unit)
+    counts_spectral_axis = SpectralAxis(np.append(setup["rmf_emin"], setup["rmf_emax"][-1]), bin_specification="edges")
+    meta = NDMeta()
+    meta.add("exposure_time", setup["lvt"])
+    meta.add("srm", setup["arf_resp"][:, None] * setup["expected_rmf"])
+    meta.add("ph_axis", np.hstack((setup["rmf_elo"][:,None], setup["rmf_ehi"][:,None])))
+    meta.add("distance", 1.0<<u.AU)
+    spec_obj_made = Spectrum(
+        data=counts, uncertainty=counts_uncertainity_pu, spectral_axis=counts_spectral_axis, meta=meta
+    )
+
+    assert np.all(spec_obj_get.data==spec_obj_att.data)
+    assert np.all(spec_obj_get.data==spec_obj_made.data)
+    assert np.all(spec_obj_get.uncertainty.array==spec_obj_att.uncertainty.array)
+    assert np.all(spec_obj_get.uncertainty.array==spec_obj_made.uncertainty.array)
+    assert np.all(spec_obj_get.spectral_axis==spec_obj_att.spectral_axis)
+    assert np.all(spec_obj_get.spectral_axis==spec_obj_made.spectral_axis)
+    for (k,v) in spec_obj_made.meta.items():
+        assert np.all(v==spec_obj_get.meta[k])
+        assert np.all(v==spec_obj_att.meta[k])
+    assert np.all(list(spec_obj_get.meta.keys())==list(spec_obj_att.meta.keys()))
+    assert np.all(list(spec_obj_get.meta.keys())==list(spec_obj_made.meta.keys()))
+    
 def test_NustarSpectrum_rebin_functions():
     """Test all `NustarSpectrum` functions that rebin data."""
     setup = _NustarSpectrum_inputs_setup0()
