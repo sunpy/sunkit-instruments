@@ -30,7 +30,7 @@ def _init_NustarSpectrum(obs_func, eff_func, res_func):
         return NonFileNustarSpectrum()
 
 def _NustarSpectrum_inputs_setup0():
-    """Store a but of set-up values to reuse."""
+    """Store a bit of set-up values to reuse."""
     chan = np.array([0, 1, 2, 3]) << u.dimensionless_unscaled
     counts = np.array([8, 4, 9, 2.3]) << u.ct
     lvt = 11 << u.second
