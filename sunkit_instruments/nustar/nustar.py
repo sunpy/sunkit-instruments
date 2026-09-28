@@ -59,8 +59,8 @@ class NustarSpectrum:
         The RMF file, likely associated with the PHA file.
         Default: None
 
-    **kwargs : 
-        Used to update the `meta` attribute in the created spectrum 
+    **kwargs :
+        Used to update the `meta` attribute in the created spectrum
         object returned by `~NustarSpectrum.get_spec_obj()`.
     """
 
@@ -723,7 +723,7 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
-        This function only returns the rebinned results and does not 
+        This function only returns the rebinned results and does not
         change the stored class data.
 
         Parameters
@@ -765,7 +765,7 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
-        This function only returns the rebinned results and does not 
+        This function only returns the rebinned results and does not
         change the stored class data.
 
         Parameters
@@ -797,7 +797,7 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
-        This function only returns the rebinned results and does not 
+        This function only returns the rebinned results and does not
         change the stored class data.
 
         Parameters
@@ -829,7 +829,7 @@ class NustarSpectrum:
         The PHA, ARF, RMF, and SRM should all be updated together so
         please used: ``rebin_info`` instead.
 
-        This function only returns the rebinned results and does not 
+        This function only returns the rebinned results and does not
         change the stored class data.
 
         Parameters
@@ -867,8 +867,8 @@ class NustarSpectrum:
         """Function to rebin the axes of the ARF, RMF (so SRM as well),
         and PHA information.
 
-        This updates the stored data in the class. The other rebin 
-        functions return the rebinned componenets.
+        This updates the stored data in the class. The other rebin
+        functions return the rebinned components.
 
         Parameters
         ----------

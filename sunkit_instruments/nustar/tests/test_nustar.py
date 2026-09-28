@@ -1,12 +1,11 @@
 import warnings
 
 import numpy as np
-
-import astropy.units as u
-
 from ndcube import NDMeta
 from sunkit_spex.spectrum.spectrum import SpectralAxis, Spectrum
 from sunkit_spex.spectrum.uncertainty import PoissonUncertainty
+
+import astropy.units as u
 
 from sunkit_instruments.nustar.nustar import NustarSpectrum
 
@@ -75,9 +74,9 @@ def _NustarSpectrum_setup0():
     setup = _NustarSpectrum_inputs_setup0()
     def obs_func(*args):
         return (setup["chan"], setup["counts"], setup["lvt"])
-    def eff_func(*args): 
+    def eff_func(*args):
         return (setup["arf_elo"], setup["arf_ehi"], setup["arf_resp"])
-    def res_func(*args): 
+    def res_func(*args):
         return ((setup["rmf_chan"], setup["rmf_emin"], setup["rmf_emax"]), (setup["rmf_elo"], setup["rmf_ehi"], setup["ngrp"], setup["fchan"], setup["nchan"], setup["data"]))
 
     return _init_NustarSpectrum(obs_func, eff_func, res_func)
@@ -197,7 +196,7 @@ def test_NustarSpectrum_spectrum_object():
         assert np.all(v==spec_obj_att.meta[k])
     assert np.all(list(spec_obj_get.meta.keys())==list(spec_obj_att.meta.keys()))
     assert np.all(list(spec_obj_get.meta.keys())==list(spec_obj_made.meta.keys()))
-    
+
 def test_NustarSpectrum_rebin_functions():
     """Test all `NustarSpectrum` functions that rebin data."""
     setup = _NustarSpectrum_inputs_setup0()
