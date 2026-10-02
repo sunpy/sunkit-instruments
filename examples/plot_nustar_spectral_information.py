@@ -17,7 +17,7 @@ from parfive import Downloader
 
 import astropy.units as u
 
-from sunkit_instruments.nustar.nustar import NustarSpectrum
+from sunkit_instruments.nustar import NustarSpectrum
 
 ###############################################################################
 # We start with getting the data. This is done by downloading the data
