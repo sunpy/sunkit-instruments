@@ -608,12 +608,11 @@ class NustarSpectrum:
     def _has_unit(self, att:str, new_val:u.Quantity, desc:str, standard_unit:str):
         """General method to check if a new value given has a unit."""
         if not isinstance(new_val, u.Quantity):
-            warnings.warn(f"""
+            raise ValueError(f"""
             Nom, nom, nom, give me yummy units on `{att}` update
             otherwise I'm not changing a thing.
             """
             )
-            return False
 
         self._standard_unit_check(desc,
                                  self.__dict__[att].unit,
