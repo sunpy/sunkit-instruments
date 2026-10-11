@@ -8,7 +8,7 @@ import astropy.units as u
 __all__ = ["SourceSpectra", "get_temperature_response"]
 
 
-def get_temperature_response(channel, spectra, obstime=None):
+def get_temperature_response(channel, spectra):
     """
     Calculate the temperature response function for a given instrument channel
     and input spectra.
@@ -16,8 +16,9 @@ def get_temperature_response(channel, spectra, obstime=None):
     Parameters
     ----------
     channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
+        For time-dependent instrument degradation, bind the time first:
+        ``get_temperature_response(channel.at(obstime), spectra)``.
     spectra: `~sunkit_instruments.response.SourceSpectra`
-    obstime: any format parsed by `sunpy.time.parse_time` , optional
 
     Returns
     -------
@@ -28,7 +29,7 @@ def get_temperature_response(channel, spectra, obstime=None):
     --------
     sunkit_instruments.response.SourceSpectra.temperature_response
     """
-    return spectra.temperature, spectra.temperature_response(channel, obstime=obstime)
+    return spectra.temperature, spectra.temperature_response(channel)
 
 
 class SourceSpectra:
@@ -136,9 +137,7 @@ class SourceSpectra:
         return u.Quantity(self._da.data, self._da.attrs["unit"])
 
     @u.quantity_input
-    def temperature_response(
-        self, channel, obstime=None
-    ) -> u.cm**5 * u.DN / (u.pixel * u.s):
+    def temperature_response(self, channel) -> u.cm**5 * u.DN / (u.pixel * u.s):
         """
         Temperature response function for a given instrument channel.
 
@@ -151,12 +150,10 @@ class SourceSpectra:
         ----------
         channel: `~sunkit_instruments.response.abstractions.AbstractChannel`
             The relevant instrument channel object used to compute the wavelength
-            response function.
-        obstime: any format parsed by `sunpy.time.parse_time`, optional
-            A time of a particular observation. This is used to calculated any
-            time-dependent instrument degradation.
+            response function. For time-dependent instrument degradation,
+            bind the time first with ``channel.at(obstime)``.
         """
-        wave_response = channel.wavelength_response(obstime=obstime)
+        wave_response = channel.wavelength_response()
         da_response = xarray.DataArray(
             wave_response.to_value(wave_response.unit),
             dims=['wavelength'],
