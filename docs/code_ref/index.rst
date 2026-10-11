@@ -13,4 +13,5 @@ API Reference
    lyra
    rhessi
    suvi
+   swpc
    response
