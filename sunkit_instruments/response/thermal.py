@@ -170,7 +170,7 @@ class SourceSpectra:
             wavelength=self._da.wavelength,
             kwargs={'bounds_error': False, 'fill_value': 0.0},
         )
-        spec_weighted = self._da * response_interp
+        spec_weighted = (self._da * response_interp).sortby('wavelength')
         temp_response = spec_weighted.integrate(coord='wavelength')
         final_unit = (u.Unit(self._da.unit)
                       * u.Unit(da_response.attrs['unit'])

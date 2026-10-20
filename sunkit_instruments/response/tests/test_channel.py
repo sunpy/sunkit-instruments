@@ -100,6 +100,7 @@ def test_temperature_response_line(fake_channel, offset):
     wavelength = line + np.arange(-100, 101) * delta
     data = np.zeros((1, wavelength.size)) * u.Unit("photon cm3 s-1 sr-1 Angstrom-1")
     data[0, 100] = u.Quantity(1, "photon cm3 s-1 sr-1") / delta
-    spectra = SourceSpectra([1e6] * u.K, wavelength, data)
     expected = np.interp(line, fake_channel.wavelength, fake_channel.wavelength_response())
-    assert u.allclose(spectra.temperature_response(fake_channel), expected * u.Quantity(1, "photon cm3 s-1 sr-1"))
+    for order in [slice(None), slice(None, None, -1)]:
+        spectra = SourceSpectra([1e6] * u.K, wavelength[order], data[:, order])
+        assert u.allclose(spectra.temperature_response(fake_channel), expected * u.Quantity(1, "photon cm3 s-1 sr-1"))
