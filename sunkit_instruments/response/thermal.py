@@ -165,13 +165,14 @@ class SourceSpectra:
                                    attrs={'unit': 'Angstrom'}),],
             attrs={'unit': wave_response.unit.to_string()}
         )
-        spec_interp = self._da.interp(
-            wavelength=da_response.wavelength,
+        # Integrate on the spectra wavelengths so that narrow lines keep their flux
+        response_interp = da_response.interp(
+            wavelength=self._da.wavelength,
             kwargs={'bounds_error': False, 'fill_value': 0.0},
         )
-        spec_interp_weighted = spec_interp * da_response
-        temp_response = spec_interp_weighted.integrate(coord='wavelength')
-        final_unit = (u.Unit(spec_interp.unit)
+        spec_weighted = self._da * response_interp
+        temp_response = spec_weighted.integrate(coord='wavelength')
+        final_unit = (u.Unit(self._da.unit)
                       * u.Unit(da_response.attrs['unit'])
-                      * u.Unit(spec_interp_weighted.wavelength.unit))
+                      * u.Unit(self._da.wavelength.unit))
         return u.Quantity(temp_response.data, final_unit)

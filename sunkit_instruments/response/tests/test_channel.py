@@ -90,3 +90,16 @@ def test_temperature_response(fake_channel, fake_spectra, obstime):
     temp_response = fake_spectra.temperature_response(fake_channel, obstime=obstime)
     assert isinstance(temp_response, u.Quantity)
     assert temp_response.shape == fake_spectra.temperature.shape
+
+
+@pytest.mark.parametrize("offset", [0, 0.5])
+def test_temperature_response_line(fake_channel, offset):
+    # A unit-integral line on (0) or between (0.5) channel wavelengths gives the response at the line
+    line = fake_channel.wavelength[50] + offset * np.diff(fake_channel.wavelength)[50]
+    delta = 0.02 * u.AA
+    wavelength = line + np.arange(-100, 101) * delta
+    data = np.zeros((1, wavelength.size)) * u.Unit("photon cm3 s-1 sr-1 Angstrom-1")
+    data[0, 100] = u.Quantity(1, "photon cm3 s-1 sr-1") / delta
+    spectra = SourceSpectra([1e6] * u.K, wavelength, data)
+    expected = np.interp(line, fake_channel.wavelength, fake_channel.wavelength_response())
+    assert u.allclose(spectra.temperature_response(fake_channel), expected * u.Quantity(1, "photon cm3 s-1 sr-1"))
