@@ -85,6 +85,15 @@ def test_spectra_repr(fake_spectra):
     assert isinstance(fake_spectra.__repr__(), str)
 
 
+def test_temperature_response_wavelength_unit(fake_channel, fake_spectra):
+    spectra_nm = SourceSpectra(
+        fake_spectra.temperature,
+        fake_spectra.wavelength.to("nm"),
+        fake_spectra.data.to("photon cm3 s-1 sr-1 nm-1"),
+    )
+    assert u.allclose(spectra_nm.temperature_response(fake_channel), fake_spectra.temperature_response(fake_channel))
+
+
 @pytest.mark.parametrize('obstime', [None, '2020-01-01'])
 def test_temperature_response(fake_channel, fake_spectra, obstime):
     temp_response = fake_spectra.temperature_response(fake_channel, obstime=obstime)
