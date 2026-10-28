@@ -1,0 +1,1 @@
+`~sunkit_instruments.response.SourceSpectra.temperature_response` now interpolates the wavelength response onto the wavelengths of the spectra, instead of the spectra onto the channel wavelengths, so that spectra sampled more finely than the channel keep their flux.
