@@ -38,7 +38,7 @@ repos:
     rev: v2.4.3
     hooks:
       - id: codespell
-        args: [ "--write-changes" ]
+        args: [ "--write-changes" , "--ignore-words-list", "livetime"]
         types_or: [python, rst]
         exclude: *exclude_dirs
   - repo: https://github.com/sphinx-contrib/sphinx-lint

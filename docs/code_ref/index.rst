@@ -11,6 +11,7 @@ API Reference
    fermi
    goes_xrs
    lyra
+   nustar
    rhessi
    suvi
    response
