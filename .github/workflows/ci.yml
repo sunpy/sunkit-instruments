@@ -100,11 +100,7 @@ jobs:
       toxdeps: tox-pypi-filter
       posargs: -n auto --dist loadgroup
       envs: |
-<<<<<<<
         - linux: py313-online
-=======
-
->>>>>>>
 
   build_dists:
     # Build wheels on PRs only when labelled. Releases will only be published if tagged ^v.*
