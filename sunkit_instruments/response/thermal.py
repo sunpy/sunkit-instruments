@@ -161,8 +161,8 @@ class SourceSpectra:
             wave_response.to_value(wave_response.unit),
             dims=['wavelength'],
             coords=[xarray.Variable('wavelength',
-                                   channel.wavelength.to_value('Angstrom'),
-                                   attrs={'unit': 'Angstrom'}),],
+                                   channel.wavelength.to_value(self._da.wavelength.unit),
+                                   attrs={'unit': self._da.wavelength.unit}),],
             attrs={'unit': wave_response.unit.to_string()}
         )
         spec_interp = self._da.interp(

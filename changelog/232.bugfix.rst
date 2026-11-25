@@ -1,0 +1,1 @@
+`~sunkit_instruments.response.SourceSpectra.temperature_response` now gives the same result whatever the wavelength unit of the spectra; spectra in units other than Angstrom gave a zero response.
