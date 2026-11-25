@@ -70,7 +70,7 @@ jobs:
       envs: |
         - linux: py314
         - windows: py312
-        - macos: py312
+        - macos: py313
         - linux: py312-oldestdeps
         - linux: py314-devdeps
 
@@ -100,7 +100,11 @@ jobs:
       toxdeps: tox-pypi-filter
       posargs: -n auto --dist loadgroup
       envs: |
+<<<<<<<
         - linux: py313-online
+=======
+
+>>>>>>>
 
   build_dists:
     # Build wheels on PRs only when labelled. Releases will only be published if tagged ^v.*
